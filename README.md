@@ -84,6 +84,24 @@ The React frontend runs on port `5173`. The Express API runs on port `5000`, and
 npm run seed
 ```
 
+
+## Quick Deployment for Your Accounts
+
+1. Create an empty GitHub repository named `it-ticketing-system` under `proyneon-hub`.
+2. From this project folder, run:
+
+```bash
+git branch -M main
+git remote set-url origin https://github.com/proyneon-hub/it-ticketing-system.git
+git push -u origin main
+```
+
+3. In Vercel, import `proyneon-hub/it-ticketing-system`.
+4. Add `MONGODB_URI` in Vercel Environment Variables.
+5. Deploy.
+
+See `DEPLOYMENT.md` for the full step-by-step guide.
+
 ## API Endpoints
 
 | Method | Endpoint | Purpose |
@@ -113,19 +131,23 @@ curl -X POST http://localhost:5000/api/tickets \
 
 ## Push to GitHub
 
+This project has been tailored for your GitHub profile: `https://github.com/proyneon-hub`. The recommended repository name is `it-ticketing-system`.
+
 After unzipping this project:
 
 ```bash
 cd it-ticketing-system
 git status
-git remote add origin https://github.com/YOUR_USERNAME/it-ticketing-system.git
 git branch -M main
+git remote set-url origin https://github.com/proyneon-hub/it-ticketing-system.git
 git push -u origin main
 ```
 
 If the remote repo already has content, use a new empty repo or pull/merge first.
 
 ## Deploy to Vercel
+
+This project is ready to deploy under your Vercel account/team path: `https://vercel.com/pramits-projects-ce654619`.
 
 ### Option A: Import from GitHub
 
