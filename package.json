@@ -1,0 +1,42 @@
+{
+  "name": "it-ticketing-system",
+  "version": "1.0.0",
+  "description": "Full-stack IT ticketing system using Node.js, Express, MongoDB, React, and Vite.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:client\"",
+    "dev:api": "nodemon server.js",
+    "dev:client": "vite --host 0.0.0.0",
+    "start": "node server.js",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "seed": "node scripts/seed.js"
+  },
+  "keywords": [
+    "it-ticketing",
+    "express",
+    "mongodb",
+    "react",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^8.9.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9",
+    "vite": "^6.0.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
