@@ -5,13 +5,19 @@ const ticketRoutes = require('./routes/tickets');
 
 const app = express();
 
+// CORS allows the Vite dev server and the API server to talk across ports.
 app.use(cors());
+// All API endpoints accept JSON bodies. The 1mb limit is plenty for ticket text
+// and prevents accidentally accepting very large payloads.
 app.use(express.json({ limit: '1mb' }));
 
+// Lightweight endpoint for deployment checks and quick local API verification.
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'it-ticketing-system' });
 });
 
+// Every /api route after health needs the database. The connection helper caches
+// successful connections, which is important for both local dev and Vercel.
 app.use('/api', async (_req, _res, next) => {
   try {
     await connectToDatabase();
@@ -21,12 +27,16 @@ app.use('/api', async (_req, _res, next) => {
   }
 });
 
+// Mount the ticket CRUD routes under /api, producing URLs like /api/tickets.
 app.use('/api', ticketRoutes);
 
+// Any request that reaches this point did not match a route above.
 app.use((req, res) => {
   res.status(404).json({ message: `Route not found: ${req.method} ${req.path}` });
 });
 
+// Central error handler. Route handlers call next(error), then this converts the
+// error into a consistent JSON response for the frontend.
 app.use((error, _req, res, _next) => {
   if (error.message && error.message.includes('MONGODB_URI is missing')) {
     console.error(error.message);
@@ -35,6 +45,8 @@ app.use((error, _req, res, _next) => {
     });
   }
 
+  // Known MongoDB connection failures become a service-unavailable response
+  // with deployment guidance instead of a vague internal server error.
   if (isDatabaseConnectivityError(error)) {
     console.error('Database connection failed:', error.message);
     return res.status(503).json({
@@ -45,6 +57,7 @@ app.use((error, _req, res, _next) => {
   const statusCode = error.statusCode || 500;
   const message = statusCode === 500 ? 'Internal server error.' : error.message;
 
+  // Log only unexpected server errors to avoid noisy logs for normal 400/404s.
   if (statusCode === 500) {
     console.error(error);
   }

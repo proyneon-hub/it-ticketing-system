@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createTicket, deleteTicket, fetchStats, fetchTickets, updateTicket } from './api.js';
 
+// These lists mirror the backend enum values. Keeping them centralized makes the
+// form controls, filters, and inline table editors consistent.
 const statuses = ['open', 'in-progress', 'resolved', 'closed'];
 const priorities = ['low', 'medium', 'high', 'urgent'];
 
+// Initial state for the create-ticket form. Resetting to this object clears the
+// form after a successful submission.
 const emptyForm = {
   title: '',
   description: '',
@@ -14,6 +18,7 @@ const emptyForm = {
 };
 
 function label(value) {
+  // Converts API values like "in-progress" into display labels like "In Progress".
   return value
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -21,6 +26,7 @@ function label(value) {
 }
 
 function formatDate(value) {
+  // Missing dates are shown as a placeholder instead of rendering "Invalid Date".
   if (!value) return '—';
   return new Intl.DateTimeFormat('en-CA', {
     dateStyle: 'medium',
@@ -29,6 +35,7 @@ function formatDate(value) {
 }
 
 function StatCard({ title, value, helper }) {
+  // Small reusable component for the dashboard summary metrics.
   return (
     <section className="card stat-card">
       <p>{title}</p>
@@ -39,8 +46,11 @@ function StatCard({ title, value, helper }) {
 }
 
 export default function App() {
+  // Main API-backed data.
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState(null);
+
+  // Local UI state for form inputs, filters, and request feedback.
   const [form, setForm] = useState(emptyForm);
   const [filters, setFilters] = useState({ status: '', priority: '', search: '' });
   const [loading, setLoading] = useState(true);
@@ -49,9 +59,12 @@ export default function App() {
   const [success, setSuccess] = useState('');
 
   async function loadData(activeFilters = filters) {
+    // Refresh tickets and stats together. The optional activeFilters parameter
+    // lets filter changes fetch with the new values immediately.
     setLoading(true);
     setError('');
 
+    // allSettled allows one request to fail while still using the other result.
     const [ticketResult, statResult] = await Promise.allSettled([
       fetchTickets(activeFilters),
       fetchStats()
@@ -69,6 +82,7 @@ export default function App() {
       setStats(null);
     }
 
+    // Show the first API error to the user while keeping the page mounted.
     const failedResult = [ticketResult, statResult].find((result) => result.status === 'rejected');
     if (failedResult) {
       setError(failedResult.reason.message);
@@ -78,20 +92,26 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Load the dashboard once when the component first mounts.
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Derived value for the "Active Tickets" stat card. Memoizing avoids
+  // recalculating unless the tickets array changes.
   const activeCount = useMemo(
     () => tickets.filter((ticket) => !['resolved', 'closed'].includes(ticket.status)).length,
     [tickets]
   );
 
   function updateFormField(field, value) {
+    // Merge one changed form field into the current form state.
     setForm((current) => ({ ...current, [field]: value }));
   }
 
   function updateFilter(field, value) {
+    // Build the next filter object before calling loadData so the API request
+    // uses the latest value instead of waiting for React state to settle.
     const nextFilters = { ...filters, [field]: value };
     setFilters(nextFilters);
     loadData(nextFilters);
@@ -99,6 +119,7 @@ export default function App() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    // Disable the submit button and clear old messages while creating the ticket.
     setSaving(true);
     setError('');
     setSuccess('');
@@ -107,6 +128,7 @@ export default function App() {
       await createTicket(form);
       setForm(emptyForm);
       setSuccess('Ticket created successfully.');
+      // Reload both table data and stats so the dashboard reflects the new ticket.
       await loadData();
     } catch (err) {
       setError(err.message);
@@ -116,6 +138,8 @@ export default function App() {
   }
 
   async function handleTicketPatch(id, patch) {
+    // Used by inline table editors. The patch contains only the field that
+    // changed, such as { priority: "urgent" }.
     setError('');
     setSuccess('');
 
@@ -129,6 +153,7 @@ export default function App() {
   }
 
   async function handleDelete(id) {
+    // Ask for confirmation because deleting a ticket is permanent in this app.
     const confirmed = window.confirm('Delete this ticket? This cannot be undone.');
     if (!confirmed) return;
 
@@ -146,6 +171,7 @@ export default function App() {
 
   return (
     <main className="shell">
+      {/* Header area with a manual refresh button for reloading API data. */}
       <header className="hero">
         <div>
           <span className="eyebrow">Full Stack Portfolio Project</span>
@@ -159,6 +185,7 @@ export default function App() {
         </button>
       </header>
 
+      {/* Summary metrics combine server-provided stats with client-derived counts. */}
       <section className="stats-grid">
         <StatCard title="Total Tickets" value={stats?.total ?? '—'} helper="All time" />
         <StatCard title="Active Tickets" value={activeCount} helper="Open or in progress" />
@@ -170,6 +197,7 @@ export default function App() {
       {success ? <div className="alert success">{success}</div> : null}
 
       <section className="layout-grid">
+        {/* Controlled form for creating a new ticket. */}
         <form className="card ticket-form" onSubmit={handleSubmit}>
           <div className="section-heading">
             <h2>Create Ticket</h2>
@@ -242,6 +270,7 @@ export default function App() {
           </button>
         </form>
 
+        {/* Ticket list and inline editors. This section is backed by /api/tickets. */}
         <section className="card dashboard-card">
           <div className="section-heading horizontal">
             <div>
@@ -250,6 +279,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* Changing any filter immediately reloads the tickets from the API. */}
           <div className="filters">
             <input
               value={filters.search}
@@ -296,6 +326,7 @@ export default function App() {
                         <small>{ticket.requesterName || 'Unknown requester'} {ticket.requesterEmail ? `• ${ticket.requesterEmail}` : ''}</small>
                       </td>
                       <td>
+                        {/* Status updates are saved immediately through PATCH /api/tickets/:id. */}
                         <select
                           className={`pill ${ticket.status}`}
                           value={ticket.status}
@@ -307,6 +338,7 @@ export default function App() {
                         </select>
                       </td>
                       <td>
+                        {/* Priority uses the same inline update flow as status. */}
                         <select
                           className={`pill ${ticket.priority}`}
                           value={ticket.priority}
@@ -322,6 +354,8 @@ export default function App() {
                           className="assignee-input"
                           defaultValue={ticket.assignee}
                           onBlur={(event) => {
+                            // Save assignee edits on blur, but skip the API call
+                            // when the value did not actually change.
                             if (event.target.value !== ticket.assignee) {
                               handleTicketPatch(ticket._id, { assignee: event.target.value });
                             }

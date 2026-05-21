@@ -3,6 +3,7 @@ require('dotenv').config();
 const { connectToDatabase } = require('../src/server/db');
 const Ticket = require('../src/server/models/Ticket');
 
+// Small set of sample tickets for local demos and portfolio screenshots.
 const tickets = [
   {
     title: 'Laptop cannot connect to Wi-Fi',
@@ -34,13 +35,20 @@ const tickets = [
 ];
 
 async function seed() {
+  // Reuse the same database helper as the API so seeding respects MONGODB_URI,
+  // DNS settings, and connection timeout behavior.
   await connectToDatabase();
+
+  // This is intentionally destructive: it clears existing tickets so the sample
+  // data is predictable every time the script runs.
   await Ticket.deleteMany({});
   await Ticket.insertMany(tickets);
+
   console.log(`Seeded ${tickets.length} tickets.`);
   process.exit(0);
 }
 
+// Log failures clearly and exit non-zero so npm/CI knows the seed command failed.
 seed().catch((error) => {
   console.error(error);
   process.exit(1);

@@ -1,11 +1,14 @@
 const dns = require('dns');
 const mongoose = require('mongoose');
 
+// Cached state prevents repeated MongoDB handshakes. This is especially helpful
+// in serverless environments where several requests can reuse a warm function.
 let cachedConnection = null;
 let connectingPromise = null;
 let dnsConfigured = false;
 
 function getConnectionTimeoutMs() {
+  // Keep the API from hanging indefinitely when MongoDB or DNS is unreachable.
   return Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 5000;
 }
 
@@ -28,6 +31,8 @@ function configureDnsServers(uri) {
     return;
   }
 
+  // mongodb+srv:// URLs require DNS SRV lookups. Some local networks have
+  // unreliable DNS for Atlas, so development can opt into public DNS servers.
   const configuredServers = process.env.MONGODB_DNS_SERVERS;
   const defaultDevServers = process.env.NODE_ENV === 'production' ? '' : '8.8.8.8,1.1.1.1';
   const servers = (configuredServers || defaultDevServers)
@@ -43,6 +48,7 @@ function configureDnsServers(uri) {
 }
 
 async function connectToDatabase() {
+  // Mongoose readyState 1 means the existing connection is open and reusable.
   if (cachedConnection && mongoose.connection.readyState === 1) {
     return cachedConnection;
   }
@@ -55,6 +61,9 @@ async function connectToDatabase() {
 
   configureDnsServers(uri);
 
+  // Share one in-flight connection attempt across concurrent requests. If five
+  // requests arrive at once, they all await the same promise instead of opening
+  // five independent database connections.
   if (!connectingPromise) {
     const timeoutMs = getConnectionTimeoutMs();
 
@@ -71,6 +80,7 @@ async function connectToDatabase() {
   try {
     cachedConnection = await connectingPromise;
   } catch (error) {
+    // Reset failed state so the next request can retry a fresh connection.
     connectingPromise = null;
     await mongoose.disconnect().catch(() => {});
     throw error;
@@ -80,6 +90,8 @@ async function connectToDatabase() {
 }
 
 function isDatabaseConnectivityError(error) {
+  // The Express error handler uses this to return a 503 with deployment guidance
+  // for known network/connectivity failures.
   return [
     'MongoNetworkError',
     'MongoNetworkTimeoutError',
