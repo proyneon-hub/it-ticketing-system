@@ -52,18 +52,29 @@ export default function App() {
     setLoading(true);
     setError('');
 
-    try {
-      const [ticketData, statData] = await Promise.all([
-        fetchTickets(activeFilters),
-        fetchStats()
-      ]);
-      setTickets(ticketData.tickets);
-      setStats(statData);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    const [ticketResult, statResult] = await Promise.allSettled([
+      fetchTickets(activeFilters),
+      fetchStats()
+    ]);
+
+    if (ticketResult.status === 'fulfilled') {
+      setTickets(ticketResult.value.tickets);
+    } else {
+      setTickets([]);
     }
+
+    if (statResult.status === 'fulfilled') {
+      setStats(statResult.value);
+    } else {
+      setStats(null);
+    }
+
+    const failedResult = [ticketResult, statResult].find((result) => result.status === 'rejected');
+    if (failedResult) {
+      setError(failedResult.reason.message);
+    }
+
+    setLoading(false);
   }
 
   useEffect(() => {

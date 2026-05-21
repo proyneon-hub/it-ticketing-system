@@ -6,7 +6,7 @@ let connectingPromise = null;
 let dnsConfigured = false;
 
 function getConnectionTimeoutMs() {
-  return Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 10000;
+  return Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 5000;
 }
 
 function withConnectionTimeout(promise, timeoutMs) {
