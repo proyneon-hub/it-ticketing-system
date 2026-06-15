@@ -1,18 +1,15 @@
 :root {
-  /* Global page colors and typography shared by every component. */
   color-scheme: light;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #eef2f7;
+  background: #f3f5f8;
   color: #172033;
 }
 
 * {
-  /* Makes width calculations include padding and borders, simplifying layout. */
   box-sizing: border-box;
 }
 
 body {
-  /* Remove browser defaults so the app shell controls page spacing. */
   margin: 0;
   min-width: 320px;
 }
@@ -30,100 +27,206 @@ button {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.62;
 }
 
 .shell {
-  /* Centers the app and keeps it readable on very wide screens. */
-  width: min(1380px, calc(100% - 32px));
+  width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 32px 0 48px;
+  padding: 24px 0 44px;
 }
 
-.hero {
-  /* Top summary area for the product title and refresh action. */
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 32px;
+.app-header {
+  display: grid;
+  grid-template-columns: 1fr minmax(300px, 420px);
+  gap: 18px;
+  align-items: stretch;
+  padding: 24px;
   color: #fff;
-  background: linear-gradient(135deg, #102542, #1f4d7a);
-  border-radius: 28px;
-  box-shadow: 0 22px 60px rgba(16, 37, 66, 0.24);
+  background: #18263a;
+  border-radius: 8px;
+  box-shadow: 0 20px 45px rgba(19, 30, 45, 0.18);
 }
 
 .eyebrow {
   display: inline-flex;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 6px;
+  color: #c9d8ea;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
-.hero h1 {
-  margin: 16px 0 12px;
-  font-size: clamp(2rem, 5vw, 4.5rem);
-  line-height: 0.95;
+.app-header h1 {
+  margin: 12px 0 8px;
+  font-size: 2.5rem;
+  line-height: 1;
 }
 
-.hero p {
+.app-header p {
+  max-width: 720px;
   margin: 0;
-  max-width: 680px;
-  color: #d9e8f8;
+  color: #dbe5f2;
+}
+
+.session-card,
+.empty-panel,
+.panel,
+.stat-card,
+.workflow-strip,
+.demo-strip {
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.session-card {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+  padding: 16px;
+  color: #172033;
+}
+
+.session-card strong {
   font-size: 1.05rem;
 }
 
-.card {
-  /* Shared panel treatment used for stats, form, and dashboard sections. */
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  border-radius: 24px;
-  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+.session-card small {
+  color: #68758a;
+}
+
+.session-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.login-form {
+  display: grid;
+  gap: 8px;
+}
+
+.role-badge {
+  width: max-content;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.role-badge.admin {
+  background: #7c3aed;
+}
+
+.role-badge.technician {
+  background: #0369a1;
+}
+
+.role-badge.user {
+  background: #15803d;
+}
+
+.demo-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+  padding: 10px;
+}
+
+.demo-account {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+  padding: 10px;
+  text-align: left;
+  background: #f9fafc;
+}
+
+.demo-account span,
+.demo-account small {
+  color: #68758a;
+  font-size: 0.78rem;
 }
 
 .stats-grid {
-  /* Four summary cards on desktop, reduced by media queries below. */
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin: 22px 0;
+  gap: 12px;
+  margin: 16px 0;
 }
 
 .stat-card {
-  padding: 20px;
+  padding: 16px;
+  border-left: 5px solid #64748b;
+}
+
+.stat-card.warning {
+  border-left-color: #d97706;
+}
+
+.stat-card.danger {
+  border-left-color: #dc2626;
 }
 
 .stat-card p,
 .stat-card span {
   margin: 0;
-  color: #64748b;
+  color: #68758a;
 }
 
 .stat-card strong {
   display: block;
-  margin: 8px 0 4px;
+  margin: 6px 0 2px;
   font-size: 2rem;
-  color: #0f172a;
+  color: #111827;
+}
+
+.workflow-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #d9e0ea;
+}
+
+.workflow-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.workflow-step span {
+  color: #536174;
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .layout-grid {
-  /* Desktop layout: form on the left, ticket table on the right. */
   display: grid;
-  grid-template-columns: minmax(320px, 430px) 1fr;
-  gap: 20px;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 16px;
   align-items: start;
 }
 
-.ticket-form,
-.dashboard-card {
-  padding: 24px;
+.panel {
+  padding: 18px;
 }
 
 .section-heading {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .section-heading.horizontal {
@@ -132,22 +235,29 @@ button:disabled {
   gap: 16px;
 }
 
-.section-heading h2 {
-  margin: 0 0 6px;
-  font-size: 1.4rem;
+.section-heading h2,
+.empty-panel h2 {
+  margin: 0 0 5px;
+  font-size: 1.22rem;
 }
 
-.section-heading p {
+.section-heading p,
+.empty-panel p {
   margin: 0;
-  color: #64748b;
+  color: #68758a;
+}
+
+.empty-panel {
+  padding: 28px;
+  text-align: center;
 }
 
 label {
   display: grid;
-  gap: 8px;
-  margin-bottom: 14px;
-  font-weight: 700;
+  gap: 7px;
+  margin-bottom: 12px;
   color: #334155;
+  font-weight: 800;
 }
 
 label span {
@@ -158,13 +268,13 @@ input,
 select,
 textarea {
   width: 100%;
-  border: 1px solid #d8dee9;
-  border-radius: 14px;
-  padding: 11px 13px;
+  border: 1px solid #cfd7e3;
+  border-radius: 6px;
+  padding: 10px 11px;
   color: #172033;
   background: #fff;
   outline: none;
-  transition: border 0.2s, box-shadow 0.2s;
+  transition: border 0.18s, box-shadow 0.18s;
 }
 
 textarea {
@@ -175,53 +285,57 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .two-column,
 .filters {
-  /* Reusable two-column input layout for forms and dashboard filters. */
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .filters {
-  grid-template-columns: 1.5fr repeat(2, minmax(150px, 0.5fr));
-  margin-bottom: 16px;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 0.6fr));
+  margin-bottom: 14px;
 }
 
 .primary-button,
 .ghost-button,
+.secondary-button,
 .danger-button {
   border: 0;
-  border-radius: 14px;
-  padding: 11px 16px;
-  font-weight: 800;
+  border-radius: 6px;
+  padding: 10px 13px;
+  font-weight: 900;
 }
 
 .primary-button {
   width: 100%;
-  background: #2563eb;
   color: #fff;
+  background: #2563eb;
 }
 
 .ghost-button {
   color: #fff;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: #2563eb;
+}
+
+.secondary-button {
+  color: #172033;
+  background: #e8eef6;
 }
 
 .danger-button {
-  color: #b91c1c;
+  color: #991b1b;
   background: #fee2e2;
 }
 
 .alert {
-  padding: 14px 16px;
-  margin-bottom: 16px;
-  border-radius: 16px;
-  font-weight: 700;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  font-weight: 800;
 }
 
 .alert.error {
@@ -235,74 +349,87 @@ textarea:focus {
 }
 
 .table-wrap {
-  /* Allows the wide ticket table to scroll horizontally on narrow screens. */
   overflow-x: auto;
 }
 
 table {
-  /* Minimum width preserves column readability; the wrapper handles overflow. */
   width: 100%;
+  min-width: 1120px;
   border-collapse: collapse;
-  min-width: 900px;
 }
 
 th,
 td {
-  padding: 14px 12px;
+  padding: 12px 10px;
   text-align: left;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e3e8ef;
   vertical-align: top;
 }
 
 th {
-  color: #64748b;
-  font-size: 0.76rem;
+  color: #68758a;
+  font-size: 0.74rem;
+  letter-spacing: 0;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
 }
 
 .ticket-cell strong {
-  color: #0f172a;
+  color: #111827;
 }
 
 .ticket-cell p {
-  margin: 6px 0;
-  max-width: 360px;
+  max-width: 380px;
+  margin: 5px 0;
   color: #475569;
 }
 
-.ticket-cell small {
-  color: #64748b;
+.ticket-cell small,
+.stacked-date {
+  display: block;
+  color: #68758a;
 }
 
-.pill {
-  /* Status and priority selects use pill styling to read like labels. */
-  min-width: 130px;
-  border-radius: 999px;
-  font-weight: 800;
+.pill,
+.sla-chip {
+  min-width: 128px;
+  border-radius: 6px;
+  font-weight: 900;
+}
+
+.sla-chip {
+  display: inline-flex;
+  min-width: 92px;
+  justify-content: center;
+  padding: 5px 8px;
+  font-size: 0.8rem;
 }
 
 .pill.open,
-.pill.medium {
-  background: #eff6ff;
+.pill.medium,
+.sla-chip.healthy {
+  background: #eaf3ff;
 }
 
+.pill.assigned,
 .pill.in-progress,
-.pill.high {
-  background: #fff7ed;
+.pill.high,
+.sla-chip.due-soon {
+  background: #fff2db;
 }
 
 .pill.resolved,
-.pill.low {
-  background: #ecfdf5;
+.pill.low,
+.sla-chip.met {
+  background: #e6f7ed;
 }
 
 .pill.closed {
-  background: #f1f5f9;
+  background: #eef2f7;
 }
 
-.pill.urgent {
-  background: #fef2f2;
+.pill.urgent,
+.sla-chip.breached {
+  background: #fee2e2;
 }
 
 .assignee-input {
@@ -310,37 +437,43 @@ th {
 }
 
 .empty-state {
-  padding: 34px;
-  color: #64748b;
+  padding: 30px;
+  color: #68758a;
   text-align: center;
 }
 
-@media (max-width: 1100px) {
-  /* Collapse the main dashboard into one column on tablets and small laptops. */
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
+@media (max-width: 1120px) {
+  .app-header,
   .layout-grid {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 700px) {
-  /* Single-column mobile layout for all major sections and controls. */
-  .shell {
-    width: min(100% - 20px, 1380px);
-    padding-top: 16px;
+  .stats-grid,
+  .demo-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .hero {
-    padding: 24px;
-    flex-direction: column;
+  .workflow-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    width: min(100% - 20px, 1440px);
+    padding-top: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 2rem;
   }
 
   .stats-grid,
+  .demo-strip,
+  .workflow-strip,
   .two-column,
-  .filters {
+  .filters,
+  .session-actions {
     grid-template-columns: 1fr;
   }
 }

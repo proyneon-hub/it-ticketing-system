@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { connectToDatabase, isDatabaseConnectivityError } = require('./db');
+const authRoutes = require('./routes/auth');
 const ticketRoutes = require('./routes/tickets');
 
 const app = express();
@@ -16,6 +18,10 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'it-ticketing-system' });
 });
 
+// Demo authentication routes are intentionally available before the database
+// middleware so reviewers can sign in even while configuring MongoDB.
+app.use('/api', authRoutes);
+
 // Every /api route after health needs the database. The connection helper caches
 // successful connections, which is important for both local dev and Vercel.
 app.use('/api', async (_req, _res, next) => {
@@ -29,6 +35,15 @@ app.use('/api', async (_req, _res, next) => {
 
 // Mount the ticket CRUD routes under /api, producing URLs like /api/tickets.
 app.use('/api', ticketRoutes);
+
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(__dirname, '..', '..', 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    return res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Any request that reaches this point did not match a route above.
 app.use((req, res) => {

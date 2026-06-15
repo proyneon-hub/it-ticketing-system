@@ -1,191 +1,160 @@
 # IT Ticketing System
 
-A full-stack IT ticketing system built with **Node.js**, **Express**, **MongoDB**, **React**, and **Vite**. It is ready to push to GitHub and deploy on Vercel.
+A production-style service desk application built with **React**, **Vite**, **Node.js**, **Express**, and **MongoDB**. It demonstrates authenticated ticket intake, role-based access, assignment workflow, SLA visibility, API validation, tests, Docker, and CI.
 
-## Features
+## Portfolio Highlights
 
-- Create support tickets
-- Update ticket status: `open`, `in-progress`, `resolved`, `closed`
-- Assign ticket priority: `low`, `medium`, `high`, `urgent`
-- Assign tickets to a technician/team
-- Dashboard summary cards
-- Search and filter by status/priority
-- Delete tickets
-- MongoDB persistence with Mongoose
-- Vercel-ready API functions
+- Authentication with signed demo bearer tokens
+- Role-based access for `admin`, `technician`, and `user`
+- Ticket workflow: `open`, `assigned`, `in-progress`, `resolved`, `closed`
+- SLA dashboard with breached and due-soon counts
+- Priority model: `urgent`, `high`, `medium`, `low`
+- User-scoped ticket visibility for requester accounts
+- Admin-only destructive actions
+- Seeded demo credentials and realistic ticket data
+- Jest + Supertest API tests
+- Dockerfile and Docker Compose setup
+- GitHub Actions CI for install, test, and build
+- API documentation in [docs/API.md](docs/API.md)
+
+## Screenshots
+
+Capture these views after running `npm run seed`:
+
+| View | What to show |
+|---|---|
+| Admin dashboard | SLA cards, workflow counts, full ticket queue |
+| Technician dashboard | Assignment/status controls without delete access |
+| User dashboard | User-scoped tickets and disabled workflow controls |
+
+Recommended paths:
+
+```text
+docs/screenshots/admin-dashboard.png
+docs/screenshots/technician-dashboard.png
+docs/screenshots/user-dashboard.png
+```
+
+## Demo Credentials
+
+| Role | Email | Password | Permissions |
+|---|---|---|---|
+| Admin | `admin@demo.local` | `AdminPass123!` | Full queue, update tickets, delete tickets |
+| Technician | `tech@demo.local` | `TechPass123!` | Full queue, update workflow and assignment |
+| User | `user@demo.local` | `UserPass123!` | Create and view own tickets only |
+
+The app also exposes these accounts in the login strip for quick portfolio demos.
 
 ## Tech Stack
 
 | Layer | Tooling |
 |---|---|
-| Frontend | React + Vite |
-| Backend | Node.js + Express |
-| Database | MongoDB Atlas / local MongoDB |
-| Deployment | Vercel |
-
-## Project Structure
-
-```text
-it-ticketing-system/
-├── api/
-│   ├── index.js              # Vercel API entry
-│   └── [...path].js          # Vercel catch-all API entry
-├── scripts/
-│   └── seed.js               # Optional sample data seeder
-├── src/
-│   ├── client/               # React frontend
-│   └── server/               # Express API, DB, routes, model
-├── .env.example
-├── package.json
-├── server.js                 # Local Express server
-├── vercel.json
-└── vite.config.js
-```
+| Frontend | React 18, Vite |
+| Backend | Node.js, Express |
+| Database | MongoDB, Mongoose |
+| Testing | Jest, Supertest |
+| DevOps | Docker, Docker Compose, GitHub Actions, Vercel-ready API functions |
 
 ## Local Setup
 
-### 1. Install dependencies
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-### 2. Create environment file
+2. Create environment variables:
 
 ```bash
 cp .env.example .env
 ```
 
-Add your MongoDB connection string:
+3. Set `MONGODB_URI` in `.env`. For local MongoDB:
 
 ```env
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/it_ticketing?retryWrites=true&w=majority
+MONGODB_URI=mongodb://127.0.0.1:27017/it_ticketing
 PORT=5000
-NODE_ENV=development
+AUTH_SECRET=replace-with-a-long-random-secret
 ```
 
-### 3. Run the app locally
+4. Run the app:
 
 ```bash
 npm run dev
 ```
 
-Open:
+Open `http://localhost:5173`.
 
-```text
-http://localhost:5173
-```
-
-The React frontend runs on port `5173`. The Express API runs on port `5000`, and Vite proxies `/api` requests to it.
-
-### 4. Optional: add sample tickets
+5. Seed demo tickets:
 
 ```bash
 npm run seed
 ```
 
+## Docker
 
-## Quick Deployment for Your Accounts
-
-1. Create an empty GitHub repository named `it-ticketing-system` under `proyneon-hub`.
-2. From this project folder, run:
+Run the app and MongoDB together:
 
 ```bash
-git branch -M main
-git remote set-url origin https://github.com/proyneon-hub/it-ticketing-system.git
-git push -u origin main
+docker compose up --build
 ```
 
-3. In Vercel, import `proyneon-hub/it-ticketing-system`.
-4. Add `MONGODB_URI` in Vercel Environment Variables.
-5. Deploy.
+The API runs at `http://localhost:5000`. The production container serves the built frontend assets and API from the same Express process.
 
-See `DEPLOYMENT.md` for the full step-by-step guide.
+## Tests
 
-## API Endpoints
+```bash
+npm test
+```
+
+The test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, and dashboard stats response shape.
+
+## API
+
+Full endpoint documentation lives in [docs/API.md](docs/API.md).
+
+Common endpoints:
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/api/health` | Health check |
-| GET | `/api/tickets` | List tickets with optional `status`, `priority`, `search` filters |
-| GET | `/api/tickets/stats` | Dashboard statistics |
-| GET | `/api/tickets/:id` | Get one ticket |
-| POST | `/api/tickets` | Create a ticket |
-| PATCH | `/api/tickets/:id` | Update status, priority, assignee, or other fields |
-| DELETE | `/api/tickets/:id` | Delete a ticket |
+| `GET` | `/api/health` | Health check |
+| `POST` | `/api/auth/login` | Demo login |
+| `GET` | `/api/auth/me` | Current session |
+| `GET` | `/api/tickets` | List visible tickets |
+| `GET` | `/api/tickets/stats` | SLA/status/priority stats |
+| `POST` | `/api/tickets` | Create ticket |
+| `PATCH` | `/api/tickets/:id` | Update ticket |
+| `DELETE` | `/api/tickets/:id` | Admin-only delete |
 
-Example create-ticket request:
-
-```bash
-curl -X POST http://localhost:5000/api/tickets \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Laptop cannot connect to Wi-Fi",
-    "description": "Device drops from Wi-Fi every few minutes.",
-    "requesterName": "Avery Johnson",
-    "requesterEmail": "avery@example.com",
-    "priority": "high",
-    "assignee": "Network Support"
-  }'
-```
-
-## Push to GitHub
-
-This project has been tailored for your GitHub profile: `https://github.com/proyneon-hub`. The recommended repository name is `it-ticketing-system`.
-
-After unzipping this project:
-
-```bash
-cd it-ticketing-system
-git status
-git branch -M main
-git remote set-url origin https://github.com/proyneon-hub/it-ticketing-system.git
-git push -u origin main
-```
-
-If the remote repo already has content, use a new empty repo or pull/merge first.
-
-## Deploy to Vercel
-
-This project is ready to deploy under your Vercel account/team path: `https://vercel.com/pramits-projects-ce654619`.
-
-### Option A: Import from GitHub
-
-1. Push this repository to GitHub.
-2. Go to Vercel and choose **Add New Project**.
-3. Import the GitHub repository.
-4. Add the environment variable:
+## Project Structure
 
 ```text
-MONGODB_URI = your MongoDB Atlas connection string
+it-ticketing-system/
+|-- .github/workflows/ci.yml
+|-- api/                         # Vercel API adapters
+|-- docs/API.md                  # API documentation
+|-- scripts/seed.js              # Demo ticket seeder
+|-- src/client/                  # React frontend
+|-- src/server/                  # Express API, auth, routes, model
+|-- Dockerfile
+|-- docker-compose.yml
+|-- package.json
+|-- server.js
+`-- vite.config.mjs
 ```
 
-5. Deploy.
+## Deployment
 
-### Option B: Vercel CLI
+This project can deploy to Vercel with the existing `api/` functions and Vite build output.
 
-```bash
-npm install -g vercel
-vercel login
-vercel
-vercel env add MONGODB_URI
-vercel --prod
+Required environment variables:
+
+```text
+MONGODB_URI
+AUTH_SECRET
 ```
 
-## MongoDB Atlas Notes
-
-Use MongoDB Atlas for deployed hosting. For a simple portfolio deployment, the Vercel MongoDB Atlas integration can configure `MONGODB_URI` automatically. If you set up Atlas manually, create a database user, add your connection string as `MONGODB_URI`, and configure network access according to your Atlas/Vercel setup.
-
-## Recommended Next Improvements
-
-- Authentication for admin/technician users
-- Role-based permissions
-- Ticket comments/activity history
-- File attachments
-- Email notifications
-- SLA due dates
-- Pagination for large ticket volumes
-- PostgreSQL version using Prisma or Drizzle
+See [DEPLOYMENT.md](DEPLOYMENT.md) for the existing Vercel walkthrough.
 
 ## License
 

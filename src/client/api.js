@@ -1,5 +1,16 @@
 const API_BASE = '/api';
 
+let authToken = localStorage.getItem('it_ticketing_token') || '';
+
+export function setAuthToken(token) {
+  authToken = token || '';
+  if (authToken) {
+    localStorage.setItem('it_ticketing_token', authToken);
+  } else {
+    localStorage.removeItem('it_ticketing_token');
+  }
+}
+
 // Shared wrapper for every frontend API call. Keeping response parsing and
 // error handling here means the React components can stay focused on UI state.
 async function request(path, options = {}) {
@@ -9,6 +20,7 @@ async function request(path, options = {}) {
     response = await fetch(`${API_BASE}${path}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
         ...(options.headers || {})
       },
       ...options
@@ -38,6 +50,21 @@ async function request(path, options = {}) {
   }
 
   return data;
+}
+
+export function login(credentials) {
+  return request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials)
+  });
+}
+
+export function fetchMe() {
+  return request('/auth/me');
+}
+
+export function fetchDemoUsers() {
+  return request('/auth/demo-users');
 }
 
 export function fetchTickets(filters = {}) {

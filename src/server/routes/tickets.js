@@ -1,40 +1,42 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { requireAuth, requireRole } = require('../auth');
 const Ticket = require('../models/Ticket');
 
 const router = express.Router();
 
-// Keep allowed API values close to the route logic so validation and filtering
-// use the same lists the frontend presents in dropdowns.
-const allowedStatuses = ['open', 'in-progress', 'resolved', 'closed'];
+const allowedStatuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
 const allowedPriorities = ['low', 'medium', 'high', 'urgent'];
+const terminalStatuses = ['resolved', 'closed'];
 
 function normalizeString(value) {
-  // Trim user-entered text while leaving non-string values untouched so Mongoose
-  // can still validate unexpected types normally.
   return typeof value === 'string' ? value.trim() : value;
 }
 
 function buildTicketPayload(body, { partial = false } = {}) {
   const payload = {};
-  const fields = ['title', 'description', 'requesterName', 'requesterEmail', 'status', 'priority', 'assignee'];
+  const fields = [
+    'title',
+    'description',
+    'requesterName',
+    'requesterEmail',
+    'status',
+    'priority',
+    'assignee',
+    'category',
+    'dueAt'
+  ];
 
-  // Copy only fields the API supports. This prevents clients from setting
-  // database-managed fields like _id, createdAt, or updatedAt.
   for (const field of fields) {
     if (Object.prototype.hasOwnProperty.call(body, field)) {
       payload[field] = normalizeString(body[field]);
     }
   }
 
-  // Full creates require a title. Partial updates can send only the field that
-  // changed, such as { status: "resolved" }.
   if (!partial && !payload.title) {
     throw Object.assign(new Error('Title is required.'), { statusCode: 400 });
   }
 
-  // Validate enum fields before hitting MongoDB so the client receives a clean,
-  // predictable 400 response.
   if (payload.status && !allowedStatuses.includes(payload.status)) {
     throw Object.assign(new Error('Invalid status.'), { statusCode: 400 });
   }
@@ -43,46 +45,83 @@ function buildTicketPayload(body, { partial = false } = {}) {
     throw Object.assign(new Error('Invalid priority.'), { statusCode: 400 });
   }
 
-  // Treat a blank assignee as intentionally unassigned.
   if (payload.assignee === '') {
     payload.assignee = 'Unassigned';
+  }
+
+  if (payload.dueAt) {
+    const dueAt = new Date(payload.dueAt);
+    if (Number.isNaN(dueAt.getTime())) {
+      throw Object.assign(new Error('Invalid SLA due date.'), { statusCode: 400 });
+    }
+    payload.dueAt = dueAt;
   }
 
   return payload;
 }
 
 function validateObjectId(id) {
-  // Mongoose will throw for malformed ObjectIds. Checking first lets the API
-  // return a controlled 400 instead of a generic server error.
   if (!mongoose.Types.ObjectId.isValid(id)) {
     throw Object.assign(new Error('Invalid ticket id.'), { statusCode: 400 });
   }
 }
 
+function applyRoleScope(filter, user) {
+  if (user.role === 'user') {
+    return { ...filter, requesterEmail: user.email };
+  }
+  return filter;
+}
+
+function assertCanMutateTicket(user, ticket, patch = {}) {
+  if (user.role !== 'user') return;
+
+  if (String(ticket.requesterEmail || '').toLowerCase() !== user.email.toLowerCase()) {
+    throw Object.assign(new Error('Users can only manage tickets they created.'), { statusCode: 403 });
+  }
+
+  const allowedUserFields = ['title', 'description', 'requesterName', 'requesterEmail', 'priority', 'category'];
+  const disallowed = Object.keys(patch).filter((field) => !allowedUserFields.includes(field));
+
+  if (disallowed.length > 0) {
+    throw Object.assign(new Error('Users cannot update workflow, assignment, or SLA fields.'), { statusCode: 403 });
+  }
+}
+
+function activityEntry(user, action) {
+  return {
+    action,
+    actorName: user.name,
+    actorRole: user.role
+  };
+}
+
+router.use('/tickets', requireAuth);
+
 router.get('/tickets', async (req, res, next) => {
   try {
-    const { status, priority, search } = req.query;
-    const filter = {};
+    const { status, priority, search, sla } = req.query;
+    let filter = {};
 
-    // Invalid filter values are ignored instead of causing an error, which keeps
-    // the dashboard resilient if a query string is edited manually.
     if (status && allowedStatuses.includes(status)) filter.status = status;
     if (priority && allowedPriorities.includes(priority)) filter.priority = priority;
+    if (sla === 'breached') {
+      filter.status = { $nin: terminalStatuses };
+      filter.dueAt = { $lt: new Date() };
+    }
 
-    // Case-insensitive search across the main ticket fields. This is simple and
-    // flexible for a small ticketing app.
     if (search && search.trim()) {
       filter.$or = [
         { title: { $regex: search.trim(), $options: 'i' } },
         { description: { $regex: search.trim(), $options: 'i' } },
         { requesterName: { $regex: search.trim(), $options: 'i' } },
         { requesterEmail: { $regex: search.trim(), $options: 'i' } },
-        { assignee: { $regex: search.trim(), $options: 'i' } }
+        { assignee: { $regex: search.trim(), $options: 'i' } },
+        { category: { $regex: search.trim(), $options: 'i' } }
       ];
     }
 
-    // lean() returns plain objects instead of full Mongoose documents, which is
-    // faster when the route only needs to serialize data as JSON.
+    filter = applyRoleScope(filter, req.user);
     const tickets = await Ticket.find(filter).sort({ createdAt: -1 }).lean();
     res.json({ tickets });
   } catch (error) {
@@ -90,24 +129,28 @@ router.get('/tickets', async (req, res, next) => {
   }
 });
 
-router.get('/tickets/stats', async (_req, res, next) => {
+router.get('/tickets/stats', async (req, res, next) => {
   try {
-    // Compute dashboard totals in parallel so the stats endpoint stays quick.
-    const [statusCounts, priorityCounts, total] = await Promise.all([
-      Ticket.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Ticket.aggregate([{ $group: { _id: '$priority', count: { $sum: 1 } } }]),
-      Ticket.countDocuments()
+    const baseMatch = applyRoleScope({}, req.user);
+    const openMatch = { ...baseMatch, status: { $nin: terminalStatuses } };
+    const now = new Date();
+    const dueSoon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const [statusCounts, priorityCounts, total, breachedSla, dueSoonSla] = await Promise.all([
+      Ticket.aggregate([{ $match: baseMatch }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Ticket.aggregate([{ $match: baseMatch }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
+      Ticket.countDocuments(baseMatch),
+      Ticket.countDocuments({ ...openMatch, dueAt: { $lt: now } }),
+      Ticket.countDocuments({ ...openMatch, dueAt: { $gte: now, $lte: dueSoon } })
     ]);
 
-    // Start every status/priority at zero so the frontend can render stable
-    // values even when the database has no tickets in a category.
-    const byStatus = Object.fromEntries(allowedStatuses.map((status) => [status, 0]));
-    const byPriority = Object.fromEntries(allowedPriorities.map((priority) => [priority, 0]));
+    const byStatus = Object.fromEntries(allowedStatuses.map((item) => [item, 0]));
+    const byPriority = Object.fromEntries(allowedPriorities.map((item) => [item, 0]));
 
     for (const row of statusCounts) byStatus[row._id] = row.count;
     for (const row of priorityCounts) byPriority[row._id] = row.count;
 
-    res.json({ total, byStatus, byPriority });
+    res.json({ total, byStatus, byPriority, sla: { breached: breachedSla, dueSoon: dueSoonSla } });
   } catch (error) {
     next(error);
   }
@@ -116,8 +159,7 @@ router.get('/tickets/stats', async (_req, res, next) => {
 router.get('/tickets/:id', async (req, res, next) => {
   try {
     validateObjectId(req.params.id);
-    // findById returns null when the id is valid but no ticket exists.
-    const ticket = await Ticket.findById(req.params.id).lean();
+    const ticket = await Ticket.findOne(applyRoleScope({ _id: req.params.id }, req.user)).lean();
 
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found.' });
@@ -131,8 +173,19 @@ router.get('/tickets/:id', async (req, res, next) => {
 
 router.post('/tickets', async (req, res, next) => {
   try {
-    // Sanitize and validate the request body before creating the MongoDB record.
     const payload = buildTicketPayload(req.body);
+
+    if (req.user.role === 'user') {
+      payload.requesterName = req.user.name;
+      payload.requesterEmail = req.user.email;
+      payload.requesterUserId = req.user.sub;
+      payload.status = 'open';
+      payload.assignee = 'Unassigned';
+    }
+
+    payload.createdByRole = req.user.role;
+    payload.activity = [activityEntry(req.user, `Ticket created by ${req.user.role}`)];
+
     const ticket = await Ticket.create(payload);
     res.status(201).json({ ticket });
   } catch (error) {
@@ -143,20 +196,35 @@ router.post('/tickets', async (req, res, next) => {
 router.patch('/tickets/:id', async (req, res, next) => {
   try {
     validateObjectId(req.params.id);
-    // Partial payloads let the dashboard update one field at a time.
     const payload = buildTicketPayload(req.body, { partial: true });
+    if (Object.keys(payload).length === 0) {
+      throw Object.assign(new Error('No supported ticket fields were provided.'), { statusCode: 400 });
+    }
 
-    const ticket = await Ticket.findByIdAndUpdate(
-      req.params.id,
-      { $set: payload },
-      // new returns the updated document; runValidators keeps schema validation
-      // active for updates, not just creates.
-      { new: true, runValidators: true }
-    );
+    const existing = await Ticket.findById(req.params.id);
 
-    if (!ticket) {
+    if (!existing) {
       return res.status(404).json({ message: 'Ticket not found.' });
     }
+
+    assertCanMutateTicket(req.user, existing, payload);
+
+    if (payload.status && terminalStatuses.includes(payload.status)) {
+      payload.resolvedAt = new Date();
+    }
+
+    if (payload.status === 'assigned' && (payload.assignee || existing.assignee) === 'Unassigned') {
+      throw Object.assign(new Error('Assigned tickets need an assignee.'), { statusCode: 400 });
+    }
+
+    const update = {
+      $set: payload,
+      $push: {
+        activity: activityEntry(req.user, `Updated ${Object.keys(payload).join(', ')}`)
+      }
+    };
+
+    const ticket = await Ticket.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
 
     res.json({ ticket });
   } catch (error) {
@@ -164,7 +232,7 @@ router.patch('/tickets/:id', async (req, res, next) => {
   }
 });
 
-router.delete('/tickets/:id', async (req, res, next) => {
+router.delete('/tickets/:id', requireRole('admin'), async (req, res, next) => {
   try {
     validateObjectId(req.params.id);
     const ticket = await Ticket.findByIdAndDelete(req.params.id);
@@ -173,7 +241,6 @@ router.delete('/tickets/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Ticket not found.' });
     }
 
-    // 204 means the delete succeeded and there is no response body.
     res.status(204).send();
   } catch (error) {
     next(error);

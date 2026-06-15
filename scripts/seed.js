@@ -12,16 +12,35 @@ const tickets = [
     requesterEmail: 'avery@example.com',
     status: 'open',
     priority: 'high',
-    assignee: 'Network Support'
+    category: 'Network',
+    assignee: 'Network Support',
+    dueAt: new Date(Date.now() + 20 * 60 * 60 * 1000),
+    activity: [{ action: 'Seeded demo ticket', actorName: 'Priya Admin', actorRole: 'admin' }]
   },
   {
-    title: 'Password reset required',
-    description: 'Requester is locked out after too many failed login attempts.',
+    title: 'Password reset required for payroll app',
+    description: 'Requester is locked out after too many failed login attempts before payroll approval.',
     requesterName: 'Morgan Lee',
-    requesterEmail: 'morgan@example.com',
+    requesterEmail: 'user@demo.local',
+    requesterUserId: 'usr_user',
+    status: 'assigned',
+    priority: 'urgent',
+    category: 'Access',
+    assignee: 'Theo Technician',
+    dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    activity: [{ action: 'Seeded breached urgent ticket', actorName: 'Priya Admin', actorRole: 'admin' }]
+  },
+  {
+    title: 'VPN client fails after operating system update',
+    description: 'Remote employee receives a certificate error when launching the VPN client.',
+    requesterName: 'Casey Brown',
+    requesterEmail: 'casey@example.com',
     status: 'in-progress',
     priority: 'medium',
-    assignee: 'Help Desk'
+    category: 'Endpoint',
+    assignee: 'Theo Technician',
+    dueAt: new Date(Date.now() + 36 * 60 * 60 * 1000),
+    activity: [{ action: 'Seeded active work item', actorName: 'Priya Admin', actorRole: 'admin' }]
   },
   {
     title: 'Printer queue stuck on third floor',
@@ -30,7 +49,22 @@ const tickets = [
     requesterEmail: 'jamie@example.com',
     status: 'resolved',
     priority: 'low',
-    assignee: 'Field Tech'
+    category: 'Hardware',
+    assignee: 'Field Tech',
+    resolvedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
+    activity: [{ action: 'Seeded resolved ticket', actorName: 'Theo Technician', actorRole: 'technician' }]
+  },
+  {
+    title: 'New hire software access checklist',
+    description: 'Provision email, file share access, password manager, and CRM seat for Monday start.',
+    requesterName: 'Priya Admin',
+    requesterEmail: 'admin@demo.local',
+    status: 'closed',
+    priority: 'medium',
+    category: 'Onboarding',
+    assignee: 'Help Desk',
+    resolvedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    activity: [{ action: 'Seeded closed ticket', actorName: 'Priya Admin', actorRole: 'admin' }]
   }
 ];
 
