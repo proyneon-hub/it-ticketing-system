@@ -8,7 +8,7 @@ import {
   fetchTickets,
   login,
   setAuthToken,
-  updateTicket
+  updateTicket,
 } from './api.js';
 
 const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
@@ -21,7 +21,7 @@ const emptyForm = {
   requesterEmail: '',
   priority: 'medium',
   category: 'General Support',
-  assignee: ''
+  assignee: '',
 };
 
 function label(value) {
@@ -35,7 +35,7 @@ function formatDate(value) {
   if (!value) return '-';
   return new Intl.DateTimeFormat('en-CA', {
     dateStyle: 'medium',
-    timeStyle: 'short'
+    timeStyle: 'short',
   }).format(new Date(value));
 }
 
@@ -63,7 +63,10 @@ export default function App() {
   const [stats, setStats] = useState(null);
   const [user, setUser] = useState(null);
   const [demoUsers, setDemoUsers] = useState([]);
-  const [loginForm, setLoginForm] = useState({ email: 'admin@demo.local', password: 'AdminPass123!' });
+  const [loginForm, setLoginForm] = useState({
+    email: 'admin@demo.local',
+    password: 'AdminPass123!',
+  });
   const [form, setForm] = useState(emptyForm);
   const [filters, setFilters] = useState({ status: '', priority: '', sla: '', search: '' });
   const [loading, setLoading] = useState(false);
@@ -79,7 +82,7 @@ export default function App() {
 
     const [ticketResult, statResult] = await Promise.allSettled([
       fetchTickets(activeFilters),
-      fetchStats()
+      fetchStats(),
     ]);
 
     if (ticketResult.status === 'fulfilled') {
@@ -101,7 +104,9 @@ export default function App() {
   }
 
   useEffect(() => {
-    fetchDemoUsers().then((data) => setDemoUsers(data.users)).catch(() => setDemoUsers([]));
+    fetchDemoUsers()
+      .then((data) => setDemoUsers(data.users))
+      .catch(() => setDemoUsers([]));
     fetchMe()
       .then((data) => setUser(data.user))
       .catch(() => setAuthToken(''));
@@ -209,7 +214,10 @@ export default function App() {
         <div>
           <span className="eyebrow">Production-style service desk</span>
           <h1>IT Ticketing System</h1>
-          <p>Role-based support queue with SLA tracking, workflow ownership, and a seeded demo environment.</p>
+          <p>
+            Role-based support queue with SLA tracking, workflow ownership, and a seeded demo
+            environment.
+          </p>
         </div>
         <div className="session-card">
           {user ? (
@@ -221,7 +229,9 @@ export default function App() {
                 <button className="ghost-button" onClick={() => loadData()} disabled={loading}>
                   {loading ? 'Refreshing...' : 'Refresh'}
                 </button>
-                <button className="secondary-button" onClick={handleLogout}>Sign out</button>
+                <button className="secondary-button" onClick={handleLogout}>
+                  Sign out
+                </button>
               </div>
             </>
           ) : (
@@ -229,16 +239,22 @@ export default function App() {
               <strong>Demo login</strong>
               <input
                 value={loginForm.email}
-                onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))}
+                onChange={(event) =>
+                  setLoginForm((current) => ({ ...current, email: event.target.value }))
+                }
                 placeholder="Email"
               />
               <input
                 type="password"
                 value={loginForm.password}
-                onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
+                onChange={(event) =>
+                  setLoginForm((current) => ({ ...current, password: event.target.value }))
+                }
                 placeholder="Password"
               />
-              <button className="primary-button" type="submit">Sign in</button>
+              <button className="primary-button" type="submit">
+                Sign in
+              </button>
             </form>
           )}
         </div>
@@ -251,7 +267,9 @@ export default function App() {
               key={demoUser.email}
               type="button"
               className="demo-account"
-              onClick={() => handleLogin(null, { email: demoUser.email, password: demoUser.demoPassword })}
+              onClick={() =>
+                handleLogin(null, { email: demoUser.email, password: demoUser.demoPassword })
+              }
             >
               <span>{label(demoUser.role)}</span>
               <strong>{demoUser.email}</strong>
@@ -267,15 +285,36 @@ export default function App() {
       {!user ? (
         <section className="empty-panel">
           <h2>Sign in to open the service desk.</h2>
-          <p>Use any demo account above to inspect role-based permissions without creating external users.</p>
+          <p>
+            Use any demo account above to inspect role-based permissions without creating external
+            users.
+          </p>
         </section>
       ) : (
         <>
           <section className="stats-grid">
-            <StatCard title="Total Tickets" value={stats?.total ?? '-'} helper="Scoped to current role" />
-            <StatCard title="Active Tickets" value={activeCount} helper="Open, assigned, or in progress" />
-            <StatCard title="SLA Breached" value={stats?.sla?.breached ?? breachedVisibleCount} helper="Unresolved and overdue" tone="danger" />
-            <StatCard title="Due In 24h" value={stats?.sla?.dueSoon ?? '-'} helper="Needs priority handling" tone="warning" />
+            <StatCard
+              title="Total Tickets"
+              value={stats?.total ?? '-'}
+              helper="Scoped to current role"
+            />
+            <StatCard
+              title="Active Tickets"
+              value={activeCount}
+              helper="Open, assigned, or in progress"
+            />
+            <StatCard
+              title="SLA Breached"
+              value={stats?.sla?.breached ?? breachedVisibleCount}
+              helper="Unresolved and overdue"
+              tone="danger"
+            />
+            <StatCard
+              title="Due In 24h"
+              value={stats?.sla?.dueSoon ?? '-'}
+              helper="Needs priority handling"
+              tone="warning"
+            />
           </section>
 
           <section className="workflow-strip">
@@ -340,9 +379,14 @@ export default function App() {
               <div className="two-column">
                 <label>
                   Priority
-                  <select value={form.priority} onChange={(event) => updateFormField('priority', event.target.value)}>
+                  <select
+                    value={form.priority}
+                    onChange={(event) => updateFormField('priority', event.target.value)}
+                  >
                     {priorities.map((priority) => (
-                      <option value={priority} key={priority}>{label(priority)}</option>
+                      <option value={priority} key={priority}>
+                        {label(priority)}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -386,19 +430,32 @@ export default function App() {
                   onChange={(event) => updateFilter('search', event.target.value)}
                   placeholder="Search tickets..."
                 />
-                <select value={filters.status} onChange={(event) => updateFilter('status', event.target.value)}>
+                <select
+                  value={filters.status}
+                  onChange={(event) => updateFilter('status', event.target.value)}
+                >
                   <option value="">All statuses</option>
                   {statuses.map((status) => (
-                    <option value={status} key={status}>{label(status)}</option>
+                    <option value={status} key={status}>
+                      {label(status)}
+                    </option>
                   ))}
                 </select>
-                <select value={filters.priority} onChange={(event) => updateFilter('priority', event.target.value)}>
+                <select
+                  value={filters.priority}
+                  onChange={(event) => updateFilter('priority', event.target.value)}
+                >
                   <option value="">All priorities</option>
                   {priorities.map((priority) => (
-                    <option value={priority} key={priority}>{label(priority)}</option>
+                    <option value={priority} key={priority}>
+                      {label(priority)}
+                    </option>
                   ))}
                 </select>
-                <select value={filters.sla} onChange={(event) => updateFilter('sla', event.target.value)}>
+                <select
+                  value={filters.sla}
+                  onChange={(event) => updateFilter('sla', event.target.value)}
+                >
                   <option value="">All SLA states</option>
                   <option value="breached">Breached SLA</option>
                 </select>
@@ -419,9 +476,17 @@ export default function App() {
                   </thead>
                   <tbody>
                     {loading ? (
-                      <tr><td colSpan="7" className="empty-state">Loading tickets...</td></tr>
+                      <tr>
+                        <td colSpan="7" className="empty-state">
+                          Loading tickets...
+                        </td>
+                      </tr>
                     ) : tickets.length === 0 ? (
-                      <tr><td colSpan="7" className="empty-state">No tickets found.</td></tr>
+                      <tr>
+                        <td colSpan="7" className="empty-state">
+                          No tickets found.
+                        </td>
+                      </tr>
                     ) : (
                       tickets.map((ticket) => {
                         const slaState = getSlaState(ticket);
@@ -431,17 +496,25 @@ export default function App() {
                             <td className="ticket-cell">
                               <strong>{ticket.title}</strong>
                               <p>{ticket.description || 'No description provided.'}</p>
-                              <small>{ticket.category || 'General Support'} | {ticket.requesterName || 'Unknown requester'} {ticket.requesterEmail ? `(${ticket.requesterEmail})` : ''}</small>
+                              <small>
+                                {ticket.category || 'General Support'} |{' '}
+                                {ticket.requesterName || 'Unknown requester'}{' '}
+                                {ticket.requesterEmail ? `(${ticket.requesterEmail})` : ''}
+                              </small>
                             </td>
                             <td>
                               <select
                                 className={`pill ${ticket.status}`}
                                 value={ticket.status}
-                                onChange={(event) => handleTicketPatch(ticket._id, { status: event.target.value })}
+                                onChange={(event) =>
+                                  handleTicketPatch(ticket._id, { status: event.target.value })
+                                }
                                 disabled={user.role === 'user'}
                               >
                                 {statuses.map((status) => (
-                                  <option value={status} key={status}>{label(status)}</option>
+                                  <option value={status} key={status}>
+                                    {label(status)}
+                                  </option>
                                 ))}
                               </select>
                             </td>
@@ -449,10 +522,14 @@ export default function App() {
                               <select
                                 className={`pill ${ticket.priority}`}
                                 value={ticket.priority}
-                                onChange={(event) => handleTicketPatch(ticket._id, { priority: event.target.value })}
+                                onChange={(event) =>
+                                  handleTicketPatch(ticket._id, { priority: event.target.value })
+                                }
                               >
                                 {priorities.map((priority) => (
-                                  <option value={priority} key={priority}>{label(priority)}</option>
+                                  <option value={priority} key={priority}>
+                                    {label(priority)}
+                                  </option>
                                 ))}
                               </select>
                             </td>
@@ -475,7 +552,12 @@ export default function App() {
                             <td>{formatDate(ticket.createdAt)}</td>
                             <td>
                               {user.role === 'admin' ? (
-                                <button className="danger-button" onClick={() => handleDelete(ticket._id)}>Delete</button>
+                                <button
+                                  className="danger-button"
+                                  onClick={() => handleDelete(ticket._id)}
+                                >
+                                  Delete
+                                </button>
                               ) : null}
                             </td>
                           </tr>

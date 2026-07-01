@@ -14,7 +14,9 @@ const server = app.listen(port, () => {
 // the dev server can fail with a less helpful low-level Node error.
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use. Stop the other API process or set PORT to a free port.`);
+    console.error(
+      `Port ${port} is already in use. Stop the other API process or set PORT to a free port.`
+    );
     console.error(`The Vite dev proxy expects the API at http://localhost:${port}.`);
     process.exit(1);
   }

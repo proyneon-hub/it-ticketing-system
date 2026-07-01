@@ -8,22 +8,22 @@ const demoUsers = [
     name: 'Priya Admin',
     email: 'admin@demo.local',
     password: 'AdminPass123!',
-    role: 'admin'
+    role: 'admin',
   },
   {
     id: 'usr_tech',
     name: 'Theo Technician',
     email: 'tech@demo.local',
     password: 'TechPass123!',
-    role: 'technician'
+    role: 'technician',
   },
   {
     id: 'usr_user',
     name: 'Una User',
     email: 'user@demo.local',
     password: 'UserPass123!',
-    role: 'user'
-  }
+    role: 'user',
+  },
 ];
 
 function getAuthSecret() {
@@ -44,7 +44,7 @@ function issueToken(user) {
     name: user.name,
     email: user.email,
     role: user.role,
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8,
   };
   const encoded = base64url(payload);
   return `${encoded}.${sign(encoded)}`;
@@ -59,7 +59,10 @@ function verifyToken(token) {
   const signatureBuffer = Buffer.from(signature || '');
   const expectedBuffer = Buffer.from(expected);
 
-  if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+  if (
+    signatureBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+  ) {
     return null;
   }
 
@@ -104,7 +107,9 @@ function requireAuth(req, res, next) {
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'You do not have permission to perform this action.' });
+      return res
+        .status(403)
+        .json({ message: 'You do not have permission to perform this action.' });
     }
     next();
   };
@@ -116,5 +121,5 @@ module.exports = {
   issueToken,
   requireAuth,
   requireRole,
-  verifyToken
+  verifyToken,
 };

@@ -3,7 +3,7 @@ services:
     image: mongo:7
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongo-data:/data/db
 
@@ -17,7 +17,7 @@ services:
       AUTH_SECRET: local-compose-secret
       MONGODB_URI: mongodb://mongo:27017/it_ticketing
     ports:
-      - "5000:5000"
+      - '5000:5000'
 
 volumes:
   mongo-data:

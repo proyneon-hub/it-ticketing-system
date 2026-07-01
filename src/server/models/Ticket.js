@@ -4,7 +4,7 @@ const slaHoursByPriority = {
   low: 72,
   medium: 48,
   high: 24,
-  urgent: 4
+  urgent: 4,
 };
 
 // Mongoose schema for a support ticket. The schema is the source of truth for
@@ -17,19 +17,19 @@ const ticketSchema = new mongoose.Schema(
       // even if another code path tries to create a ticket directly.
       required: [true, 'Ticket title is required'],
       trim: true,
-      maxlength: 120
+      maxlength: 120,
     },
     description: {
       type: String,
       trim: true,
       maxlength: 2000,
-      default: ''
+      default: '',
     },
     requesterName: {
       type: String,
       trim: true,
       maxlength: 80,
-      default: ''
+      default: '',
     },
     requesterEmail: {
       type: String,
@@ -37,69 +37,69 @@ const ticketSchema = new mongoose.Schema(
       // Normalize email addresses for display and search consistency.
       lowercase: true,
       maxlength: 120,
-      default: ''
+      default: '',
     },
     requesterUserId: {
       type: String,
       trim: true,
-      default: ''
+      default: '',
     },
     status: {
       type: String,
       enum: ['open', 'assigned', 'in-progress', 'resolved', 'closed'],
-      default: 'open'
+      default: 'open',
     },
     priority: {
       type: String,
       enum: ['low', 'medium', 'high', 'urgent'],
-      default: 'medium'
+      default: 'medium',
     },
     assignee: {
       type: String,
       trim: true,
       maxlength: 80,
-      default: 'Unassigned'
+      default: 'Unassigned',
     },
     category: {
       type: String,
       trim: true,
       maxlength: 80,
-      default: 'General Support'
+      default: 'General Support',
     },
     dueAt: {
-      type: Date
+      type: Date,
     },
     resolvedAt: {
-      type: Date
+      type: Date,
     },
     activity: [
       {
         action: {
           type: String,
           trim: true,
-          maxlength: 160
+          maxlength: 160,
         },
         actorName: {
           type: String,
           trim: true,
-          maxlength: 80
+          maxlength: 80,
         },
         actorRole: {
           type: String,
           enum: ['admin', 'technician', 'user'],
-          default: 'user'
+          default: 'user',
         },
         createdAt: {
           type: Date,
-          default: Date.now
-        }
-      }
+          default: Date.now,
+        },
+      },
     ],
     createdByRole: {
       type: String,
       enum: ['admin', 'technician', 'user'],
-      default: 'user'
-    }
+      default: 'user',
+    },
   },
   { timestamps: true }
 );
@@ -121,7 +121,13 @@ ticketSchema.pre('validate', function setSlaDueDate(next) {
 ticketSchema.index({ status: 1, priority: 1, dueAt: 1, createdAt: -1 });
 // Provides a text index for future full-text search support. The current route
 // uses regex search, but this index makes it easy to switch to $text later.
-ticketSchema.index({ title: 'text', description: 'text', requesterName: 'text', requesterEmail: 'text', assignee: 'text' });
+ticketSchema.index({
+  title: 'text',
+  description: 'text',
+  requesterName: 'text',
+  requesterEmail: 'text',
+  assignee: 'text',
+});
 
 // Reuse an existing model when hot reloading or serverless functions reload the
 // file. Mongoose throws if the same model name is compiled twice.

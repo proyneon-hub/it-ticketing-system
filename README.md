@@ -1,6 +1,33 @@
 # IT Ticketing System
 
-A production-style service desk application built with **React**, **Vite**, **Node.js**, **Express**, and **MongoDB**. It demonstrates authenticated ticket intake, role-based access, assignment workflow, SLA visibility, API validation, tests, Docker, and CI.
+![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)
+
+A production-style IT service desk application built with React, Vite, Node.js, Express, and MongoDB. It demonstrates ticket lifecycle management, role-based access, SLA visibility, REST API validation, automated API testing, CI/CD checks, Docker deployment, and application-support runbooks.
+
+## Live Demo
+
+The project is Vercel-ready through the existing `api/` serverless adapters. Add the required environment variables before deploying.
+
+## Demo Credentials
+
+| Role       | Email              | Password        | Permissions                                |
+| ---------- | ------------------ | --------------- | ------------------------------------------ |
+| Admin      | `admin@demo.local` | `AdminPass123!` | Full queue, update tickets, delete tickets |
+| Technician | `tech@demo.local`  | `TechPass123!`  | Full queue, update workflow and assignment |
+| User       | `user@demo.local`  | `UserPass123!`  | Create and view own tickets only           |
+
+The app also exposes these accounts in the login strip for quick portfolio demos.
+
+## Why This Project Matters
+
+This project is based on real IT support workflows: ticket intake, triage, assignment, priority handling, SLA tracking, status updates, role-based access, and incident documentation.
+
+It connects software development with practical service-management experience, making it relevant for:
+
+- QA Automation / SDET co-op roles
+- Application Support Analyst co-op roles
+- DevOps / IT Automation co-op roles
+- Software Developer co-op roles
 
 ## Portfolio Highlights
 
@@ -14,18 +41,18 @@ A production-style service desk application built with **React**, **Vite**, **No
 - Seeded demo credentials and realistic ticket data
 - Jest + Supertest API tests
 - Dockerfile and Docker Compose setup
-- GitHub Actions CI for install, test, and build
-- API documentation in [docs/API.md](docs/API.md)
+- GitHub Actions CI for formatting, install, test, build, and audit checks
+- API documentation and support runbooks in [docs](docs)
 
 ## Screenshots
 
 Capture these views after running `npm run seed`:
 
-| View | What to show |
-|---|---|
-| Admin dashboard | SLA cards, workflow counts, full ticket queue |
-| Technician dashboard | Assignment/status controls without delete access |
-| User dashboard | User-scoped tickets and disabled workflow controls |
+| View                 | What to show                                       |
+| -------------------- | -------------------------------------------------- |
+| Admin dashboard      | SLA cards, workflow counts, full ticket queue      |
+| Technician dashboard | Assignment/status controls without delete access   |
+| User dashboard       | User-scoped tickets and disabled workflow controls |
 
 Recommended paths:
 
@@ -35,25 +62,44 @@ docs/screenshots/technician-dashboard.png
 docs/screenshots/user-dashboard.png
 ```
 
-## Demo Credentials
-
-| Role | Email | Password | Permissions |
-|---|---|---|---|
-| Admin | `admin@demo.local` | `AdminPass123!` | Full queue, update tickets, delete tickets |
-| Technician | `tech@demo.local` | `TechPass123!` | Full queue, update workflow and assignment |
-| User | `user@demo.local` | `UserPass123!` | Create and view own tickets only |
-
-The app also exposes these accounts in the login strip for quick portfolio demos.
-
 ## Tech Stack
 
-| Layer | Tooling |
-|---|---|
-| Frontend | React 18, Vite |
-| Backend | Node.js, Express |
-| Database | MongoDB, Mongoose |
-| Testing | Jest, Supertest |
-| DevOps | Docker, Docker Compose, GitHub Actions, Vercel-ready API functions |
+| Layer    | Tooling                                                            |
+| -------- | ------------------------------------------------------------------ |
+| Frontend | React 18, Vite                                                     |
+| Backend  | Node.js, Express                                                   |
+| Database | MongoDB, Mongoose                                                  |
+| Testing  | Jest, Supertest                                                    |
+| DevOps   | Docker, Docker Compose, GitHub Actions, Vercel-ready API functions |
+
+## Features
+
+- Demo authentication with expiring signed bearer tokens
+- Ticket creation, update, delete, filtering, and SLA status display
+- Role-aware ticket visibility and permissions
+- SLA stats by status, priority, breached tickets, and due-soon tickets
+- Seed script for predictable demo data
+- Centralized API error handling for deployment and database issues
+
+## Testing
+
+```bash
+npm test
+npm run format:check
+npm run build
+```
+
+The test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, and dashboard stats response shape.
+
+## CI/CD
+
+GitHub Actions runs on pushes and pull requests to `main`:
+
+- `npm ci`
+- `npm run format:check`
+- `npm test`
+- `npm run build`
+- `npm audit --audit-level=high` as a non-blocking audit step
 
 ## Local Setup
 
@@ -91,7 +137,7 @@ Open `http://localhost:5173`.
 npm run seed
 ```
 
-## Docker
+## Docker Setup
 
 Run the app and MongoDB together:
 
@@ -101,30 +147,20 @@ docker compose up --build
 
 The API runs at `http://localhost:5000`. The production container serves the built frontend assets and API from the same Express process.
 
-## Tests
-
-```bash
-npm test
-```
-
-The test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, and dashboard stats response shape.
-
-## API
+## API Overview
 
 Full endpoint documentation lives in [docs/API.md](docs/API.md).
 
-Common endpoints:
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `GET` | `/api/health` | Health check |
-| `POST` | `/api/auth/login` | Demo login |
-| `GET` | `/api/auth/me` | Current session |
-| `GET` | `/api/tickets` | List visible tickets |
-| `GET` | `/api/tickets/stats` | SLA/status/priority stats |
-| `POST` | `/api/tickets` | Create ticket |
-| `PATCH` | `/api/tickets/:id` | Update ticket |
-| `DELETE` | `/api/tickets/:id` | Admin-only delete |
+| Method   | Endpoint             | Purpose                   |
+| -------- | -------------------- | ------------------------- |
+| `GET`    | `/api/health`        | Health check              |
+| `POST`   | `/api/auth/login`    | Demo login                |
+| `GET`    | `/api/auth/me`       | Current session           |
+| `GET`    | `/api/tickets`       | List visible tickets      |
+| `GET`    | `/api/tickets/stats` | SLA/status/priority stats |
+| `POST`   | `/api/tickets`       | Create ticket             |
+| `PATCH`  | `/api/tickets/:id`   | Update ticket             |
+| `DELETE` | `/api/tickets/:id`   | Admin-only delete         |
 
 ## Project Structure
 
@@ -132,7 +168,7 @@ Common endpoints:
 it-ticketing-system/
 |-- .github/workflows/ci.yml
 |-- api/                         # Vercel API adapters
-|-- docs/API.md                  # API documentation
+|-- docs/                        # API docs, runbooks, architecture, test plan
 |-- scripts/seed.js              # Demo ticket seeder
 |-- src/client/                  # React frontend
 |-- src/server/                  # Express API, auth, routes, model
@@ -142,6 +178,16 @@ it-ticketing-system/
 |-- server.js
 `-- vite.config.mjs
 ```
+
+## Documentation
+
+- [API Documentation](docs/API.md)
+- [Test Plan](docs/TEST_PLAN.md)
+- [Bug Report Examples](docs/BUG_REPORT_EXAMPLES.md)
+- [Application Support Runbook](docs/RUNBOOK.md)
+- [Security Notes](docs/SECURITY_NOTES.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)
 
 ## Deployment
 
@@ -155,6 +201,19 @@ AUTH_SECRET
 ```
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for the existing Vercel walkthrough.
+
+## Security Notes
+
+This project uses demo authentication for portfolio review. See [docs/SECURITY_NOTES.md](docs/SECURITY_NOTES.md) for production hardening recommendations.
+
+## Future Improvements
+
+- Playwright end-to-end tests and automated screenshots
+- Paginated and sortable ticket list API
+- Human-friendly ticket numbers such as `TKT-0001`
+- Structured activity timeline in the UI
+- CSV export for ticket queues
+- Expanded accessibility checks
 
 ## License
 

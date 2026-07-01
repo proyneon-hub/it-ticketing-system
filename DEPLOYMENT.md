@@ -76,12 +76,12 @@ Save this value. You will need it as `MONGODB_URI`.
 3. Import `proyneon-hub/it-ticketing-system`.
 4. Use these project settings:
 
-| Setting | Value |
-|---|---|
-| Framework Preset | Vite |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Install Command | `npm install` |
+| Setting          | Value           |
+| ---------------- | --------------- |
+| Framework Preset | Vite            |
+| Build Command    | `npm run build` |
+| Output Directory | `dist`          |
+| Install Command  | `npm install`   |
 
 5. Add this environment variable:
 

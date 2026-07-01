@@ -10,11 +10,11 @@ export default defineConfig({
     proxy: {
       // During local development, browser calls to /api are forwarded to
       // the Express API server instead of being handled by Vite.
-      '/api': 'http://127.0.0.1:5000'
-    }
+      '/api': 'http://127.0.0.1:5000',
+    },
   },
   build: {
     // Vercel serves this folder after `npm run build`.
-    outDir: 'dist'
-  }
+    outDir: 'dist',
+  },
 });

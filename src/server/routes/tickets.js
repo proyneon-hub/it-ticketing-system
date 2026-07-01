@@ -24,7 +24,7 @@ function buildTicketPayload(body, { partial = false } = {}) {
     'priority',
     'assignee',
     'category',
-    'dueAt'
+    'dueAt',
   ];
 
   for (const field of fields) {
@@ -77,14 +77,25 @@ function assertCanMutateTicket(user, ticket, patch = {}) {
   if (user.role !== 'user') return;
 
   if (String(ticket.requesterEmail || '').toLowerCase() !== user.email.toLowerCase()) {
-    throw Object.assign(new Error('Users can only manage tickets they created.'), { statusCode: 403 });
+    throw Object.assign(new Error('Users can only manage tickets they created.'), {
+      statusCode: 403,
+    });
   }
 
-  const allowedUserFields = ['title', 'description', 'requesterName', 'requesterEmail', 'priority', 'category'];
+  const allowedUserFields = [
+    'title',
+    'description',
+    'requesterName',
+    'requesterEmail',
+    'priority',
+    'category',
+  ];
   const disallowed = Object.keys(patch).filter((field) => !allowedUserFields.includes(field));
 
   if (disallowed.length > 0) {
-    throw Object.assign(new Error('Users cannot update workflow, assignment, or SLA fields.'), { statusCode: 403 });
+    throw Object.assign(new Error('Users cannot update workflow, assignment, or SLA fields.'), {
+      statusCode: 403,
+    });
   }
 }
 
@@ -92,7 +103,7 @@ function activityEntry(user, action) {
   return {
     action,
     actorName: user.name,
-    actorRole: user.role
+    actorRole: user.role,
   };
 }
 
@@ -117,7 +128,7 @@ router.get('/tickets', async (req, res, next) => {
         { requesterName: { $regex: search.trim(), $options: 'i' } },
         { requesterEmail: { $regex: search.trim(), $options: 'i' } },
         { assignee: { $regex: search.trim(), $options: 'i' } },
-        { category: { $regex: search.trim(), $options: 'i' } }
+        { category: { $regex: search.trim(), $options: 'i' } },
       ];
     }
 
@@ -138,10 +149,13 @@ router.get('/tickets/stats', async (req, res, next) => {
 
     const [statusCounts, priorityCounts, total, breachedSla, dueSoonSla] = await Promise.all([
       Ticket.aggregate([{ $match: baseMatch }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
-      Ticket.aggregate([{ $match: baseMatch }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
+      Ticket.aggregate([
+        { $match: baseMatch },
+        { $group: { _id: '$priority', count: { $sum: 1 } } },
+      ]),
       Ticket.countDocuments(baseMatch),
       Ticket.countDocuments({ ...openMatch, dueAt: { $lt: now } }),
-      Ticket.countDocuments({ ...openMatch, dueAt: { $gte: now, $lte: dueSoon } })
+      Ticket.countDocuments({ ...openMatch, dueAt: { $gte: now, $lte: dueSoon } }),
     ]);
 
     const byStatus = Object.fromEntries(allowedStatuses.map((item) => [item, 0]));
@@ -198,7 +212,9 @@ router.patch('/tickets/:id', async (req, res, next) => {
     validateObjectId(req.params.id);
     const payload = buildTicketPayload(req.body, { partial: true });
     if (Object.keys(payload).length === 0) {
-      throw Object.assign(new Error('No supported ticket fields were provided.'), { statusCode: 400 });
+      throw Object.assign(new Error('No supported ticket fields were provided.'), {
+        statusCode: 400,
+      });
     }
 
     const existing = await Ticket.findById(req.params.id);
@@ -220,11 +236,14 @@ router.patch('/tickets/:id', async (req, res, next) => {
     const update = {
       $set: payload,
       $push: {
-        activity: activityEntry(req.user, `Updated ${Object.keys(payload).join(', ')}`)
-      }
+        activity: activityEntry(req.user, `Updated ${Object.keys(payload).join(', ')}`),
+      },
     };
 
-    const ticket = await Ticket.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+    const ticket = await Ticket.findByIdAndUpdate(req.params.id, update, {
+      new: true,
+      runValidators: true,
+    });
 
     res.json({ ticket });
   } catch (error) {

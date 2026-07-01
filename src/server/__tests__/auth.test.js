@@ -8,7 +8,7 @@ describe('demo auth tokens', () => {
     expect(user.role).toBe('admin');
     expect(verifyToken(token)).toMatchObject({
       email: 'admin@demo.local',
-      role: 'admin'
+      role: 'admin',
     });
   });
 

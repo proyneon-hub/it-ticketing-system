@@ -21,14 +21,16 @@ async function request(path, options = {}) {
       headers: {
         'Content-Type': 'application/json',
         ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
-        ...(options.headers || {})
+        ...(options.headers || {}),
       },
-      ...options
+      ...options,
     });
   } catch (_error) {
     // Network-level failures land here, for example when the API server is not
     // running locally or a Vercel deployment is missing its serverless routes.
-    throw new Error('Unable to reach the API. Check that the Vercel deployment includes the /api functions.');
+    throw new Error(
+      'Unable to reach the API. Check that the Vercel deployment includes the /api functions.'
+    );
   }
 
   // DELETE /api/tickets/:id intentionally returns no response body.
@@ -55,7 +57,7 @@ async function request(path, options = {}) {
 export function login(credentials) {
   return request('/auth/login', {
     method: 'POST',
-    body: JSON.stringify(credentials)
+    body: JSON.stringify(credentials),
   });
 }
 
@@ -85,19 +87,19 @@ export function fetchStats() {
 export function createTicket(ticket) {
   return request('/tickets', {
     method: 'POST',
-    body: JSON.stringify(ticket)
+    body: JSON.stringify(ticket),
   });
 }
 
 export function updateTicket(id, patch) {
   return request(`/tickets/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(patch)
+    body: JSON.stringify(patch),
   });
 }
 
 export function deleteTicket(id) {
   return request(`/tickets/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
   });
 }

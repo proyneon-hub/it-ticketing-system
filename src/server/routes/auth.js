@@ -21,8 +21,8 @@ router.get('/auth/demo-users', (_req, res) => {
   res.json({
     users: demoUsers.map(({ password, ...user }) => ({
       ...user,
-      demoPassword: password
-    }))
+      demoPassword: password,
+    })),
   });
 });
 

@@ -15,11 +15,12 @@ const tickets = [
     category: 'Network',
     assignee: 'Network Support',
     dueAt: new Date(Date.now() + 20 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded demo ticket', actorName: 'Priya Admin', actorRole: 'admin' }]
+    activity: [{ action: 'Seeded demo ticket', actorName: 'Priya Admin', actorRole: 'admin' }],
   },
   {
     title: 'Password reset required for payroll app',
-    description: 'Requester is locked out after too many failed login attempts before payroll approval.',
+    description:
+      'Requester is locked out after too many failed login attempts before payroll approval.',
     requesterName: 'Morgan Lee',
     requesterEmail: 'user@demo.local',
     requesterUserId: 'usr_user',
@@ -28,7 +29,9 @@ const tickets = [
     category: 'Access',
     assignee: 'Theo Technician',
     dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded breached urgent ticket', actorName: 'Priya Admin', actorRole: 'admin' }]
+    activity: [
+      { action: 'Seeded breached urgent ticket', actorName: 'Priya Admin', actorRole: 'admin' },
+    ],
   },
   {
     title: 'VPN client fails after operating system update',
@@ -40,7 +43,7 @@ const tickets = [
     category: 'Endpoint',
     assignee: 'Theo Technician',
     dueAt: new Date(Date.now() + 36 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded active work item', actorName: 'Priya Admin', actorRole: 'admin' }]
+    activity: [{ action: 'Seeded active work item', actorName: 'Priya Admin', actorRole: 'admin' }],
   },
   {
     title: 'Printer queue stuck on third floor',
@@ -52,11 +55,14 @@ const tickets = [
     category: 'Hardware',
     assignee: 'Field Tech',
     resolvedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded resolved ticket', actorName: 'Theo Technician', actorRole: 'technician' }]
+    activity: [
+      { action: 'Seeded resolved ticket', actorName: 'Theo Technician', actorRole: 'technician' },
+    ],
   },
   {
     title: 'New hire software access checklist',
-    description: 'Provision email, file share access, password manager, and CRM seat for Monday start.',
+    description:
+      'Provision email, file share access, password manager, and CRM seat for Monday start.',
     requesterName: 'Priya Admin',
     requesterEmail: 'admin@demo.local',
     status: 'closed',
@@ -64,8 +70,8 @@ const tickets = [
     category: 'Onboarding',
     assignee: 'Help Desk',
     resolvedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded closed ticket', actorName: 'Priya Admin', actorRole: 'admin' }]
-  }
+    activity: [{ action: 'Seeded closed ticket', actorName: 'Priya Admin', actorRole: 'admin' }],
+  },
 ];
 
 async function seed() {

@@ -1,6 +1,6 @@
 jest.mock('../db', () => ({
   connectToDatabase: jest.fn().mockResolvedValue({}),
-  isDatabaseConnectivityError: jest.fn().mockReturnValue(false)
+  isDatabaseConnectivityError: jest.fn().mockReturnValue(false),
 }));
 
 jest.mock('../models/Ticket', () => ({
@@ -8,7 +8,7 @@ jest.mock('../models/Ticket', () => ({
   countDocuments: jest.fn(),
   find: jest.fn(),
   findById: jest.fn(),
-  findByIdAndDelete: jest.fn()
+  findByIdAndDelete: jest.fn(),
 }));
 
 const request = require('supertest');
@@ -16,10 +16,7 @@ const app = require('../app');
 const Ticket = require('../models/Ticket');
 
 async function loginAs(email, password) {
-  const response = await request(app)
-    .post('/api/auth/login')
-    .send({ email, password })
-    .expect(200);
+  const response = await request(app).post('/api/auth/login').send({ email, password }).expect(200);
 
   return response.body.token;
 }
@@ -30,8 +27,8 @@ describe('API auth and ticket routes', () => {
     Ticket.countDocuments.mockResolvedValue(0);
     Ticket.find.mockReturnValue({
       sort: jest.fn().mockReturnValue({
-        lean: jest.fn().mockResolvedValue([])
-      })
+        lean: jest.fn().mockResolvedValue([]),
+      }),
     });
   });
 
@@ -59,7 +56,7 @@ describe('API auth and ticket routes', () => {
       total: 4,
       byStatus: { assigned: 2 },
       byPriority: { urgent: 1 },
-      sla: { breached: 1, dueSoon: 2 }
+      sla: { breached: 1, dueSoon: 2 },
     });
   });
 

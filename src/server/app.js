@@ -56,7 +56,8 @@ app.use((error, _req, res, _next) => {
   if (error.message && error.message.includes('MONGODB_URI is missing')) {
     console.error(error.message);
     return res.status(503).json({
-      message: 'Database is not configured. Add MONGODB_URI in Vercel Project Settings, then redeploy.'
+      message:
+        'Database is not configured. Add MONGODB_URI in Vercel Project Settings, then redeploy.',
     });
   }
 
@@ -65,7 +66,8 @@ app.use((error, _req, res, _next) => {
   if (isDatabaseConnectivityError(error)) {
     console.error('Database connection failed:', error.message);
     return res.status(503).json({
-      message: 'Database unavailable. Check MONGODB_URI in Vercel and allow access from Vercel in MongoDB Atlas Network Access.'
+      message:
+        'Database unavailable. Check MONGODB_URI in Vercel and allow access from Vercel in MongoDB Atlas Network Access.',
     });
   }
 

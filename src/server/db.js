@@ -56,7 +56,9 @@ async function connectToDatabase() {
   const uri = process.env.MONGODB_URI;
 
   if (!uri) {
-    throw new Error('MONGODB_URI is missing. Add it to .env locally and to Vercel Environment Variables in production.');
+    throw new Error(
+      'MONGODB_URI is missing. Add it to .env locally and to Vercel Environment Variables in production.'
+    );
   }
 
   configureDnsServers(uri);
@@ -71,7 +73,7 @@ async function connectToDatabase() {
       mongoose.connect(uri, {
         serverSelectionTimeoutMS: timeoutMs,
         connectTimeoutMS: timeoutMs,
-        socketTimeoutMS: timeoutMs
+        socketTimeoutMS: timeoutMs,
       }),
       timeoutMs
     );
@@ -92,11 +94,11 @@ async function connectToDatabase() {
 function isDatabaseConnectivityError(error) {
   // The Express error handler uses this to return a 503 with deployment guidance
   // for known network/connectivity failures.
-  return [
-    'MongoNetworkError',
-    'MongoNetworkTimeoutError',
-    'MongooseServerSelectionError'
-  ].includes(error.name) || ['ETIMEOUT', 'ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET'].includes(error.code);
+  return (
+    ['MongoNetworkError', 'MongoNetworkTimeoutError', 'MongooseServerSelectionError'].includes(
+      error.name
+    ) || ['ETIMEOUT', 'ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET'].includes(error.code)
+  );
 }
 
 module.exports = { connectToDatabase, isDatabaseConnectivityError };
