@@ -91,7 +91,7 @@ npm run format:check
 npm run build
 ```
 
-The API test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, dashboard stats, pagination validation, CSV export, ticket numbers, and structured activity. Playwright covers login, role permissions, ticket workflow, export, and screenshot capture.
+The API test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, dashboard stats, pagination validation, CSV export, ticket numbers, and structured activity. Playwright covers login, role permissions, ticket workflow, export, and screenshot captures.
 
 ## CI/CD
 
