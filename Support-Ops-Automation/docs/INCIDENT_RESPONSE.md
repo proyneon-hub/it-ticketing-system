@@ -2,12 +2,12 @@
 
 ## Severity Levels
 
-| Severity | Description | Response Target |
-| --- | --- | --- |
-| Critical | The app is unavailable or core ticketing workflows are blocked. | Immediate response and escalation |
-| High | A major workflow is degraded, such as login or ticket API access. | Same business day response |
-| Medium | A non-critical feature is impaired or slow. | Next business day response |
-| Low | Cosmetic issue, documentation gap, or minor support request. | Planned backlog |
+| Severity | Description                                                       | Response Target                   |
+| -------- | ----------------------------------------------------------------- | --------------------------------- |
+| Critical | The app is unavailable or core ticketing workflows are blocked.   | Immediate response and escalation |
+| High     | A major workflow is degraded, such as login or ticket API access. | Same business day response        |
+| Medium   | A non-critical feature is impaired or slow.                       | Next business day response        |
+| Low      | Cosmetic issue, documentation gap, or minor support request.      | Planned backlog                   |
 
 ## Incident Lifecycle
 
@@ -31,13 +31,13 @@ Next Update: Within 30 minutes or sooner if status changes.
 
 ## Sample Timeline
 
-| Time | Event |
-| --- | --- |
-| 09:00 UTC | Scheduled health check fails. |
+| Time      | Event                                             |
+| --------- | ------------------------------------------------- |
+| 09:00 UTC | Scheduled health check fails.                     |
 | 09:05 UTC | Support confirms API health endpoint returns 503. |
-| 09:10 UTC | Incident report created and owner notified. |
-| 09:25 UTC | Environment variable issue identified. |
-| 09:40 UTC | Service redeployed and checks pass. |
+| 09:10 UTC | Incident report created and owner notified.       |
+| 09:25 UTC | Environment variable issue identified.            |
+| 09:40 UTC | Service redeployed and checks pass.               |
 
 ## Post-Incident Review Template
 

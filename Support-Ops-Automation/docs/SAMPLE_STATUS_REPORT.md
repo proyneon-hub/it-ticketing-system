@@ -7,11 +7,11 @@
 
 ## Checks
 
-| Check | Endpoint | Result | Latency | Checked At |
-| --- | --- | --- | --- | --- |
-| health | `/api/health` | PASS | 243ms | 2026-07-01T13:00:00Z |
-| synthetic_login | `/api/auth/login` | PASS | 411ms | 2026-07-01T13:00:03Z |
-| ticket_api | `/api/tickets` | PASS | 530ms | 2026-07-01T13:00:06Z |
+| Check           | Endpoint          | Result | Latency | Checked At           |
+| --------------- | ----------------- | ------ | ------- | -------------------- |
+| health          | `/api/health`     | PASS   | 243ms   | 2026-07-01T13:00:00Z |
+| synthetic_login | `/api/auth/login` | PASS   | 411ms   | 2026-07-01T13:00:03Z |
+| ticket_api      | `/api/tickets`    | PASS   | 530ms   | 2026-07-01T13:00:06Z |
 
 ## Failures
 

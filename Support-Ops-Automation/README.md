@@ -45,16 +45,16 @@ Update `.env` when targeting a deployed app. Keep real `.env` values out of git.
 
 ## Environment Variables
 
-| Variable | Purpose |
-| --- | --- |
-| `BASE_URL` | Ticketing app URL, such as `http://localhost:5173` or a Vercel URL |
-| `APP_NAME` | Display name used in generated reports |
-| `ENVIRONMENT` | Environment label such as `local`, `staging`, or `production` |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Demo admin credentials for synthetic checks |
-| `TECH_EMAIL` / `TECH_PASSWORD` | Demo technician credentials for synthetic checks |
-| `USER_EMAIL` / `USER_PASSWORD` | Demo user credentials for synthetic checks |
-| `LATENCY_THRESHOLD_MS` | Maximum acceptable API response time |
-| `REQUEST_TIMEOUT_SECONDS` | HTTP timeout for support checks |
+| Variable                         | Purpose                                                            |
+| -------------------------------- | ------------------------------------------------------------------ |
+| `BASE_URL`                       | Ticketing app URL, such as `http://localhost:5173` or a Vercel URL |
+| `APP_NAME`                       | Display name used in generated reports                             |
+| `ENVIRONMENT`                    | Environment label such as `local`, `staging`, or `production`      |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Demo admin credentials for synthetic checks                        |
+| `TECH_EMAIL` / `TECH_PASSWORD`   | Demo technician credentials for synthetic checks                   |
+| `USER_EMAIL` / `USER_PASSWORD`   | Demo user credentials for synthetic checks                         |
+| `LATENCY_THRESHOLD_MS`           | Maximum acceptable API response time                               |
+| `REQUEST_TIMEOUT_SECONDS`        | HTTP timeout for support checks                                    |
 
 ## Commands
 

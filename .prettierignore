@@ -6,3 +6,10 @@ test-results
 .env
 .env.local
 dev-server*.log
+Support-Ops-Automation/
+Support-Ops-Automation/.venv/
+Support-Ops-Automation/.pytest_cache/
+Support-Ops-Automation/.pytest-tmp/
+Support-Ops-Automation/pytest-cache-files-*
+Support-Ops-Automation/reports/*.md
+Support-Ops-Automation/src/support_ops_automation_lab.egg-info/
