@@ -1,0 +1,39 @@
+name: Support Ops Scheduled Health Check
+
+on:
+  schedule:
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Support-Ops-Automation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Generate status report
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          TECH_EMAIL: ${{ secrets.TECH_EMAIL }}
+          TECH_PASSWORD: ${{ secrets.TECH_PASSWORD }}
+          USER_EMAIL: ${{ secrets.USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.USER_PASSWORD }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "BASE_URL secret is not set; skipping live scheduled check."
+            exit 0
+          fi
+          python -m support_ops.report_generator
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: support-ops-reports
+          path: Support-Ops-Automation/reports/

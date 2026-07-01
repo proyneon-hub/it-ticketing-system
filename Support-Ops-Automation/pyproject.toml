@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "support-ops-automation-lab"
+version = "0.1.0"
+description = "Support automation checks and report generation for the IT Ticketing System."
+requires-python = ">=3.11"
+dependencies = [
+  "requests>=2.32.0",
+  "python-dotenv>=1.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "--basetemp=.pytest-tmp"
+pythonpath = ["src"]
+testpaths = ["tests"]
