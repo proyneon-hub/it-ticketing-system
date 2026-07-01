@@ -95,7 +95,7 @@ The API test suite covers signed demo authentication, protected ticket routes, r
 
 ## CI/CD
 
-GitHub Actions runs on pushes and pull requests to `main`:
+GitHub Actions run on push and pull requests to `main`:
 
 - `npm ci`
 - `npm run format:check`
