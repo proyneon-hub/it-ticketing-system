@@ -6,6 +6,7 @@ const Ticket = require('../src/server/models/Ticket');
 // Small set of sample tickets for local demos and portfolio screenshots.
 const tickets = [
   {
+    ticketNumber: 'TKT-0001',
     title: 'Laptop cannot connect to Wi-Fi',
     description: 'User reports the device drops from the corporate Wi-Fi every few minutes.',
     requesterName: 'Avery Johnson',
@@ -15,9 +16,18 @@ const tickets = [
     category: 'Network',
     assignee: 'Network Support',
     dueAt: new Date(Date.now() + 20 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded demo ticket', actorName: 'Priya Admin', actorRole: 'admin' }],
+    activity: [
+      {
+        action: 'ticket_created',
+        detail: 'Seeded demo ticket',
+        actorName: 'Priya Admin',
+        actorRole: 'admin',
+        actorEmail: 'admin@demo.local',
+      },
+    ],
   },
   {
+    ticketNumber: 'TKT-0002',
     title: 'Password reset required for payroll app',
     description:
       'Requester is locked out after too many failed login attempts before payroll approval.',
@@ -30,10 +40,25 @@ const tickets = [
     assignee: 'Theo Technician',
     dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     activity: [
-      { action: 'Seeded breached urgent ticket', actorName: 'Priya Admin', actorRole: 'admin' },
+      {
+        action: 'ticket_created',
+        detail: 'Seeded breached urgent ticket',
+        actorName: 'Priya Admin',
+        actorRole: 'admin',
+        actorEmail: 'admin@demo.local',
+      },
+      {
+        action: 'status_changed',
+        from: 'open',
+        to: 'assigned',
+        actorName: 'Theo Technician',
+        actorRole: 'technician',
+        actorEmail: 'tech@demo.local',
+      },
     ],
   },
   {
+    ticketNumber: 'TKT-0003',
     title: 'VPN client fails after operating system update',
     description: 'Remote employee receives a certificate error when launching the VPN client.',
     requesterName: 'Casey Brown',
@@ -43,9 +68,26 @@ const tickets = [
     category: 'Endpoint',
     assignee: 'Theo Technician',
     dueAt: new Date(Date.now() + 36 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded active work item', actorName: 'Priya Admin', actorRole: 'admin' }],
+    activity: [
+      {
+        action: 'ticket_created',
+        detail: 'Seeded active work item',
+        actorName: 'Priya Admin',
+        actorRole: 'admin',
+        actorEmail: 'admin@demo.local',
+      },
+      {
+        action: 'status_changed',
+        from: 'assigned',
+        to: 'in-progress',
+        actorName: 'Theo Technician',
+        actorRole: 'technician',
+        actorEmail: 'tech@demo.local',
+      },
+    ],
   },
   {
+    ticketNumber: 'TKT-0004',
     title: 'Printer queue stuck on third floor',
     description: 'Print jobs are not clearing from the shared printer queue.',
     requesterName: 'Jamie Smith',
@@ -56,10 +98,17 @@ const tickets = [
     assignee: 'Field Tech',
     resolvedAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
     activity: [
-      { action: 'Seeded resolved ticket', actorName: 'Theo Technician', actorRole: 'technician' },
+      {
+        action: 'ticket_created',
+        detail: 'Seeded resolved ticket',
+        actorName: 'Theo Technician',
+        actorRole: 'technician',
+        actorEmail: 'tech@demo.local',
+      },
     ],
   },
   {
+    ticketNumber: 'TKT-0005',
     title: 'New hire software access checklist',
     description:
       'Provision email, file share access, password manager, and CRM seat for Monday start.',
@@ -70,7 +119,15 @@ const tickets = [
     category: 'Onboarding',
     assignee: 'Help Desk',
     resolvedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    activity: [{ action: 'Seeded closed ticket', actorName: 'Priya Admin', actorRole: 'admin' }],
+    activity: [
+      {
+        action: 'ticket_created',
+        detail: 'Seeded closed ticket',
+        actorName: 'Priya Admin',
+        actorRole: 'admin',
+        actorEmail: 'admin@demo.local',
+      },
+    ],
   },
 ];
 
@@ -83,6 +140,9 @@ async function seed() {
   // data is predictable every time the script runs.
   await Ticket.deleteMany({});
   await Ticket.insertMany(tickets);
+  await Ticket.db
+    .collection('counters')
+    .updateOne({ _id: 'ticket' }, { $set: { seq: tickets.length } }, { upsert: true });
 
   console.log(`Seeded ${tickets.length} tickets.`);
   process.exit(0);

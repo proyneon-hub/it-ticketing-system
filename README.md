@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)
 
-A production-style IT service desk application built with React, Vite, Node.js, Express, and MongoDB. It demonstrates ticket lifecycle management, role-based access, SLA visibility, REST API validation, automated API testing, CI/CD checks, Docker deployment, and application-support runbooks.
+A production-style IT service desk application built with React, Vite, Node.js, Express, and MongoDB. It demonstrates ticket lifecycle management, role-based access, SLA visibility, REST API validation, automated API and end-to-end testing, CI/CD checks, Docker deployment, and application-support runbooks.
 
 ## Live Demo
 
@@ -39,28 +39,28 @@ It connects software development with practical service-management experience, m
 - User-scoped ticket visibility for requester accounts
 - Admin-only destructive actions
 - Seeded demo credentials and realistic ticket data
-- Jest + Supertest API tests
+- Human-friendly ticket IDs such as `TKT-0001`
+- Activity timeline for workflow and assignment changes
+- Paginated, sortable, filterable ticket list API
+- Role-scoped CSV export
+- Jest + Supertest API tests and Playwright E2E tests
 - Dockerfile and Docker Compose setup
 - GitHub Actions CI for formatting, install, test, build, and audit checks
 - API documentation and support runbooks in [docs](docs)
 
 ## Screenshots
 
-Capture these views after running `npm run seed`:
+### Admin Dashboard
 
-| View                 | What to show                                       |
-| -------------------- | -------------------------------------------------- |
-| Admin dashboard      | SLA cards, workflow counts, full ticket queue      |
-| Technician dashboard | Assignment/status controls without delete access   |
-| User dashboard       | User-scoped tickets and disabled workflow controls |
+![Admin dashboard](docs/screenshots/admin-dashboard.png)
 
-Recommended paths:
+### Technician Dashboard
 
-```text
-docs/screenshots/admin-dashboard.png
-docs/screenshots/technician-dashboard.png
-docs/screenshots/user-dashboard.png
-```
+![Technician dashboard](docs/screenshots/technician-dashboard.png)
+
+### User Dashboard
+
+![User dashboard](docs/screenshots/user-dashboard.png)
 
 ## Tech Stack
 
@@ -76,6 +76,7 @@ docs/screenshots/user-dashboard.png
 
 - Demo authentication with expiring signed bearer tokens
 - Ticket creation, update, delete, filtering, and SLA status display
+- Ticket numbers, pagination, sorting, CSV export, and activity timeline
 - Role-aware ticket visibility and permissions
 - SLA stats by status, priority, breached tickets, and due-soon tickets
 - Seed script for predictable demo data
@@ -85,11 +86,12 @@ docs/screenshots/user-dashboard.png
 
 ```bash
 npm test
+npm run test:e2e
 npm run format:check
 npm run build
 ```
 
-The test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, and dashboard stats response shape.
+The API test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, dashboard stats, pagination validation, CSV export, ticket numbers, and structured activity. Playwright covers login, role permissions, ticket workflow, export, and screenshot capture.
 
 ## CI/CD
 
@@ -100,6 +102,8 @@ GitHub Actions runs on pushes and pull requests to `main`:
 - `npm test`
 - `npm run build`
 - `npm audit --audit-level=high` as a non-blocking audit step
+
+The separate E2E workflow installs Chromium and runs `npm run test:e2e`.
 
 ## Local Setup
 
@@ -151,16 +155,17 @@ The API runs at `http://localhost:5000`. The production container serves the bui
 
 Full endpoint documentation lives in [docs/API.md](docs/API.md).
 
-| Method   | Endpoint             | Purpose                   |
-| -------- | -------------------- | ------------------------- |
-| `GET`    | `/api/health`        | Health check              |
-| `POST`   | `/api/auth/login`    | Demo login                |
-| `GET`    | `/api/auth/me`       | Current session           |
-| `GET`    | `/api/tickets`       | List visible tickets      |
-| `GET`    | `/api/tickets/stats` | SLA/status/priority stats |
-| `POST`   | `/api/tickets`       | Create ticket             |
-| `PATCH`  | `/api/tickets/:id`   | Update ticket             |
-| `DELETE` | `/api/tickets/:id`   | Admin-only delete         |
+| Method   | Endpoint              | Purpose                       |
+| -------- | --------------------- | ----------------------------- |
+| `GET`    | `/api/health`         | Health check                  |
+| `POST`   | `/api/auth/login`     | Demo login                    |
+| `GET`    | `/api/auth/me`        | Current session               |
+| `GET`    | `/api/tickets`        | List visible tickets          |
+| `GET`    | `/api/tickets/export` | Export visible tickets as CSV |
+| `GET`    | `/api/tickets/stats`  | SLA/status/priority stats     |
+| `POST`   | `/api/tickets`        | Create ticket                 |
+| `PATCH`  | `/api/tickets/:id`    | Update ticket                 |
+| `DELETE` | `/api/tickets/:id`    | Admin-only delete             |
 
 ## Project Structure
 
@@ -172,6 +177,7 @@ it-ticketing-system/
 |-- scripts/seed.js              # Demo ticket seeder
 |-- src/client/                  # React frontend
 |-- src/server/                  # Express API, auth, routes, model
+|-- tests/e2e/                   # Playwright browser tests
 |-- Dockerfile
 |-- docker-compose.yml
 |-- package.json
@@ -187,6 +193,7 @@ it-ticketing-system/
 - [Application Support Runbook](docs/RUNBOOK.md)
 - [Security Notes](docs/SECURITY_NOTES.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Accessibility Checklist](docs/ACCESSIBILITY_CHECKLIST.md)
 - [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)
 
 ## Deployment
@@ -208,12 +215,10 @@ This project uses demo authentication for portfolio review. See [docs/SECURITY_N
 
 ## Future Improvements
 
-- Playwright end-to-end tests and automated screenshots
-- Paginated and sortable ticket list API
-- Human-friendly ticket numbers such as `TKT-0001`
-- Structured activity timeline in the UI
-- CSV export for ticket queues
-- Expanded accessibility checks
+- Real user administration with password hashing
+- Email notifications for assignment and SLA risk
+- Full audit retention for deleted tickets
+- Advanced reporting and saved filters
 
 ## License
 

@@ -80,6 +80,26 @@ export function fetchTickets(filters = {}) {
   return request(`/tickets${query}`);
 }
 
+export async function exportTickets(filters = {}) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const response = await fetch(`${API_BASE}/tickets/export${query}`, {
+    headers: {
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Export failed with status ${response.status}.`);
+  }
+
+  return response.blob();
+}
+
 export function fetchStats() {
   return request('/tickets/stats');
 }

@@ -11,6 +11,14 @@ const slaHoursByPriority = {
 // validation, defaults, and the shape of documents stored in MongoDB.
 const ticketSchema = new mongoose.Schema(
   {
+    ticketNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      unique: true,
+      sparse: true,
+      maxlength: 16,
+    },
     title: {
       type: String,
       // The API also checks for title, but this keeps the database model safe
@@ -89,6 +97,27 @@ const ticketSchema = new mongoose.Schema(
           enum: ['admin', 'technician', 'user'],
           default: 'user',
         },
+        actorEmail: {
+          type: String,
+          trim: true,
+          lowercase: true,
+          maxlength: 120,
+        },
+        from: {
+          type: String,
+          trim: true,
+          maxlength: 160,
+        },
+        to: {
+          type: String,
+          trim: true,
+          maxlength: 160,
+        },
+        detail: {
+          type: String,
+          trim: true,
+          maxlength: 240,
+        },
         createdAt: {
           type: Date,
           default: Date.now,
@@ -122,6 +151,7 @@ ticketSchema.index({ status: 1, priority: 1, dueAt: 1, createdAt: -1 });
 // Provides a text index for future full-text search support. The current route
 // uses regex search, but this index makes it easy to switch to $text later.
 ticketSchema.index({
+  ticketNumber: 'text',
   title: 'text',
   description: 'text',
   requesterName: 'text',

@@ -37,6 +37,18 @@ button:disabled {
   opacity: 0.62;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .shell {
   width: min(1440px, calc(100% - 32px));
   margin: 0 auto;
@@ -305,7 +317,7 @@ textarea:focus {
 }
 
 .filters {
-  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(140px, 0.6fr));
+  grid-template-columns: minmax(220px, 1.4fr) repeat(5, minmax(130px, 0.6fr));
   margin-bottom: 14px;
 }
 
@@ -338,6 +350,12 @@ textarea:focus {
 .danger-button {
   color: #991b1b;
   background: #fee2e2;
+}
+
+.compact-button {
+  width: auto;
+  padding: 8px 10px;
+  white-space: nowrap;
 }
 
 .alert {
@@ -383,7 +401,20 @@ th {
 }
 
 .ticket-cell strong {
+  display: block;
   color: #111827;
+}
+
+.ticket-number {
+  display: inline-flex;
+  width: max-content;
+  margin-bottom: 5px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  color: #0f3a5d;
+  background: #dff0ff;
+  font-size: 0.75rem;
+  font-weight: 900;
 }
 
 .ticket-cell p {
@@ -445,6 +476,61 @@ th {
   min-width: 150px;
 }
 
+.row-actions {
+  display: grid;
+  gap: 8px;
+  min-width: 110px;
+}
+
+.activity-row td {
+  padding-top: 0;
+  background: #f8fafc;
+}
+
+.activity-panel {
+  padding: 12px;
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.activity-panel h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.activity-panel ol {
+  display: grid;
+  gap: 8px;
+  padding-left: 22px;
+  margin: 0;
+}
+
+.activity-panel li {
+  color: #334155;
+}
+
+.activity-panel li span,
+.activity-panel li small {
+  display: block;
+  color: #68758a;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 14px;
+  color: #536174;
+  font-weight: 800;
+}
+
+.pagination-bar div {
+  display: flex;
+  gap: 8px;
+}
+
 .empty-state {
   padding: 30px;
   color: #68758a;
@@ -482,7 +568,15 @@ th {
   .workflow-strip,
   .two-column,
   .filters,
-  .session-actions {
+  .session-actions,
+  .pagination-bar,
+  .pagination-bar div {
     grid-template-columns: 1fr;
+  }
+
+  .pagination-bar,
+  .pagination-bar div {
+    display: grid;
+    width: 100%;
   }
 }

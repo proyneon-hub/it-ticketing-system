@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   createTicket,
   deleteTicket,
+  exportTickets,
   fetchDemoUsers,
   fetchMe,
   fetchStats,
@@ -13,6 +14,13 @@ import {
 
 const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
 const priorities = ['low', 'medium', 'high', 'urgent'];
+const sortFields = [
+  ['createdAt', 'Newest first'],
+  ['ticketNumber', 'Ticket ID'],
+  ['priority', 'Priority'],
+  ['status', 'Status'],
+  ['dueAt', 'SLA due date'],
+];
 
 const emptyForm = {
   title: '',
@@ -48,6 +56,19 @@ function getSlaState(ticket) {
   return 'healthy';
 }
 
+function activityLabel(activity) {
+  const labels = {
+    ticket_created: 'Ticket created',
+    ticket_updated: 'Ticket updated',
+    status_changed: 'Status changed',
+    priority_changed: 'Priority changed',
+    assignee_changed: 'Assignee changed',
+    ticket_resolved: 'Ticket resolved',
+    ticket_closed: 'Ticket closed',
+  };
+  return labels[activity.action] || label(activity.action || 'activity');
+}
+
 function StatCard({ title, value, helper, tone = 'neutral' }) {
   return (
     <section className={`stat-card ${tone}`}>
@@ -68,9 +89,21 @@ export default function App() {
     password: 'AdminPass123!',
   });
   const [form, setForm] = useState(emptyForm);
-  const [filters, setFilters] = useState({ status: '', priority: '', sla: '', search: '' });
+  const [filters, setFilters] = useState({
+    status: '',
+    priority: '',
+    sla: '',
+    search: '',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    page: 1,
+    limit: 10,
+  });
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [expandedTicketId, setExpandedTicketId] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -86,7 +119,15 @@ export default function App() {
     ]);
 
     if (ticketResult.status === 'fulfilled') {
-      setTickets(ticketResult.value.tickets);
+      setTickets(ticketResult.value.data || ticketResult.value.tickets || []);
+      setPagination(
+        ticketResult.value.pagination || {
+          page: 1,
+          limit: activeFilters.limit,
+          total: 0,
+          totalPages: 1,
+        }
+      );
     } else {
       setTickets([]);
     }
@@ -156,7 +197,14 @@ export default function App() {
   }
 
   function updateFilter(field, value) {
-    const nextFilters = { ...filters, [field]: value };
+    const nextFilters = { ...filters, [field]: value, page: 1 };
+    setFilters(nextFilters);
+    loadData(nextFilters);
+  }
+
+  function updatePage(nextPage) {
+    const page = Math.min(Math.max(nextPage, 1), pagination.totalPages || 1);
+    const nextFilters = { ...filters, page };
     setFilters(nextFilters);
     loadData(nextFilters);
   }
@@ -171,7 +219,9 @@ export default function App() {
       await createTicket(form);
       setForm(emptyForm);
       setSuccess('Ticket created successfully.');
-      await loadData();
+      const nextFilters = { ...filters, page: 1 };
+      setFilters(nextFilters);
+      await loadData(nextFilters);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -208,6 +258,29 @@ export default function App() {
     }
   }
 
+  async function handleExport() {
+    setExporting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const blob = await exportTickets(filters);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'tickets.csv';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setSuccess('Ticket export downloaded.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <main className="shell">
       <header className="app-header">
@@ -226,10 +299,21 @@ export default function App() {
               <strong>{user.name}</strong>
               <small>{user.email}</small>
               <div className="session-actions">
-                <button className="ghost-button" onClick={() => loadData()} disabled={loading}>
+                <button
+                  className="ghost-button"
+                  onClick={() => loadData()}
+                  disabled={loading}
+                  type="button"
+                  data-testid="refresh-button"
+                >
                   {loading ? 'Refreshing...' : 'Refresh'}
                 </button>
-                <button className="secondary-button" onClick={handleLogout}>
+                <button
+                  className="secondary-button"
+                  onClick={handleLogout}
+                  type="button"
+                  data-testid="logout-button"
+                >
                   Sign out
                 </button>
               </div>
@@ -237,14 +321,24 @@ export default function App() {
           ) : (
             <form className="login-form" onSubmit={handleLogin}>
               <strong>Demo login</strong>
+              <label className="sr-only" htmlFor="login-email">
+                Email
+              </label>
               <input
+                id="login-email"
+                data-testid="login-email"
                 value={loginForm.email}
                 onChange={(event) =>
                   setLoginForm((current) => ({ ...current, email: event.target.value }))
                 }
                 placeholder="Email"
               />
+              <label className="sr-only" htmlFor="login-password">
+                Password
+              </label>
               <input
+                id="login-password"
+                data-testid="login-password"
                 type="password"
                 value={loginForm.password}
                 onChange={(event) =>
@@ -252,7 +346,7 @@ export default function App() {
                 }
                 placeholder="Password"
               />
-              <button className="primary-button" type="submit">
+              <button className="primary-button" type="submit" data-testid="login-submit">
                 Sign in
               </button>
             </form>
@@ -267,6 +361,7 @@ export default function App() {
               key={demoUser.email}
               type="button"
               className="demo-account"
+              data-testid={`demo-login-${demoUser.role}`}
               onClick={() =>
                 handleLogin(null, { email: demoUser.email, password: demoUser.demoPassword })
               }
@@ -336,6 +431,7 @@ export default function App() {
               <label>
                 Title <span>*</span>
                 <input
+                  data-testid="ticket-title"
                   value={form.title}
                   onChange={(event) => updateFormField('title', event.target.value)}
                   placeholder="Laptop cannot connect to Wi-Fi"
@@ -346,6 +442,7 @@ export default function App() {
               <label>
                 Description
                 <textarea
+                  data-testid="ticket-description"
                   value={form.description}
                   onChange={(event) => updateFormField('description', event.target.value)}
                   placeholder="Describe the issue, device, business impact, and troubleshooting tried."
@@ -380,6 +477,7 @@ export default function App() {
                 <label>
                   Priority
                   <select
+                    data-testid="ticket-priority"
                     value={form.priority}
                     onChange={(event) => updateFormField('priority', event.target.value)}
                   >
@@ -411,7 +509,12 @@ export default function App() {
                 />
               </label>
 
-              <button className="primary-button" type="submit" disabled={saving}>
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={saving}
+                data-testid="ticket-create-submit"
+              >
                 {saving ? 'Creating...' : 'Create Ticket'}
               </button>
             </form>
@@ -422,17 +525,30 @@ export default function App() {
                   <h2>Ticket Dashboard</h2>
                   <p>Filter tickets, update assignments, and watch SLA risk.</p>
                 </div>
+                <button
+                  className="secondary-button compact-button"
+                  type="button"
+                  onClick={handleExport}
+                  disabled={exporting || loading}
+                  data-testid="ticket-export-button"
+                >
+                  {exporting ? 'Exporting...' : 'Export CSV'}
+                </button>
               </div>
 
               <div className="filters">
                 <input
                   value={filters.search}
                   onChange={(event) => updateFilter('search', event.target.value)}
-                  placeholder="Search tickets..."
+                  placeholder="Search tickets or TKT ID..."
+                  aria-label="Search tickets"
+                  data-testid="ticket-search"
                 />
                 <select
                   value={filters.status}
                   onChange={(event) => updateFilter('status', event.target.value)}
+                  aria-label="Filter by status"
+                  data-testid="ticket-status-filter"
                 >
                   <option value="">All statuses</option>
                   {statuses.map((status) => (
@@ -444,6 +560,7 @@ export default function App() {
                 <select
                   value={filters.priority}
                   onChange={(event) => updateFilter('priority', event.target.value)}
+                  aria-label="Filter by priority"
                 >
                   <option value="">All priorities</option>
                   {priorities.map((priority) => (
@@ -455,9 +572,30 @@ export default function App() {
                 <select
                   value={filters.sla}
                   onChange={(event) => updateFilter('sla', event.target.value)}
+                  aria-label="Filter by SLA state"
                 >
                   <option value="">All SLA states</option>
                   <option value="breached">Breached SLA</option>
+                  <option value="due-soon">Due in 24h</option>
+                </select>
+                <select
+                  value={filters.sortBy}
+                  onChange={(event) => updateFilter('sortBy', event.target.value)}
+                  aria-label="Sort tickets by"
+                >
+                  {sortFields.map(([value, name]) => (
+                    <option value={value} key={value}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={filters.sortOrder}
+                  onChange={(event) => updateFilter('sortOrder', event.target.value)}
+                  aria-label="Sort direction"
+                >
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
                 </select>
               </div>
 
@@ -492,80 +630,161 @@ export default function App() {
                         const slaState = getSlaState(ticket);
 
                         return (
-                          <tr key={ticket._id}>
-                            <td className="ticket-cell">
-                              <strong>{ticket.title}</strong>
-                              <p>{ticket.description || 'No description provided.'}</p>
-                              <small>
-                                {ticket.category || 'General Support'} |{' '}
-                                {ticket.requesterName || 'Unknown requester'}{' '}
-                                {ticket.requesterEmail ? `(${ticket.requesterEmail})` : ''}
-                              </small>
-                            </td>
-                            <td>
-                              <select
-                                className={`pill ${ticket.status}`}
-                                value={ticket.status}
-                                onChange={(event) =>
-                                  handleTicketPatch(ticket._id, { status: event.target.value })
-                                }
-                                disabled={user.role === 'user'}
-                              >
-                                {statuses.map((status) => (
-                                  <option value={status} key={status}>
-                                    {label(status)}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td>
-                              <select
-                                className={`pill ${ticket.priority}`}
-                                value={ticket.priority}
-                                onChange={(event) =>
-                                  handleTicketPatch(ticket._id, { priority: event.target.value })
-                                }
-                              >
-                                {priorities.map((priority) => (
-                                  <option value={priority} key={priority}>
-                                    {label(priority)}
-                                  </option>
-                                ))}
-                              </select>
-                            </td>
-                            <td>
-                              <input
-                                className="assignee-input"
-                                defaultValue={ticket.assignee}
-                                onBlur={(event) => {
-                                  if (event.target.value !== ticket.assignee) {
-                                    handleTicketPatch(ticket._id, { assignee: event.target.value });
+                          <Fragment key={ticket._id}>
+                            <tr data-testid="ticket-row">
+                              <td className="ticket-cell">
+                                <span className="ticket-number">
+                                  {ticket.ticketNumber || 'Pending ID'}
+                                </span>
+                                <strong>{ticket.title}</strong>
+                                <p>{ticket.description || 'No description provided.'}</p>
+                                <small>
+                                  {ticket.category || 'General Support'} |{' '}
+                                  {ticket.requesterName || 'Unknown requester'}{' '}
+                                  {ticket.requesterEmail ? `(${ticket.requesterEmail})` : ''}
+                                </small>
+                              </td>
+                              <td>
+                                <select
+                                  className={`pill ${ticket.status}`}
+                                  value={ticket.status}
+                                  onChange={(event) =>
+                                    handleTicketPatch(ticket._id, { status: event.target.value })
                                   }
-                                }}
-                                disabled={user.role === 'user'}
-                              />
-                            </td>
-                            <td>
-                              <span className={`sla-chip ${slaState}`}>{label(slaState)}</span>
-                              <small className="stacked-date">{formatDate(ticket.dueAt)}</small>
-                            </td>
-                            <td>{formatDate(ticket.createdAt)}</td>
-                            <td>
-                              {user.role === 'admin' ? (
-                                <button
-                                  className="danger-button"
-                                  onClick={() => handleDelete(ticket._id)}
+                                  disabled={user.role === 'user'}
+                                  aria-label={`Status for ${ticket.ticketNumber || ticket.title}`}
+                                  data-testid="ticket-status-select"
                                 >
-                                  Delete
+                                  {statuses.map((status) => (
+                                    <option value={status} key={status}>
+                                      {label(status)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <select
+                                  className={`pill ${ticket.priority}`}
+                                  value={ticket.priority}
+                                  onChange={(event) =>
+                                    handleTicketPatch(ticket._id, { priority: event.target.value })
+                                  }
+                                  aria-label={`Priority for ${ticket.ticketNumber || ticket.title}`}
+                                >
+                                  {priorities.map((priority) => (
+                                    <option value={priority} key={priority}>
+                                      {label(priority)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td>
+                                <input
+                                  className="assignee-input"
+                                  defaultValue={ticket.assignee}
+                                  aria-label={`Assignee for ${ticket.ticketNumber || ticket.title}`}
+                                  onBlur={(event) => {
+                                    if (event.target.value !== ticket.assignee) {
+                                      handleTicketPatch(ticket._id, {
+                                        assignee: event.target.value,
+                                      });
+                                    }
+                                  }}
+                                  disabled={user.role === 'user'}
+                                />
+                              </td>
+                              <td>
+                                <span className={`sla-chip ${slaState}`}>{label(slaState)}</span>
+                                <small className="stacked-date">{formatDate(ticket.dueAt)}</small>
+                              </td>
+                              <td>{formatDate(ticket.createdAt)}</td>
+                              <td className="row-actions">
+                                <button
+                                  className="secondary-button compact-button"
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedTicketId((current) =>
+                                      current === ticket._id ? '' : ticket._id
+                                    )
+                                  }
+                                  data-testid="ticket-activity-toggle"
+                                >
+                                  Activity
                                 </button>
-                              ) : null}
-                            </td>
-                          </tr>
+                                {user.role === 'admin' ? (
+                                  <button
+                                    className="danger-button compact-button"
+                                    type="button"
+                                    onClick={() => handleDelete(ticket._id)}
+                                    data-testid="ticket-delete-button"
+                                  >
+                                    Delete
+                                  </button>
+                                ) : null}
+                              </td>
+                            </tr>
+                            {expandedTicketId === ticket._id ? (
+                              <tr className="activity-row" data-testid="ticket-activity-row">
+                                <td colSpan="7">
+                                  <div className="activity-panel">
+                                    <h3>Ticket Activity Timeline</h3>
+                                    {ticket.activity?.length ? (
+                                      <ol>
+                                        {ticket.activity.map((activity, index) => (
+                                          <li key={`${ticket._id}-activity-${index}`}>
+                                            <strong>{activityLabel(activity)}</strong>
+                                            {activity.from || activity.to ? (
+                                              <span>
+                                                {activity.from || '-'} to {activity.to || '-'}
+                                              </span>
+                                            ) : null}
+                                            {activity.detail ? (
+                                              <span>{activity.detail}</span>
+                                            ) : null}
+                                            <small>
+                                              {activity.actorName || 'System'} ·{' '}
+                                              {formatDate(activity.createdAt)}
+                                            </small>
+                                          </li>
+                                        ))}
+                                      </ol>
+                                    ) : (
+                                      <p>No activity has been recorded for this ticket.</p>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ) : null}
+                          </Fragment>
                         );
                       })
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              <div className="pagination-bar" data-testid="ticket-pagination">
+                <span>
+                  Page {pagination.page} of {pagination.totalPages} · {pagination.total} tickets
+                </span>
+                <div>
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    onClick={() => updatePage(pagination.page - 1)}
+                    disabled={loading || pagination.page <= 1}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    onClick={() => updatePage(pagination.page + 1)}
+                    disabled={loading || pagination.page >= pagination.totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             </section>
           </section>
