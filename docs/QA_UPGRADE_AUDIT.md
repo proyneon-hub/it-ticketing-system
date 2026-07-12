@@ -62,3 +62,8 @@
 - Added a separate `playwright.live.config.ts` and `tests/smoke-live` suite that never imports mocked API support.
 - Live checks skip by default and require an explicit enable flag plus dedicated credentials before login or ticket creation.
 - The ticket lifecycle smoke test uses a `PW-LIVE-` prefix and deletes only the ticket it created.
+
+## Phase 6 Update
+
+- Added automated Axe checks for the mocked login, dashboard, and ticket-form states.
+- Kept the manual accessibility checklist for checks Axe cannot reliably automate.

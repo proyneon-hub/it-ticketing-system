@@ -36,3 +36,7 @@
 ## Regression Notes
 
 Run the Playwright role-permission tests after UI changes to verify disabled workflow controls and admin-only delete controls still behave as expected.
+
+## Automated Coverage Boundary
+
+Run `npm run test:a11y` for Axe checks on the login, dashboard, and ticket form. Axe does not replace the keyboard, focus, screen-reader, zoom, cognitive-usability, or color-only checks above.

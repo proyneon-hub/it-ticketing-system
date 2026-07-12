@@ -115,7 +115,7 @@ button:disabled {
 }
 
 .session-card small {
-  color: #68758a;
+  color: #647186;
 }
 
 .session-actions {
@@ -172,7 +172,7 @@ button:disabled {
 
 .demo-account span,
 .demo-account small {
-  color: #68758a;
+  color: #647186;
   font-size: 0.78rem;
 }
 
@@ -199,7 +199,7 @@ button:disabled {
 .stat-card p,
 .stat-card span {
   margin: 0;
-  color: #68758a;
+  color: #647186;
 }
 
 .stat-card strong {
@@ -263,7 +263,7 @@ button:disabled {
 .section-heading p,
 .empty-panel p {
   margin: 0;
-  color: #68758a;
+  color: #647186;
 }
 
 .empty-panel {
@@ -394,7 +394,7 @@ td {
 }
 
 th {
-  color: #68758a;
+  color: #647186;
   font-size: 0.74rem;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -426,7 +426,7 @@ th {
 .ticket-cell small,
 .stacked-date {
   display: block;
-  color: #68758a;
+  color: #647186;
 }
 
 .pill,
@@ -513,7 +513,7 @@ th {
 .activity-panel li span,
 .activity-panel li small {
   display: block;
-  color: #68758a;
+  color: #647186;
 }
 
 .pagination-bar {
@@ -533,7 +533,7 @@ th {
 
 .empty-state {
   padding: 30px;
-  color: #68758a;
+  color: #647186;
   text-align: center;
 }
 
