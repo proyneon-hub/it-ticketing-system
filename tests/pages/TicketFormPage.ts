@@ -18,6 +18,25 @@ export class TicketFormPage {
     await this.page.getByRole('button', { name: 'Create Ticket' }).click();
   }
 
+  async submitWithoutTitle(): Promise<void> {
+    await this.page.getByTestId('ticket-title').fill('');
+    await this.submit();
+  }
+
+  async submitWithoutDescription(): Promise<void> {
+    await this.page.getByTestId('ticket-title').fill('Valid title');
+    await this.page.getByTestId('ticket-description').fill('');
+    await this.submit();
+  }
+
+  async expectTitleRequired(): Promise<void> {
+    await expect(this.page.getByTestId('ticket-title')).toBeFocused();
+  }
+
+  async expectDescriptionRequired(): Promise<void> {
+    await expect(this.page.getByTestId('ticket-description')).toBeFocused();
+  }
+
   async expectValidationError(message: string): Promise<void> {
     await expect(this.page.getByText(message, { exact: true })).toBeVisible();
   }

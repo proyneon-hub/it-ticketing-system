@@ -154,6 +154,42 @@ function cloneTicket(ticket: MockTicket): MockTicket {
   return { ...ticket, activity: [...ticket.activity] };
 }
 
+function visibleTicketsFor(
+  activeUser: MockUser | null,
+  tickets: readonly MockTicket[]
+): MockTicket[] {
+  return activeUser?.role === 'user'
+    ? tickets.filter((ticket) => ticket.requesterEmail === activeUser.email)
+    : [...tickets];
+}
+
+function filterTickets(tickets: readonly MockTicket[], params: URLSearchParams): MockTicket[] {
+  const status = params.get('status');
+  const priority = params.get('priority');
+  const search = params.get('search')?.trim().toLowerCase();
+
+  return tickets.filter((ticket) => {
+    if (status && ticket.status !== status) return false;
+    if (priority && ticket.priority !== priority) return false;
+    if (!search) return true;
+
+    return [
+      ticket.ticketNumber,
+      ticket.title,
+      ticket.description,
+      ticket.requesterName,
+      ticket.requesterEmail,
+      ticket.assignee,
+      ticket.category,
+    ].some((value) => value.toLowerCase().includes(search));
+  });
+}
+
+function csvFor(tickets: readonly MockTicket[]): string {
+  const rows = tickets.map((ticket) => `${ticket.ticketNumber},${ticket.title}`);
+  return ['Ticket ID,Title', ...rows].join('\n');
+}
+
 export async function installApiMocks(page: Page): Promise<void> {
   let currentUser: MockUser | null = null;
   let tickets = baseTickets.map(cloneTicket);
@@ -180,7 +216,11 @@ export async function installApiMocks(page: Page): Promise<void> {
 
     if (path === '/api/auth/login' && method === 'POST') {
       const email = stringFromPayload(request.postDataJSON() as unknown, 'email');
-      const matchedUser = Object.values(demoUsers).find((user) => user.email === email) ?? null;
+      const password = stringFromPayload(request.postDataJSON() as unknown, 'password');
+      const matchedUser =
+        Object.values(demoUsers).find(
+          (user) => user.email === email && user.demoPassword === password
+        ) ?? null;
 
       if (!matchedUser) {
         return route.fulfill({ status: 401, json: { message: 'Invalid demo credentials.' } });
@@ -191,30 +231,37 @@ export async function installApiMocks(page: Page): Promise<void> {
     }
 
     if (path === '/api/tickets/stats') {
-      const activeUser = currentUser;
-      const visibleTickets =
-        activeUser?.role === 'user'
-          ? tickets.filter((ticket) => ticket.requesterEmail === activeUser.email)
-          : tickets;
+      const visibleTickets = visibleTicketsFor(currentUser, tickets);
       return route.fulfill({ json: statsFor(visibleTickets) });
     }
 
     if (path === '/api/tickets/export') {
+      if (!currentUser) {
+        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+      }
+
+      const visibleTickets = filterTickets(
+        visibleTicketsFor(currentUser, tickets),
+        url.searchParams
+      );
       return route.fulfill({
         headers: {
           'content-type': 'text/csv',
           'content-disposition': 'attachment; filename="tickets.csv"',
         },
-        body: 'Ticket ID,Title\nTKT-0001,Laptop cannot connect to Wi-Fi\n',
+        body: csvFor(visibleTickets),
       });
     }
 
     if (path === '/api/tickets' && method === 'GET') {
-      const activeUser = currentUser;
-      const visibleTickets =
-        activeUser?.role === 'user'
-          ? tickets.filter((ticket) => ticket.requesterEmail === activeUser.email)
-          : tickets;
+      if (!currentUser) {
+        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+      }
+
+      const visibleTickets = filterTickets(
+        visibleTicketsFor(currentUser, tickets),
+        url.searchParams
+      );
       return route.fulfill({
         json: {
           tickets: visibleTickets,

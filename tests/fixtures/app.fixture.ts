@@ -1,5 +1,5 @@
 import { expect, test as base } from '@playwright/test';
-import { installApiMocks } from '../e2e/support';
+import { installApiMocks } from '../e2e-mocked/support';
 import { LoginPage } from '../pages/LoginPage';
 import { TicketDashboardPage } from '../pages/TicketDashboardPage';
 import { TicketFormPage } from '../pages/TicketFormPage';

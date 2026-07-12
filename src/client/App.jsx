@@ -447,6 +447,7 @@ export default function App() {
                   onChange={(event) => updateFormField('description', event.target.value)}
                   placeholder="Describe the issue, device, business impact, and troubleshooting tried."
                   rows="4"
+                  required
                 />
               </label>
 

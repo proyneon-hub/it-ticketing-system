@@ -45,6 +45,23 @@ export class TicketDashboardPage {
     await expect(this.page.getByLabel(/Assignee for/).first()).toBeDisabled();
   }
 
+  async expectTotalTickets(total: number): Promise<void> {
+    const totalCard = this.page.locator('.stat-card').filter({ hasText: 'Total Tickets' });
+    await expect(totalCard.getByText(String(total), { exact: true })).toBeVisible();
+  }
+
+  async expectEmptyState(): Promise<void> {
+    await expect(this.page.getByText('No tickets found.', { exact: true })).toBeVisible();
+  }
+
+  async expectLoadingState(): Promise<void> {
+    await expect(this.page.getByText('Loading tickets...', { exact: true })).toBeVisible();
+  }
+
+  async expectError(message: string): Promise<void> {
+    await expect(this.page.getByText(message, { exact: true })).toBeVisible();
+  }
+
   async exportCsv(): Promise<Download> {
     const downloadPromise = this.page.waitForEvent('download');
     await this.page.getByRole('button', { name: 'Export CSV' }).click();
@@ -55,6 +72,18 @@ export class TicketDashboardPage {
     await this.ticketRow(ticketNumber)
       .getByLabel(`Status for ${ticketNumber}`)
       .selectOption(status);
+  }
+
+  async assignTicket(ticketNumber: string, assignee: string): Promise<void> {
+    const assigneeInput = this.ticketRow(ticketNumber).getByLabel(`Assignee for ${ticketNumber}`);
+    await assigneeInput.fill(assignee);
+    await assigneeInput.blur();
+  }
+
+  async expectAssignee(ticketNumber: string, assignee: string): Promise<void> {
+    await expect(
+      this.ticketRow(ticketNumber).getByLabel(`Assignee for ${ticketNumber}`)
+    ).toHaveValue(assignee);
   }
 
   async deleteFirstTicket(): Promise<void> {

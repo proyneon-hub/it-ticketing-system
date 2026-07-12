@@ -30,4 +30,10 @@ export class LoginPage {
   async expectLoginError(message: string): Promise<void> {
     await expect(this.page.getByText(message, { exact: true })).toBeVisible();
   }
+
+  async expectSignedOut(): Promise<void> {
+    await expect(
+      this.page.getByRole('heading', { name: 'Sign in to open the service desk.' })
+    ).toBeVisible();
+  }
 }

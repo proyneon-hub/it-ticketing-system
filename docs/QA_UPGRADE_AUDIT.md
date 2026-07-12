@@ -5,7 +5,7 @@
 - The root project is a CommonJS Node.js application with an engine requirement of Node.js 20 or later.
 - The frontend is React and Vite on port 5173. Vite proxies `/api` to the Express API on port 5000 during local development; production Express can serve the Vite `dist` output.
 - Root API and auth coverage uses Jest and Supertest. `npm test` delegates to `npm run test:api`, which preserves the existing `jest --runInBand` command.
-- Playwright 1.61.1 is installed at the root. Five TypeScript mocked browser specs and their typed route-interception helper live in `tests/e2e`; the configuration starts Vite and runs Chromium.
+- Playwright 1.61.1 is installed at the root. TypeScript mocked browser specs and their typed route-interception helper live in `tests/e2e-mocked`; the configuration starts Vite and runs Chromium.
 - Root CI runs Node 20 formatting, Jest, a production build, and a non-blocking dependency audit. The separate E2E workflow installs Chromium and runs the root E2E command.
 
 ## Strengths
@@ -29,7 +29,7 @@
 - `DEPLOYMENT.md`
 - `package.json`
 - `.gitignore`
-- `tests/e2e/screenshots.spec.js`
+- `tests/e2e-mocked/screenshots.spec.ts`
 
 ## Risks and Compatibility Considerations
 
@@ -50,3 +50,9 @@
 - Added page objects for login, ticket dashboard, and ticket creation workflows.
 - Added an automatic mocked-API fixture plus typed user and ticket data shared by the existing specs and mock helper.
 - Refactored the existing browser tests to express business scenarios through fixtures and page-object methods while keeping assertions and test behavior intact.
+
+## Phase 4 Update
+
+- Renamed the deterministic suite to `tests/e2e-mocked` and updated root E2E commands accordingly.
+- Expanded mocked UI coverage for authentication, role restrictions, ticket workflows, validation, filtering, requester-scoped CSV exports, API failures, and loading states.
+- Added tagged scenarios and `docs/TEST_CASES.md`, including documented exclusions for behavior the current demo application does not support.

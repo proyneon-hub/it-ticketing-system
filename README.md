@@ -93,7 +93,7 @@ npm run format:check
 npm run build
 ```
 
-The API test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, dashboard stats, pagination validation, CSV export, ticket numbers, and structured activity. Playwright covers login, role permissions, ticket workflow, export, and screenshot captures.
+The API test suite covers signed demo authentication, protected ticket routes, role-protected delete behavior, dashboard stats, pagination validation, CSV export, ticket numbers, and structured activity. The mocked Playwright regression suite covers login, role permissions, ticket workflow, validation, filters, exports, API failures, loading states, and screenshot captures.
 
 ## CI/CD
 
@@ -179,7 +179,7 @@ it-ticketing-system/
 |-- scripts/seed.js              # Demo ticket seeder
 |-- src/client/                  # React frontend
 |-- src/server/                  # Express API, auth, routes, model
-|-- tests/e2e/                   # Playwright browser tests
+|-- tests/e2e-mocked/            # Deterministic mocked Playwright regression tests
 |-- Dockerfile
 |-- docker-compose.yml
 |-- package.json
