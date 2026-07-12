@@ -18,6 +18,7 @@
     "test:e2e:ui": "playwright test tests/e2e-mocked --ui",
     "test:e2e:debug": "playwright test tests/e2e-mocked --debug",
     "test:all:playwright": "playwright test",
+    "test:smoke:live": "playwright test -c playwright.live.config.ts",
     "typecheck:playwright": "tsc -p tsconfig.playwright.json",
     "test:all": "npm test && npm run test:e2e",
     "format": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.js\" \"src/**/*.{js,jsx,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --write",

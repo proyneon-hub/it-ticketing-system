@@ -56,3 +56,9 @@
 - Renamed the deterministic suite to `tests/e2e-mocked` and updated root E2E commands accordingly.
 - Expanded mocked UI coverage for authentication, role restrictions, ticket workflows, validation, filtering, requester-scoped CSV exports, API failures, and loading states.
 - Added tagged scenarios and `docs/TEST_CASES.md`, including documented exclusions for behavior the current demo application does not support.
+
+## Phase 5 Update
+
+- Added a separate `playwright.live.config.ts` and `tests/smoke-live` suite that never imports mocked API support.
+- Live checks skip by default and require an explicit enable flag plus dedicated credentials before login or ticket creation.
+- The ticket lifecycle smoke test uses a `PW-LIVE-` prefix and deletes only the ticket it created.

@@ -91,6 +91,11 @@ export class TicketDashboardPage {
     await this.page.getByTestId('ticket-delete-button').first().click();
   }
 
+  async deleteTicket(ticketNumber: string): Promise<void> {
+    this.page.once('dialog', (dialog) => dialog.accept());
+    await this.ticketRow(ticketNumber).getByRole('button', { name: 'Delete' }).click();
+  }
+
   async expectSuccess(message: string): Promise<void> {
     await expect(this.page.getByText(message, { exact: true })).toBeVisible();
   }

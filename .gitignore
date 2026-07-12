@@ -6,6 +6,7 @@ dist/
 build/
 coverage/
 playwright-report/
+playwright-report-live/
 test-results/
 blob-report/
 .DS_Store
