@@ -1,0 +1,39 @@
+# QA Upgrade Audit
+
+## Current Test Architecture
+
+- The root project is a CommonJS Node.js application with an engine requirement of Node.js 20 or later.
+- The frontend is React and Vite on port 5173. Vite proxies `/api` to the Express API on port 5000 during local development; production Express can serve the Vite `dist` output.
+- Root API and auth coverage uses Jest and Supertest. `npm test` delegates to `npm run test:api`, which preserves the existing `jest --runInBand` command.
+- Playwright 1.61.1 is installed at the root. Five JavaScript mocked browser specs and their route-interception helper live in `tests/e2e`; the configuration starts Vite and runs Chromium.
+- Root CI runs Node 20 formatting, Jest, a production build, and a non-blocking dependency audit. The separate E2E workflow installs Chromium and runs the root E2E command.
+
+## Strengths
+
+- API tests cover authentication, protected routes, validation, ticket behavior, exports, and dashboard statistics.
+- The mocked Playwright helper provides deterministic users, ticket data, role scoping, CRUD operations, and CSV downloads.
+- The application provides accessible labels and targeted `data-testid` attributes for the existing browser tests.
+- The deployed demo and health endpoint are verified at `https://it-ticketing-system-pi.vercel.app/` and `https://it-ticketing-system-pi.vercel.app/api/health`.
+
+## Limitations
+
+- Root Playwright configuration, specs, and mock helper are JavaScript. TypeScript, typed fixtures, page objects, separate mocked/live suites, accessibility automation, and cross-browser projects are future-phase work.
+- Root browser tests share one `tests/e2e` directory and run only in Chromium. CI does not yet retain Playwright reports or diagnostics.
+- The screenshot spec previously overwrote tracked portfolio images during a test run. It now writes screenshots to Playwright test output instead.
+- The root package has no separate unit-test command; the current Jest suite is API/auth coverage, so `test:api` is the preserved baseline command.
+
+## Phase 1 Files Changed
+
+- `docs/QA_UPGRADE_AUDIT.md`
+- `README.md`
+- `DEPLOYMENT.md`
+- `package.json`
+- `.gitignore`
+- `tests/e2e/screenshots.spec.js`
+
+## Risks and Compatibility Considerations
+
+- The local baseline is pending: `npm ci` was blocked by a running `esbuild.exe`, and the interrupted install left Jest unavailable. Do not begin Phase 2 until a clean install and the Phase 1 validation commands pass.
+- Root documentation now uses the verified replacement deployment. The prior repository website URL returned 404.
+- `Qa-Automation/` and `Support-Ops-Automation/` are independent projects with their own tooling and placeholder deployment documentation. They were audited but are outside this phase's root-only edit scope.
+- No production credentials are required for the mocked root E2E suite. Keep `.env.example` tracked and do not commit real environment files.

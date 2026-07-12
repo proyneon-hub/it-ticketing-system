@@ -6,7 +6,9 @@ A production-style IT service desk application built with React, Vite, Node.js, 
 
 ## Live Demo
 
-The project is Vercel-ready through the existing `api/` serverless adapters. Add the required environment variables before deploying.
+Try the deployed application at [it-ticketing-system-pi.vercel.app](https://it-ticketing-system-pi.vercel.app/).
+The deployment health endpoint is available at
+[`/api/health`](https://it-ticketing-system-pi.vercel.app/api/health).
 
 ## Demo Credentials
 
@@ -50,15 +52,15 @@ It connects software development with practical service-management experience, m
 
 ## Screenshots
 
-### Admin Dashboard
+### Admin Dashboard (captured from the [live demo](https://it-ticketing-system-pi.vercel.app/))
 
 ![Admin dashboard](docs/screenshots/admin-dashboard.png)
 
-### Technician Dashboard
+### Technician Dashboard (captured from the [live demo](https://it-ticketing-system-pi.vercel.app/))
 
 ![Technician dashboard](docs/screenshots/technician-dashboard.png)
 
-### User Dashboard
+### User Dashboard (captured from the [live demo](https://it-ticketing-system-pi.vercel.app/))
 
 ![User dashboard](docs/screenshots/user-dashboard.png)
 

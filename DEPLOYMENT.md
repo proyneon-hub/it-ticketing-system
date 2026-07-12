@@ -122,7 +122,7 @@ it-ticketing-system
 Open your deployed site and test:
 
 ```text
-https://YOUR-VERCEL-APP.vercel.app/api/health
+https://it-ticketing-system-pi.vercel.app/api/health
 ```
 
 You should see:
