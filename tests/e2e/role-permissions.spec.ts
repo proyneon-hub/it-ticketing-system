@@ -1,29 +1,24 @@
-import { expect, test } from '@playwright/test';
-import { installApiMocks, loginAs } from './support';
+import { expect, test } from '../fixtures/app.fixture';
 
-test.beforeEach(async ({ page }) => {
-  await installApiMocks(page);
+test('technician cannot access admin-only delete controls', async ({
+  loginPage,
+  dashboardPage,
+}) => {
+  await loginPage.loginAs('technician');
+
+  await dashboardPage.expectDeleteControlsHidden();
 });
 
-test('technician cannot access admin-only delete controls', async ({ page }) => {
-  await loginAs(page, 'technician');
+test('user cannot update workflow controls', async ({ loginPage, dashboardPage }) => {
+  await loginPage.loginAs('user');
 
-  await expect(page.getByTestId('ticket-delete-button')).toHaveCount(0);
+  await dashboardPage.expectWorkflowControlsDisabled();
 });
 
-test('user cannot update workflow controls', async ({ page }) => {
-  await loginAs(page, 'user');
+test('user can export only the scoped ticket list', async ({ loginPage, dashboardPage }) => {
+  await loginPage.loginAs('user');
 
-  await expect(page.getByTestId('ticket-status-select')).toBeDisabled();
-  await expect(page.locator('.assignee-input')).toBeDisabled();
-});
-
-test('user can export only the scoped ticket list', async ({ page }) => {
-  await loginAs(page, 'user');
-
-  const downloadPromise = page.waitForEvent('download');
-  await page.getByTestId('ticket-export-button').click();
-  const download = await downloadPromise;
+  const download = await dashboardPage.exportCsv();
 
   expect(download.suggestedFilename()).toBe('tickets.csv');
 });

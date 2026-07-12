@@ -1,53 +1,22 @@
 import type { Page } from '@playwright/test';
+import { testUsers } from '../test-data/users';
+import type {
+  MockDashboardStats,
+  MockTicket,
+  MockUser,
+  TicketPriority,
+  TicketStatus,
+  UserRole,
+} from '../test-data/types';
 
-export type UserRole = 'admin' | 'technician' | 'user';
-export type TicketStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed';
-export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
-
-export interface MockUser {
-  sub: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  demoPassword: string;
-}
-
-export interface MockActivity {
-  action: string;
-  detail?: string;
-  from?: TicketStatus;
-  to?: TicketStatus;
-  actorName: string;
-  actorRole: UserRole;
-  createdAt: string;
-}
-
-export interface MockTicket {
-  _id: string;
-  ticketNumber: string;
-  title: string;
-  description: string;
-  requesterName: string;
-  requesterEmail: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-  category: string;
-  assignee: string;
-  dueAt: string;
-  createdAt: string;
-  updatedAt: string;
-  activity: MockActivity[];
-}
-
-export interface MockDashboardStats {
-  total: number;
-  byStatus: Record<TicketStatus, number>;
-  byPriority: Record<TicketPriority, number>;
-  sla: {
-    breached: number;
-    dueSoon: number;
-  };
-}
+export type {
+  MockDashboardStats,
+  MockTicket,
+  MockUser,
+  TicketPriority,
+  TicketStatus,
+  UserRole,
+} from '../test-data/types';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -57,24 +26,24 @@ const ticketPriorities: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
 const demoUsers: Record<UserRole, MockUser> = {
   admin: {
     sub: 'usr_admin',
-    name: 'Priya Admin',
-    email: 'admin@demo.local',
-    role: 'admin',
-    demoPassword: 'AdminPass123!',
+    name: testUsers.admin.name,
+    email: testUsers.admin.email,
+    role: testUsers.admin.role,
+    demoPassword: testUsers.admin.password,
   },
   technician: {
     sub: 'usr_tech',
-    name: 'Theo Technician',
-    email: 'tech@demo.local',
-    role: 'technician',
-    demoPassword: 'TechPass123!',
+    name: testUsers.technician.name,
+    email: testUsers.technician.email,
+    role: testUsers.technician.role,
+    demoPassword: testUsers.technician.password,
   },
   user: {
     sub: 'usr_user',
-    name: 'Una User',
-    email: 'user@demo.local',
-    role: 'user',
-    demoPassword: 'UserPass123!',
+    name: testUsers.user.name,
+    email: testUsers.user.email,
+    role: testUsers.user.role,
+    demoPassword: testUsers.user.password,
   },
 };
 

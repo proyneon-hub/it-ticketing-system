@@ -1,34 +1,27 @@
-import { expect, test } from '@playwright/test';
-import { installApiMocks, loginAs } from './support';
+import { test } from '../fixtures/app.fixture';
+import { testTickets } from '../test-data/tickets';
 
-test.beforeEach(async ({ page }) => {
-  await installApiMocks(page);
+test('admin creates and deletes a ticket', async ({ loginPage, dashboardPage, ticketFormPage }) => {
+  await loginPage.loginAs('admin');
+
+  await ticketFormPage.createTicket(testTickets.monitorFlicker);
+
+  await dashboardPage.expectSuccess('Ticket created successfully.');
+  await dashboardPage.expectTicketVisible('TKT-0009');
+
+  await dashboardPage.deleteFirstTicket();
+  await dashboardPage.expectSuccess('Ticket deleted.');
 });
 
-test('admin creates and deletes a ticket', async ({ page }) => {
-  await loginAs(page, 'admin');
+test('technician updates ticket status and opens activity timeline', async ({
+  loginPage,
+  dashboardPage,
+}) => {
+  await loginPage.loginAs('technician');
 
-  await page.getByTestId('ticket-title').fill('Monitor flickers after docking');
-  await page
-    .getByTestId('ticket-description')
-    .fill('External monitor flickers when laptop is docked.');
-  await page.getByTestId('ticket-create-submit').click();
+  await dashboardPage.updateTicketStatus('TKT-0001', 'in-progress');
+  await dashboardPage.expectSuccess('Ticket updated.');
 
-  await expect(page.getByText('Ticket created successfully.')).toBeVisible();
-  await expect(page.getByText('TKT-0009')).toBeVisible();
-
-  page.on('dialog', (dialog) => dialog.accept());
-  await page.getByTestId('ticket-delete-button').first().click();
-  await expect(page.getByText('Ticket deleted.')).toBeVisible();
-});
-
-test('technician updates ticket status and opens activity timeline', async ({ page }) => {
-  await loginAs(page, 'technician');
-
-  await page.getByTestId('ticket-status-select').first().selectOption('in-progress');
-  await expect(page.getByText('Ticket updated.')).toBeVisible();
-
-  await page.getByTestId('ticket-activity-toggle').first().click();
-  await expect(page.getByTestId('ticket-activity-row')).toBeVisible();
-  await expect(page.getByText('Ticket Activity Timeline')).toBeVisible();
+  await dashboardPage.openTicket('TKT-0001');
+  await dashboardPage.expectActivityVisible();
 });

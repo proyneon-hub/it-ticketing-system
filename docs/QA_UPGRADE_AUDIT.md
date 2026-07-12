@@ -17,7 +17,7 @@
 
 ## Limitations
 
-- Playwright configuration, specs, and mock helper use strict TypeScript with Node16/CommonJS-compatible module resolution. Page objects, typed fixtures, separate mocked/live suites, accessibility automation, and cross-browser projects are future-phase work.
+- Playwright configuration, specs, and mock helper use strict TypeScript with Node16/CommonJS-compatible module resolution. Page objects, typed fixtures, and reusable test data cover the current mocked suite; separate mocked/live suites, accessibility automation, and cross-browser projects are future-phase work.
 - Root browser tests share one `tests/e2e` directory and run only in Chromium. CI does not yet retain Playwright reports or diagnostics.
 - The screenshot spec previously overwrote tracked portfolio images during a test run. It now writes screenshots to Playwright test output instead.
 - The root package has no separate unit-test command; the current Jest suite is API/auth coverage, so `test:api` is the preserved baseline command.
@@ -44,3 +44,9 @@
 - Converted the Playwright configuration, four browser specs, screenshot spec, and mock helper from JavaScript to TypeScript.
 - Preserved CommonJS application compatibility with `module` and `moduleResolution` set to `Node16`.
 - Removed the obsolete JavaScript Playwright files after the type check and migrated E2E suite passed.
+
+## Phase 3 Update
+
+- Added page objects for login, ticket dashboard, and ticket creation workflows.
+- Added an automatic mocked-API fixture plus typed user and ticket data shared by the existing specs and mock helper.
+- Refactored the existing browser tests to express business scenarios through fixtures and page-object methods while keeping assertions and test behavior intact.
