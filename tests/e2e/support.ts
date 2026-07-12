@@ -1,4 +1,60 @@
-const demoUsers = {
+import type { Page } from '@playwright/test';
+
+export type UserRole = 'admin' | 'technician' | 'user';
+export type TicketStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed';
+export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface MockUser {
+  sub: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  demoPassword: string;
+}
+
+export interface MockActivity {
+  action: string;
+  detail?: string;
+  from?: TicketStatus;
+  to?: TicketStatus;
+  actorName: string;
+  actorRole: UserRole;
+  createdAt: string;
+}
+
+export interface MockTicket {
+  _id: string;
+  ticketNumber: string;
+  title: string;
+  description: string;
+  requesterName: string;
+  requesterEmail: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  category: string;
+  assignee: string;
+  dueAt: string;
+  createdAt: string;
+  updatedAt: string;
+  activity: MockActivity[];
+}
+
+export interface MockDashboardStats {
+  total: number;
+  byStatus: Record<TicketStatus, number>;
+  byPriority: Record<TicketPriority, number>;
+  sla: {
+    breached: number;
+    dueSoon: number;
+  };
+}
+
+type JsonRecord = Record<string, unknown>;
+
+const ticketStatuses: TicketStatus[] = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
+const ticketPriorities: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
+
+const demoUsers: Record<UserRole, MockUser> = {
   admin: {
     sub: 'usr_admin',
     name: 'Priya Admin',
@@ -22,7 +78,7 @@ const demoUsers = {
   },
 };
 
-const baseTickets = [
+const baseTickets: MockTicket[] = [
   {
     _id: '665f0f40d5d4f541f8ef1001',
     ticketNumber: 'TKT-0001',
@@ -81,11 +137,33 @@ const baseTickets = [
   },
 ];
 
-function statsFor(tickets) {
-  const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
-  const priorities = ['low', 'medium', 'high', 'urgent'];
-  const byStatus = Object.fromEntries(statuses.map((status) => [status, 0]));
-  const byPriority = Object.fromEntries(priorities.map((priority) => [priority, 0]));
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+function stringFromPayload(value: unknown, property: string): string | undefined {
+  if (!isJsonRecord(value)) return undefined;
+
+  const candidate = value[property];
+  return typeof candidate === 'string' ? candidate : undefined;
+}
+
+function isTicketStatus(value: string): value is TicketStatus {
+  return ticketStatuses.some((status) => status === value);
+}
+
+function isTicketPriority(value: string): value is TicketPriority {
+  return ticketPriorities.some((priority) => priority === value);
+}
+
+function statsFor(tickets: readonly MockTicket[]): MockDashboardStats {
+  const byStatus = Object.fromEntries(ticketStatuses.map((status) => [status, 0])) as Record<
+    TicketStatus,
+    number
+  >;
+  const byPriority = Object.fromEntries(
+    ticketPriorities.map((priority) => [priority, 0])
+  ) as Record<TicketPriority, number>;
 
   for (const ticket of tickets) {
     byStatus[ticket.status] += 1;
@@ -103,9 +181,13 @@ function statsFor(tickets) {
   };
 }
 
-async function installApiMocks(page) {
-  let currentUser = null;
-  let tickets = baseTickets.map((ticket) => ({ ...ticket, activity: [...ticket.activity] }));
+function cloneTicket(ticket: MockTicket): MockTicket {
+  return { ...ticket, activity: [...ticket.activity] };
+}
+
+export async function installApiMocks(page: Page): Promise<void> {
+  let currentUser: MockUser | null = null;
+  let tickets = baseTickets.map(cloneTicket);
 
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -128,15 +210,22 @@ async function installApiMocks(page) {
     }
 
     if (path === '/api/auth/login' && method === 'POST') {
-      const body = request.postDataJSON();
-      currentUser = Object.values(demoUsers).find((user) => user.email === body.email);
-      return route.fulfill({ json: { token: `token-${currentUser.role}`, user: currentUser } });
+      const email = stringFromPayload(request.postDataJSON() as unknown, 'email');
+      const matchedUser = Object.values(demoUsers).find((user) => user.email === email) ?? null;
+
+      if (!matchedUser) {
+        return route.fulfill({ status: 401, json: { message: 'Invalid demo credentials.' } });
+      }
+
+      currentUser = matchedUser;
+      return route.fulfill({ json: { token: `token-${matchedUser.role}`, user: matchedUser } });
     }
 
     if (path === '/api/tickets/stats') {
+      const activeUser = currentUser;
       const visibleTickets =
-        currentUser?.role === 'user'
-          ? tickets.filter((ticket) => ticket.requesterEmail === currentUser.email)
+        activeUser?.role === 'user'
+          ? tickets.filter((ticket) => ticket.requesterEmail === activeUser.email)
           : tickets;
       return route.fulfill({ json: statsFor(visibleTickets) });
     }
@@ -152,9 +241,10 @@ async function installApiMocks(page) {
     }
 
     if (path === '/api/tickets' && method === 'GET') {
+      const activeUser = currentUser;
       const visibleTickets =
-        currentUser?.role === 'user'
-          ? tickets.filter((ticket) => ticket.requesterEmail === currentUser.email)
+        activeUser?.role === 'user'
+          ? tickets.filter((ticket) => ticket.requesterEmail === activeUser.email)
           : tickets;
       return route.fulfill({
         json: {
@@ -171,15 +261,20 @@ async function installApiMocks(page) {
     }
 
     if (path === '/api/tickets' && method === 'POST') {
-      const body = request.postDataJSON();
+      const activeUser = currentUser;
+      if (!activeUser) {
+        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+      }
+
+      const body = request.postDataJSON() as unknown;
       const ticket = {
         ...baseTickets[0],
         _id: '665f0f40d5d4f541f8ef1999',
         ticketNumber: 'TKT-0009',
-        title: body.title,
-        description: body.description,
-        requesterName: currentUser.name,
-        requesterEmail: currentUser.email,
+        title: stringFromPayload(body, 'title') ?? '',
+        description: stringFromPayload(body, 'description') ?? '',
+        requesterName: activeUser.name,
+        requesterEmail: activeUser.email,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -188,21 +283,33 @@ async function installApiMocks(page) {
     }
 
     if (path.startsWith('/api/tickets/') && method === 'PATCH') {
+      const activeUser = currentUser;
+      if (!activeUser) {
+        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+      }
+
       const id = path.split('/').pop();
-      const patch = request.postDataJSON();
+      const patch = request.postDataJSON() as unknown;
+      const status = stringFromPayload(patch, 'status');
+      const priority = stringFromPayload(patch, 'priority');
+      const assignee = stringFromPayload(patch, 'assignee');
+      const nextStatus = status && isTicketStatus(status) ? status : undefined;
+      const nextPriority = priority && isTicketPriority(priority) ? priority : undefined;
       tickets = tickets.map((ticket) =>
         ticket._id === id
           ? {
               ...ticket,
-              ...patch,
+              ...(nextStatus ? { status: nextStatus } : {}),
+              ...(nextPriority ? { priority: nextPriority } : {}),
+              ...(assignee !== undefined ? { assignee } : {}),
               activity: [
                 ...ticket.activity,
                 {
-                  action: patch.status ? 'status_changed' : 'ticket_updated',
+                  action: nextStatus ? 'status_changed' : 'ticket_updated',
                   from: ticket.status,
-                  to: patch.status,
-                  actorName: currentUser.name,
-                  actorRole: currentUser.role,
+                  to: nextStatus,
+                  actorName: activeUser.name,
+                  actorRole: activeUser.role,
                   createdAt: new Date().toISOString(),
                 },
               ],
@@ -225,15 +332,10 @@ async function installApiMocks(page) {
   });
 }
 
-async function loginAs(page, role) {
+export async function loginAs(page: Page, role: UserRole): Promise<void> {
   await page.goto('/');
   await page.getByTestId(`demo-login-${role}`).click();
   await page.getByText(`Signed in as ${demoUsers[role].name}.`).waitFor();
 }
 
-module.exports = {
-  baseTickets,
-  demoUsers,
-  installApiMocks,
-  loginAs,
-};
+export { baseTickets, demoUsers };

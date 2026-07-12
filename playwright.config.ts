@@ -1,13 +1,17 @@
-const { defineConfig, devices } = require('@playwright/test');
+import { defineConfig, devices } from '@playwright/test';
 
-module.exports = defineConfig({
-  testDir: './tests/e2e',
+export default defineConfig({
+  testDir: './tests',
   fullyParallel: true,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  forbidOnly: Boolean(process.env.CI),
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   projects: [
     {

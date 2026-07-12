@@ -1,5 +1,5 @@
-const { expect, test } = require('@playwright/test');
-const { installApiMocks, loginAs } = require('./support');
+import { expect, test } from '@playwright/test';
+import { installApiMocks, loginAs } from './support';
 
 test.beforeEach(async ({ page }) => {
   await installApiMocks(page);
