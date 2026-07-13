@@ -2,7 +2,7 @@
 
 ## Local Startup Checklist
 
-1. Confirm Node.js 20 or later is installed.
+1. Confirm a supported Node.js version (22 through 26) is installed; Node.js 24 is the tested runtime.
 2. Run `npm install`.
 3. Create `.env` from `.env.example`.
 4. Set `MONGODB_URI`, `PORT`, and `AUTH_SECRET`.

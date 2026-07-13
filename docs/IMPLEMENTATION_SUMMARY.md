@@ -3,11 +3,11 @@
 ## Completed
 
 - Added Prettier configuration and npm formatting scripts.
-- Updated GitHub Actions to check formatting, run tests, build the frontend, and run a non-blocking high-severity audit.
+- Updated GitHub Actions to check formatting, run tests, build the frontend, and fail on high or critical production-dependency audit findings.
 - Reworked README positioning for a recruiter-ready IT service desk portfolio project.
 - Added documentation for testing, bug reporting, application support, security, and architecture.
 - Added ignored output directories for future coverage and Playwright reports.
-- Added Playwright E2E tests with mocked API responses and automated screenshot capture.
+- Added Playwright E2E tests with mocked API responses and a separate Chromium portfolio-screenshot capture command.
 - Added ticket pagination, sorting, query validation, and role-scoped CSV export.
 - Added human-friendly ticket numbers and display/search support.
 - Added structured ticket activity entries and a UI activity timeline.
@@ -21,7 +21,7 @@
 - `npm test` passes after changes.
 - `npm run build` passes after changes.
 - `npm run test:e2e` passes after changes.
-- `npm audit --audit-level=high` reports no vulnerabilities.
+- `npm audit` and `npm audit --omit=dev` report no vulnerabilities.
 
 ## Next Recommended Milestones
 

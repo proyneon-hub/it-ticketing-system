@@ -2,8 +2,6 @@ name: Live Smoke
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 12 * * *'
 
 jobs:
   live-smoke:
@@ -16,12 +14,12 @@ jobs:
       LIVE_SMOKE_ENABLED: 'true'
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Check live-smoke secrets
@@ -49,16 +47,18 @@ jobs:
 
       - name: Upload live Playwright report
         if: ${{ always() && steps.live-config.outputs.configured == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-live
           path: playwright-report-live/
+          if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload live Playwright test results
-        if: ${{ always() && steps.live-config.outputs.configured == 'true' }}
-        uses: actions/upload-artifact@v4
+      - name: Upload live failure diagnostics
+        if: ${{ failure() && steps.live-config.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-live-test-results
           path: test-results/
+          if-no-files-found: ignore
           retention-days: 14

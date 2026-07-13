@@ -72,7 +72,7 @@ The repository includes a TypeScript Playwright framework with:
 
 - Page Objects, typed fixtures, and reusable test users/tickets.
 - A deterministic mocked UI regression suite in `tests/e2e-mocked`.
-- 20 tagged regression tests across Chromium, Firefox, and WebKit.
+- 19 tagged functional regression tests across Chromium, Firefox, and WebKit (57 cross-browser executions), plus a separate Chromium portfolio-screenshot workflow with 1 screenshot-capture test.
 - Axe checks for the login, dashboard, and ticket form.
 - Failure screenshots, video, traces, HTML reports, and CI artifact uploads.
 - A separate safety-gated live smoke suite for health, configured login, and dedicated test-ticket cleanup.
@@ -96,15 +96,17 @@ Live smoke tests never install API mocks. They are disabled by default and requi
 
 ## Local Setup
 
-1. Install dependencies:
+1. Use Node.js 24 (the tested CI runtime; `.nvmrc` is included).
+
+2. Install dependencies:
 
    ```bash
    npm ci
    ```
 
-2. Copy `.env.example` to `.env` and configure `MONGODB_URI`, `PORT`, and `AUTH_SECRET`.
+3. Copy `.env.example` to `.env` and configure `MONGODB_URI`, `PORT`, and `AUTH_SECRET`.
 
-3. Start the local app:
+4. Start the local app:
 
    ```bash
    npm run dev
@@ -112,7 +114,7 @@ Live smoke tests never install API mocks. They are disabled by default and requi
 
    Open `http://localhost:5173`.
 
-4. Optionally seed predictable tickets:
+5. Optionally seed predictable tickets:
 
    ```bash
    npm run seed
@@ -141,15 +143,16 @@ npm run test:e2e:headed
 npm run test:e2e:ui
 npm run test:a11y
 npm run test:smoke:live
+npm run screenshots:portfolio
 npm run format:check
 npm run build
 ```
 
 ## CI/CD
 
-The main CI workflow runs formatting, API tests, a production build, and an audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; and uploads HTML reports plus test-result artifacts.
+The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and a high/critical production-dependency audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; always uploads HTML reports; and uploads diagnostics only after a failure.
 
-The live-smoke workflow is manual/scheduled and performs no checks until the required repository secrets are configured.
+The live-smoke workflow is manual-only and performs no checks until the required repository secrets are configured.
 
 ## Documentation
 
@@ -159,6 +162,7 @@ The live-smoke workflow is manual/scheduled and performs no checks until the req
 - [QA Architecture](docs/QA_ARCHITECTURE.md)
 - [Accessibility Testing](docs/ACCESSIBILITY_TESTING.md)
 - [Live Smoke Testing](docs/LIVE_SMOKE_TESTING.md)
+- [GitHub Secrets Setup](docs/GITHUB_SECRETS_SETUP.md)
 - [Bug Report Examples](docs/BUG_REPORT_EXAMPLES.md)
 - [Security Notes](docs/SECURITY_NOTES.md)
 - [Application Support Runbook](docs/RUNBOOK.md)
@@ -173,7 +177,7 @@ This is a portfolio demo with in-code demo accounts, not a production identity s
 - Persisted user administration with password hashing.
 - Notification workflows for assignment and SLA risk.
 - Saved filters, advanced reporting, and production identity-provider integration.
-- Configured non-production live-smoke credentials and post-deployment verification.
+- Configure test-only live-smoke credentials and manually verify post-deployment behavior.
 
 ## License
 

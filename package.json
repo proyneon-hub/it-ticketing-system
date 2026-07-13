@@ -2,6 +2,16 @@
   "name": "it-ticketing-system",
   "version": "1.0.0",
   "description": "Full-stack IT ticketing system using Node.js, Express, MongoDB, React, and Vite.",
+  "author": "Pramit Roy",
+  "license": "MIT",
+  "homepage": "https://pramitroy.tech",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proyneon-hub/it-ticketing-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/proyneon-hub/it-ticketing-system/issues"
+  },
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -17,6 +27,7 @@
     "test:e2e:headed": "playwright test tests/e2e-mocked --headed",
     "test:e2e:ui": "playwright test tests/e2e-mocked --ui",
     "test:e2e:debug": "playwright test tests/e2e-mocked --debug",
+    "screenshots:portfolio": "playwright test tests/visual/capture-portfolio-screenshots.spec.ts --project=chromium",
     "test:all:playwright": "playwright test",
     "test:smoke:live": "playwright test -c playwright.live.config.ts",
     "test:a11y": "playwright test tests/accessibility",
@@ -30,13 +41,18 @@
   },
   "keywords": [
     "it-ticketing",
+    "helpdesk",
+    "service-desk",
+    "react",
     "express",
     "mongodb",
-    "react",
-    "vercel"
+    "playwright",
+    "typescript",
+    "qa-automation",
+    "e2e-testing",
+    "accessibility-testing",
+    "github-actions"
   ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -66,6 +82,6 @@
     "clearMocks": true
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22 <27"
   }
 }

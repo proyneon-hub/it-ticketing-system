@@ -28,7 +28,7 @@ Out of scope for the current demo:
 - Local API: `http://localhost:5000/api`
 - Database: local MongoDB or MongoDB Atlas through `MONGODB_URI`
 - Browser: Chrome or Edge current stable
-- Node.js: 20 or later
+- Node.js: 24 (tested; supported range is 22 through 26)
 
 ## User Roles
 
@@ -65,6 +65,17 @@ Out of scope for the current demo:
 - Dashboard cards load without API errors.
 - Filters do not expose tickets outside the current role scope.
 - The production build completes with `npm run build`.
+
+## Traceability Summary
+
+| Requirement area                                   | Root automated coverage                                                                                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication and session rejection               | `tests/e2e-mocked/auth.spec.ts`, `src/server/__tests__/auth.test.js`, and configured `tests/smoke-live/login.spec.ts`                       |
+| Role permissions and requester scoping             | `tests/e2e-mocked/role-permissions.spec.ts`, `src/server/__tests__/app.test.js`                                                             |
+| Ticket lifecycle, validation, and protected routes | `tests/e2e-mocked/ticket-lifecycle.spec.ts`, `src/server/__tests__/app.test.js`, and configured `tests/smoke-live/ticket-lifecycle.spec.ts` |
+| Filters, exports, loading, and error states        | `tests/e2e-mocked/filters-export.spec.ts` and `tests/e2e-mocked/error-handling.spec.ts`                                                     |
+| Accessibility                                      | `tests/accessibility/`                                                                                                                      |
+| Live service health                                | configured `tests/smoke-live/health.spec.ts`                                                                                                |
 
 ## Role-Based Permission Tests
 
