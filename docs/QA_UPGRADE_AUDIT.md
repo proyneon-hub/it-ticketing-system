@@ -5,7 +5,7 @@
 - The root project is a CommonJS Node.js application with an engine requirement of Node.js 22 through 26; Node.js 24 is the tested CI runtime.
 - The frontend is React and Vite on port 5173. Vite proxies `/api` to the Express API on port 5000 during local development; production Express can serve the Vite `dist` output.
 - Root API and auth coverage uses Jest and Supertest. `npm test` delegates to `npm run test:api`, which preserves the existing `jest --runInBand` command.
-- Playwright 1.61.1 is installed at the root. TypeScript mocked browser specs and their typed route-interception helper live in `tests/e2e-mocked`; the configuration starts Vite and runs Chromium.
+- Playwright 1.61.1 is installed at the root. TypeScript mocked browser specs and their typed route-interception helper live in `tests/e2e-mocked`; the root configuration starts Vite and runs Chromium, Firefox, and WebKit.
 - Root CI runs Node 24 formatting, Jest, a production build, and a production-dependency audit that fails on high or critical findings. The separate E2E workflow installs Chromium and runs the root E2E command.
 
 ## Strengths
@@ -19,7 +19,7 @@
 
 - The application uses in-code demo authentication rather than a production identity provider; it is suitable for demonstration and resettable test environments only.
 - Live smoke tests perform a controlled write and cleanup, so they remain explicitly opt-in and must target a resettable demo or non-production environment. GitHub Actions live smoke remains gated on repository secrets.
-- The screenshot spec previously overwrote tracked portfolio images during a test run. It now writes screenshots to Playwright test output instead.
+- The separate Chromium screenshot spec writes portfolio captures to Playwright test output instead of tracked images.
 - The root package has no separate unit-test command; the current Jest suite is API/auth coverage, so `test:api` is the preserved baseline command.
 
 ## Phase 1 Files Changed
@@ -35,7 +35,7 @@
 
 - The baseline install issue was resolved by stopping the locking local process. A clean `npm ci`, API suite, formatting check, production build, mocked cross-browser suite, and accessibility suite subsequently passed.
 - Root documentation now uses the verified replacement deployment. The prior repository website URL returned 404.
-- `Qa-Automation/` and `Support-Ops-Automation/` are independent projects with their own tooling and placeholder deployment documentation. They were audited but are outside this phase's root-only edit scope.
+- The former `Qa-Automation/` framework was consolidated into the root framework; its review and traceability migration are recorded in `docs/QA_FRAMEWORK_CONSOLIDATION.md`. `Support-Ops-Automation/` remains a separate operational-monitoring project.
 - No production credentials are required for the mocked root E2E suite. Keep `.env.example` tracked and do not commit real environment files.
 
 ## Phase 2 Update
@@ -82,5 +82,5 @@
 ## Phase 9 Update
 
 - Verified a clean install, strict Playwright type check, API tests, formatting, production build, and zero audit findings.
-- Ran the three-browser mocked regression suite three consecutive times with 60 passing executions per run.
+- Before screenshot capture was separated, the three-browser mocked suite ran 60 executions. The current normal regression suite runs 57 executions from 19 functional tests; the screenshot capture runs separately in Chromium.
 - Ran nine cross-browser Axe checks successfully. A subsequent configured live-smoke run passed all three health, login, and ticket-lifecycle checks.

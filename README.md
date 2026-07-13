@@ -150,7 +150,7 @@ npm run build
 
 ## CI/CD
 
-The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and an audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; and uploads HTML reports plus test-result artifacts.
+The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and a high/critical production-dependency audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; always uploads HTML reports; and uploads diagnostics only after a failure.
 
 The live-smoke workflow is available for manual execution after its test-only repository secrets are configured.
 

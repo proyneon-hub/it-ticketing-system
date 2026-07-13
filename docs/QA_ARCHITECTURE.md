@@ -26,8 +26,8 @@ flowchart TD
 
 ## Execution
 
-The root configuration runs mocked and accessibility coverage in Chromium, Firefox, and WebKit. The separate live configuration uses Chromium only and serial execution to limit test-data risk. CI uploads Playwright HTML reports and test-result artifacts after regression runs.
+The root configuration runs mocked and accessibility coverage in Chromium, Firefox, and WebKit. The separate live configuration uses Chromium only and serial execution to limit test-data risk. CI always uploads Playwright HTML reports and uploads failure diagnostics only when a test command fails.
 
 ## Diagnostics
 
-Playwright retains traces on retry, screenshots on failure, and videos on failure. The regression workflow uploads generated reports and test results even when a test command fails.
+Playwright retains traces on retry, screenshots on failure, and videos on failure. The regression workflow preserves generated reports on every run and failure diagnostics only when a test command fails.

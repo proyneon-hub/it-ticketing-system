@@ -82,5 +82,5 @@ Resolved and closed tickets are treated as terminal for SLA breach calculations.
 
 - Jest verifies auth helpers and API route behavior.
 - Supertest exercises protected API endpoints without a browser.
-- CI runs formatting, tests, build, and a non-blocking audit.
-- Future Playwright tests should cover login, role permissions, ticket workflow, and screenshot capture.
+- CI runs formatting, tests, build, and a production-dependency audit that fails on high or critical findings.
+- The active Playwright framework covers login, role permissions, ticket workflows, accessibility, and separate Chromium screenshot capture.
