@@ -72,7 +72,7 @@ The repository includes a TypeScript Playwright framework with:
 
 - Page Objects, typed fixtures, and reusable test users/tickets.
 - A deterministic mocked UI regression suite in `tests/e2e-mocked`.
-- 19 tagged functional regression tests across Chromium, Firefox, and WebKit, plus a separate Chromium portfolio-screenshot workflow.
+- 19 tagged functional regression tests across Chromium, Firefox, and WebKit (57 cross-browser executions), plus a separate Chromium portfolio-screenshot workflow with 1 screenshot-capture test.
 - Axe checks for the login, dashboard, and ticket form.
 - Failure screenshots, video, traces, HTML reports, and CI artifact uploads.
 - A separate safety-gated live smoke suite for health, configured login, and dedicated test-ticket cleanup.
@@ -152,7 +152,7 @@ npm run build
 
 The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and a high/critical production-dependency audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; always uploads HTML reports; and uploads diagnostics only after a failure.
 
-The live-smoke workflow is available for manual execution after its test-only repository secrets are configured.
+The live-smoke workflow is manual-only and performs no checks until the required repository secrets are configured.
 
 ## Documentation
 
