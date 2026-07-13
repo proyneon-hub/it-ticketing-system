@@ -73,3 +73,8 @@
 - Added Chromium, Firefox, and WebKit projects to the mocked regression configuration.
 - Updated GitHub Actions to install all Playwright browsers, type-check, run regression and Axe suites, and retain report artifacts.
 - Added a manual/scheduled live-smoke workflow that runs only when required repository secrets are configured.
+
+## Phase 8 Update
+
+- Restructured the README around verified application and QA capabilities, commands, documentation, and safety limitations.
+- Added QA architecture and copy-ready portfolio/resume documentation without claiming unconfigured live smoke results.
