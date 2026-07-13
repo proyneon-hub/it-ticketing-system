@@ -83,7 +83,7 @@ Mocked tests install controlled API responses for fast, deterministic browser co
 
 ### Live smoke suite
 
-Live smoke tests never install API mocks. They are disabled by default and require `LIVE_SMOKE_ENABLED=true` plus dedicated test credentials; ticket creation uses a `PW-LIVE-` prefix and cleanup. See [Live Smoke Testing](docs/LIVE_SMOKE_TESTING.md).
+Live smoke tests never install API mocks. They are disabled by default and require `LIVE_SMOKE_ENABLED=true` plus configured test credentials; ticket creation uses a `PW-LIVE-` prefix and cleanup. See [Live Smoke Testing](docs/LIVE_SMOKE_TESTING.md).
 
 ## Test Strategy
 
@@ -125,7 +125,7 @@ Live smoke tests never install API mocks. They are disabled by default and requi
 | `MONGODB_URI`                            | MongoDB connection string.                 |
 | `AUTH_SECRET`                            | Signs demo bearer tokens.                  |
 | `LIVE_BASE_URL`                          | Target for live smoke testing.             |
-| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | Dedicated live-smoke admin credentials.    |
+| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | Live-smoke admin credentials.              |
 | `LIVE_SMOKE_ENABLED`                     | Must be `true` to enable live smoke tests. |
 
 Never commit real credentials. The live-suite variables are optional unless running configured live smoke tests.
@@ -166,7 +166,7 @@ The live-smoke workflow is manual/scheduled and performs no checks until the req
 
 ## Security and Limitations
 
-This is a portfolio demo with in-code demo accounts, not a production identity system. Review [Security Notes](docs/SECURITY_NOTES.md) before adapting it for production. Live smoke tests intentionally remain skipped without dedicated non-production credentials.
+This is a portfolio demo with in-code demo accounts, not a production identity system. Review [Security Notes](docs/SECURITY_NOTES.md) before adapting it for production. The configured live smoke suite passed against the resettable demo deployment; CI stays gated until its test secrets are configured.
 
 ## Future Improvements
 

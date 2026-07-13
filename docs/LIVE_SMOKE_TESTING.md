@@ -7,9 +7,9 @@ The live smoke suite checks the real frontend, API, authentication, and database
 ## Safety Controls
 
 - The suite skips unless `LIVE_SMOKE_ENABLED=true` is explicitly set.
-- Login and ticket tests also skip unless their dedicated `E2E_*` credentials are configured.
+- Login and ticket tests also skip unless their `E2E_*` credentials are configured.
 - The ticket test creates a uniquely named `PW-LIVE-<timestamp>` record and deletes only that record in a `finally` block.
-- Run the suite only against a dedicated test environment. Do not enable live writes against production data.
+- Run the suite only against a resettable demo or non-production environment. Do not enable live writes against production data.
 
 ## Required Environment
 
@@ -29,7 +29,7 @@ LIVE_SMOKE_ENABLED=false
 
 ## Run Locally
 
-Start the target environment, set `LIVE_SMOKE_ENABLED=true` and dedicated test credentials, then run:
+Start the target environment, set `LIVE_SMOKE_ENABLED=true` and test credentials, then run:
 
 ```bash
 npm run test:smoke:live
@@ -42,5 +42,9 @@ Without the enable flag, all tests skip with a safety reason.
 - `health.spec.ts`: health endpoint reachability and basic response schema.
 - `login.spec.ts`: real login page and configured admin dashboard access.
 - `ticket-lifecycle.spec.ts`: dedicated test-ticket creation, visibility, and cleanup.
+
+## Validation status
+
+The configured suite passed on 2026-07-13 against the project's resettable demo deployment using its non-real demo admin account. The test created one `PW-LIVE-*` ticket and removed it before completion. Local values stay in ignored `.env`; CI still requires repository secrets.
 
 CI should run this suite only after deployment, on a schedule, or through a manual workflow with repository secrets.

@@ -17,8 +17,8 @@
 
 ## Limitations
 
-- Playwright configuration, specs, and mock helper use strict TypeScript with Node16/CommonJS-compatible module resolution. Page objects, typed fixtures, and reusable test data cover the current mocked suite; separate mocked/live suites, accessibility automation, and cross-browser projects are future-phase work.
-- Root browser tests share one `tests/e2e` directory and run only in Chromium. CI does not yet retain Playwright reports or diagnostics.
+- The application uses in-code demo authentication rather than a production identity provider; it is suitable for demonstration and resettable test environments only.
+- Live smoke tests perform a controlled write and cleanup, so they remain explicitly opt-in and must target a resettable demo or non-production environment. GitHub Actions live smoke remains gated on repository secrets.
 - The screenshot spec previously overwrote tracked portfolio images during a test run. It now writes screenshots to Playwright test output instead.
 - The root package has no separate unit-test command; the current Jest suite is API/auth coverage, so `test:api` is the preserved baseline command.
 
@@ -33,7 +33,7 @@
 
 ## Risks and Compatibility Considerations
 
-- The local baseline is pending: `npm ci` was blocked by a running `esbuild.exe`, and the interrupted install left Jest unavailable. Do not begin Phase 2 until a clean install and the Phase 1 validation commands pass.
+- The baseline install issue was resolved by stopping the locking local process. A clean `npm ci`, API suite, formatting check, production build, mocked cross-browser suite, and accessibility suite subsequently passed.
 - Root documentation now uses the verified replacement deployment. The prior repository website URL returned 404.
 - `Qa-Automation/` and `Support-Ops-Automation/` are independent projects with their own tooling and placeholder deployment documentation. They were audited but are outside this phase's root-only edit scope.
 - No production credentials are required for the mocked root E2E suite. Keep `.env.example` tracked and do not commit real environment files.
@@ -60,7 +60,7 @@
 ## Phase 5 Update
 
 - Added a separate `playwright.live.config.ts` and `tests/smoke-live` suite that never imports mocked API support.
-- Live checks skip by default and require an explicit enable flag plus dedicated credentials before login or ticket creation.
+- Live checks skip by default and require an explicit enable flag plus configured credentials before login or ticket creation. A later local run passed health, admin-login, and ticket-create/cleanup checks using the app's non-real demo admin account; the local values remain ignored.
 - The ticket lifecycle smoke test uses a `PW-LIVE-` prefix and deletes only the ticket it created.
 
 ## Phase 6 Update
@@ -77,10 +77,10 @@
 ## Phase 8 Update
 
 - Restructured the README around verified application and QA capabilities, commands, documentation, and safety limitations.
-- Added QA architecture and copy-ready portfolio/resume documentation without claiming unconfigured live smoke results.
+- Added QA architecture and copy-ready portfolio/resume documentation with the live suite accurately described as safety-gated.
 
 ## Phase 9 Update
 
 - Verified a clean install, strict Playwright type check, API tests, formatting, production build, and zero audit findings.
 - Ran the three-browser mocked regression suite three consecutive times with 60 passing executions per run.
-- Ran nine cross-browser Axe checks successfully; live smoke tests remained safely skipped without dedicated credentials.
+- Ran nine cross-browser Axe checks successfully. A subsequent configured live-smoke run passed all three health, login, and ticket-lifecycle checks.
