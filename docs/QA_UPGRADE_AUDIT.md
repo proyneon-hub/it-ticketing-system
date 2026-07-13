@@ -29,7 +29,7 @@
 - `DEPLOYMENT.md`
 - `package.json`
 - `.gitignore`
-- `tests/e2e-mocked/screenshots.spec.ts`
+- `tests/visual/capture-portfolio-screenshots.spec.ts`
 
 ## Risks and Compatibility Considerations
 

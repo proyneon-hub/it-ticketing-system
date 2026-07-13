@@ -72,7 +72,7 @@ The repository includes a TypeScript Playwright framework with:
 
 - Page Objects, typed fixtures, and reusable test users/tickets.
 - A deterministic mocked UI regression suite in `tests/e2e-mocked`.
-- 20 tagged regression tests across Chromium, Firefox, and WebKit.
+- 19 tagged functional regression tests across Chromium, Firefox, and WebKit, plus a separate Chromium portfolio-screenshot workflow.
 - Axe checks for the login, dashboard, and ticket form.
 - Failure screenshots, video, traces, HTML reports, and CI artifact uploads.
 - A separate safety-gated live smoke suite for health, configured login, and dedicated test-ticket cleanup.
@@ -143,6 +143,7 @@ npm run test:e2e:headed
 npm run test:e2e:ui
 npm run test:a11y
 npm run test:smoke:live
+npm run screenshots:portfolio
 npm run format:check
 npm run build
 ```

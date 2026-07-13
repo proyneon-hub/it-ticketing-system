@@ -22,6 +22,7 @@ flowchart TD
 - `tests/e2e-mocked`: deterministic TypeScript UI regression tests using fixtures, page objects, typed data, and controlled API responses.
 - `tests/accessibility`: Axe scans of the mocked login, dashboard, and ticket-form states.
 - `tests/smoke-live`: real integration checks that require an explicit enable flag and configured credentials; no mocks are installed.
+- `tests/visual`: Chromium-only portfolio screenshot capture, run separately with `npm run screenshots:portfolio`.
 
 ## Execution
 
