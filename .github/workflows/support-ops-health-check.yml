@@ -12,8 +12,8 @@ jobs:
       run:
         working-directory: Support-Ops-Automation
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
@@ -32,7 +32,7 @@ jobs:
             exit 0
           fi
           python -m support_ops.report_generator
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: support-ops-reports

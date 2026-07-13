@@ -16,7 +16,7 @@ The tests do not hardcode an environment URL. They read `BASE_URL` and default t
 
 ## Tech Stack
 
-- Node.js 20+
+- Node.js 24 (the tested repository runtime)
 - TypeScript
 - Playwright Test
 - Playwright APIRequestContext

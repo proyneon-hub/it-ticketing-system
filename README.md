@@ -96,15 +96,17 @@ Live smoke tests never install API mocks. They are disabled by default and requi
 
 ## Local Setup
 
-1. Install dependencies:
+1. Use Node.js 24 (the tested CI runtime; `.nvmrc` is included).
+
+2. Install dependencies:
 
    ```bash
    npm ci
    ```
 
-2. Copy `.env.example` to `.env` and configure `MONGODB_URI`, `PORT`, and `AUTH_SECRET`.
+3. Copy `.env.example` to `.env` and configure `MONGODB_URI`, `PORT`, and `AUTH_SECRET`.
 
-3. Start the local app:
+4. Start the local app:
 
    ```bash
    npm run dev
@@ -112,7 +114,7 @@ Live smoke tests never install API mocks. They are disabled by default and requi
 
    Open `http://localhost:5173`.
 
-4. Optionally seed predictable tickets:
+5. Optionally seed predictable tickets:
 
    ```bash
    npm run seed
@@ -147,7 +149,7 @@ npm run build
 
 ## CI/CD
 
-The main CI workflow runs formatting, API tests, a production build, and an audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; and uploads HTML reports plus test-result artifacts.
+The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and an audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; and uploads HTML reports plus test-result artifacts.
 
 The live-smoke workflow is manual/scheduled and performs no checks until the required repository secrets are configured.
 
