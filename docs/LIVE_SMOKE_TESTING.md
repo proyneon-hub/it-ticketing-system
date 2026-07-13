@@ -47,4 +47,4 @@ Without the enable flag, all tests skip with a safety reason.
 
 The configured suite passed on 2026-07-13 against the project's resettable demo deployment using its non-real demo admin account. The test created one `PW-LIVE-*` ticket and removed it before completion. Local values stay in ignored `.env`; CI still requires repository secrets.
 
-CI should run this suite only after deployment, on a schedule, or through a manual workflow with repository secrets.
+The GitHub Actions workflow is manual-only and should run only after deployment and after its test-only repository secrets are configured. See [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md).

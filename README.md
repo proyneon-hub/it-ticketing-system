@@ -152,7 +152,7 @@ npm run build
 
 The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and an audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; and uploads HTML reports plus test-result artifacts.
 
-The live-smoke workflow is manual/scheduled and performs no checks until the required repository secrets are configured.
+The live-smoke workflow is available for manual execution after its test-only repository secrets are configured.
 
 ## Documentation
 
@@ -162,6 +162,7 @@ The live-smoke workflow is manual/scheduled and performs no checks until the req
 - [QA Architecture](docs/QA_ARCHITECTURE.md)
 - [Accessibility Testing](docs/ACCESSIBILITY_TESTING.md)
 - [Live Smoke Testing](docs/LIVE_SMOKE_TESTING.md)
+- [GitHub Secrets Setup](docs/GITHUB_SECRETS_SETUP.md)
 - [Bug Report Examples](docs/BUG_REPORT_EXAMPLES.md)
 - [Security Notes](docs/SECURITY_NOTES.md)
 - [Application Support Runbook](docs/RUNBOOK.md)
@@ -176,7 +177,7 @@ This is a portfolio demo with in-code demo accounts, not a production identity s
 - Persisted user administration with password hashing.
 - Notification workflows for assignment and SLA risk.
 - Saved filters, advanced reporting, and production identity-provider integration.
-- Configured non-production live-smoke credentials and post-deployment verification.
+- Configure test-only live-smoke credentials and manually verify post-deployment behavior.
 
 ## License
 
