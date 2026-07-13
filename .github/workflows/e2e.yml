@@ -41,12 +41,14 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+          if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload Playwright test results
-        if: always()
+      - name: Upload Playwright failure diagnostics
+        if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-test-results
           path: test-results/
+          if-no-files-found: ignore
           retention-days: 14

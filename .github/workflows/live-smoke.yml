@@ -53,12 +53,14 @@ jobs:
         with:
           name: playwright-report-live
           path: playwright-report-live/
+          if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload live Playwright test results
-        if: ${{ always() && steps.live-config.outputs.configured == 'true' }}
+      - name: Upload live failure diagnostics
+        if: ${{ failure() && steps.live-config.outputs.configured == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-live-test-results
           path: test-results/
+          if-no-files-found: ignore
           retention-days: 14
