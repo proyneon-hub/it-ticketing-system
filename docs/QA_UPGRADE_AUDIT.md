@@ -6,7 +6,7 @@
 - The frontend is React and Vite on port 5173. Vite proxies `/api` to the Express API on port 5000 during local development; production Express can serve the Vite `dist` output.
 - Root API and auth coverage uses Jest and Supertest. `npm test` delegates to `npm run test:api`, which preserves the existing `jest --runInBand` command.
 - Playwright 1.61.1 is installed at the root. TypeScript mocked browser specs and their typed route-interception helper live in `tests/e2e-mocked`; the configuration starts Vite and runs Chromium.
-- Root CI runs Node 24 formatting, Jest, a production build, and a non-blocking dependency audit. The separate E2E workflow installs Chromium and runs the root E2E command.
+- Root CI runs Node 24 formatting, Jest, a production build, and a production-dependency audit that fails on high or critical findings. The separate E2E workflow installs Chromium and runs the root E2E command.
 
 ## Strengths
 

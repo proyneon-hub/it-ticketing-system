@@ -1,6 +1,6 @@
 # Final Validation
 
-Baseline checks were validated on 2026-07-12 from a clean `npm ci` install. The configured live-smoke run was validated on 2026-07-13 against the resettable demo deployment.
+Phase 3 checks were validated on 2026-07-13 from a clean Node.js 24 `npm ci` install. The configured live-smoke run was last validated on 2026-07-13 against the resettable demo deployment; it was not part of the Phase 3 run.
 
 | Check                          | Result                                                                                  |
 | ------------------------------ | --------------------------------------------------------------------------------------- |
@@ -12,13 +12,14 @@ Baseline checks were validated on 2026-07-12 from a clean `npm ci` install. The 
 | `npm run test:a11y`            | Passed: 9 Axe checks across Chromium, Firefox, and WebKit                               |
 | `npm run test:smoke:live`      | Passed: 3 Chromium checks for health, configured admin login, and ticket create/cleanup |
 | `npm audit`                    | Passed: zero vulnerabilities                                                            |
+| `npm audit --omit=dev`         | Passed: zero production-dependency vulnerabilities                                      |
 
 ## Safety Checks
 
 - No tracked `.env`, `.env.local`, or `.env.test` files.
 - No `waitForTimeout` calls in Playwright configuration or test files.
 - Live smoke tests are isolated from mocked API support and excluded from the root Playwright configuration.
-- HTML reports and test-result artifacts are configured for regression CI; live smoke CI runs only when required secrets are available.
+- HTML reports are always retained for regression CI; failure diagnostics upload only after a failed test run. Live smoke CI runs only when required secrets are available.
 
 ## CI Configuration Prerequisite
 
