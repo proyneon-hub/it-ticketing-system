@@ -67,3 +67,9 @@
 
 - Added automated Axe checks for the mocked login, dashboard, and ticket-form states.
 - Kept the manual accessibility checklist for checks Axe cannot reliably automate.
+
+## Phase 7 Update
+
+- Added Chromium, Firefox, and WebKit projects to the mocked regression configuration.
+- Updated GitHub Actions to install all Playwright browsers, type-check, run regression and Axe suites, and retain report artifacts.
+- Added a manual/scheduled live-smoke workflow that runs only when required repository secrets are configured.

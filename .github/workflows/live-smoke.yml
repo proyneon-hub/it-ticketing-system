@@ -1,0 +1,64 @@
+name: Live Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * *'
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      LIVE_BASE_URL: ${{ secrets.LIVE_BASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      LIVE_SMOKE_ENABLED: 'true'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Check live-smoke secrets
+        id: live-config
+        shell: bash
+        run: |
+          if [ -z "$LIVE_BASE_URL" ] || [ -z "$E2E_ADMIN_EMAIL" ] || [ -z "$E2E_ADMIN_PASSWORD" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "Live-smoke secrets are not configured; skipping live checks."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        if: steps.live-config.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Install Playwright browser
+        if: steps.live-config.outputs.configured == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run live smoke tests
+        if: steps.live-config.outputs.configured == 'true'
+        run: npm run test:smoke:live
+
+      - name: Upload live Playwright report
+        if: ${{ always() && steps.live-config.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-live
+          path: playwright-report-live/
+          retention-days: 14
+
+      - name: Upload live Playwright test results
+        if: ${{ always() && steps.live-config.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-live-test-results
+          path: test-results/
+          retention-days: 14

@@ -1,6 +1,7 @@
 # IT Ticketing System
 
 ![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)
+![Playwright Regression](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml/badge.svg)
 
 A production-style IT service desk application built with React, Vite, Node.js, Express, and MongoDB. It demonstrates ticket lifecycle management, role-based access, SLA visibility, REST API validation, automated API and end-to-end testing, CI/CD checks, Docker deployment, and application-support runbooks.
 
@@ -105,7 +106,7 @@ GitHub Actions run on push and pull requests to `main`:
 - `npm run build`
 - `npm audit --audit-level=high` as a non-blocking audit step
 
-The separate E2E workflow installs Chromium and runs `npm run test:e2e`.
+The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and accessibility tests; and uploads HTML reports plus test-result artifacts.
 
 ## Local Setup
 
