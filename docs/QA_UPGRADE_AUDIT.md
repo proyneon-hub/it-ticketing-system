@@ -78,3 +78,9 @@
 
 - Restructured the README around verified application and QA capabilities, commands, documentation, and safety limitations.
 - Added QA architecture and copy-ready portfolio/resume documentation without claiming unconfigured live smoke results.
+
+## Phase 9 Update
+
+- Verified a clean install, strict Playwright type check, API tests, formatting, production build, and zero audit findings.
+- Ran the three-browser mocked regression suite three consecutive times with 60 passing executions per run.
+- Ran nine cross-browser Axe checks successfully; live smoke tests remained safely skipped without dedicated credentials.
