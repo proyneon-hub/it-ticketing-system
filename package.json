@@ -2,6 +2,16 @@
   "name": "it-ticketing-system",
   "version": "1.0.0",
   "description": "Full-stack IT ticketing system using Node.js, Express, MongoDB, React, and Vite.",
+  "author": "Pramit Roy",
+  "license": "MIT",
+  "homepage": "https://pramitroy.tech",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/proyneon-hub/it-ticketing-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/proyneon-hub/it-ticketing-system/issues"
+  },
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
@@ -31,13 +41,18 @@
   },
   "keywords": [
     "it-ticketing",
+    "helpdesk",
+    "service-desk",
+    "react",
     "express",
     "mongodb",
-    "react",
-    "vercel"
+    "playwright",
+    "typescript",
+    "qa-automation",
+    "e2e-testing",
+    "accessibility-testing",
+    "github-actions"
   ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
