@@ -70,6 +70,69 @@ describe('login rate limiting', () => {
   });
 });
 
+describe('authentication routes', () => {
+  const login = async (email, password) =>
+    (await request(app).post('/api/auth/login').send({ email, password }).expect(200)).body.token;
+
+  test('lists the demo accounts so reviewers can sign in with one click', async () => {
+    const response = await request(app).get('/api/auth/demo-users').expect(200);
+
+    expect(response.body.users.map((user) => user.role)).toEqual(['admin', 'technician', 'user']);
+    expect(response.body.users[0]).toMatchObject({ email: 'admin@demo.local' });
+    expect(response.body.users[0]).not.toHaveProperty('password'); // Only demoPassword is exposed.
+  });
+
+  test('returns the signed-in user, and refuses anonymous or tampered tokens', async () => {
+    const token = await login('tech@demo.local', 'TechPass123!');
+
+    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+    expect(me.status).toBe(200);
+    expect(me.body.user).toMatchObject({ email: 'tech@demo.local', role: 'technician' });
+
+    await request(app).get('/api/auth/me').expect(401);
+    await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token.slice(0, -2)}xx`)
+      .expect(401);
+  });
+});
+
+describe('database unavailable', () => {
+  let originalUri;
+
+  beforeAll(() => {
+    originalUri = process.env.MONGODB_URI;
+    delete process.env.MONGODB_URI;
+  });
+
+  afterAll(() => {
+    if (originalUri !== undefined) process.env.MONGODB_URI = originalUri;
+  });
+
+  test('readiness reports 503 while liveness stays up', async () => {
+    await request(app).get('/api/health').expect(200);
+
+    const ready = await request(app).get('/api/ready').expect(503);
+    expect(ready.body).toMatchObject({ ok: false, database: 'down' });
+  });
+
+  test('ticket routes explain that the database is not configured', async () => {
+    const token = (
+      await request(app)
+        .post('/api/auth/login')
+        .send({ email: 'admin@demo.local', password: 'AdminPass123!' })
+    ).body.token;
+
+    const response = await request(app)
+      .get('/api/tickets')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(503);
+
+    expect(response.body.message).toMatch(/Database is not configured/);
+    expect(response.body.requestId).toBeDefined();
+  });
+});
+
 describe('startup configuration', () => {
   test('refuses to start in production without AUTH_SECRET', () => {
     expect(() => assertProductionConfig({ NODE_ENV: 'production' })).toThrow(/AUTH_SECRET/);
