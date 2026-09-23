@@ -67,9 +67,22 @@ Unexpected errors return a generic 500; details stay in the server log, where th
 
 ## Ticket workflow
 
-```text
-open -> assigned -> in-progress -> resolved -> closed
+```mermaid
+stateDiagram-v2
+    [*] --> open
+    open --> assigned
+    open --> in_progress: in-progress
+    open --> closed
+    assigned --> in_progress
+    assigned --> open
+    in_progress --> resolved
+    in_progress --> assigned
+    resolved --> closed
+    resolved --> in_progress: reopen
+    closed --> in_progress: reopen (admin only)
 ```
+
+The transition table is `statusTransitions` in [`src/shared/ticket-constants.json`](../src/shared/ticket-constants.json). The API enforces it ([`ticketWorkflow.js`](../src/server/domain/ticketWorkflow.js)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
 Default SLA windows, measured from when the ticket was created:
 
@@ -81,7 +94,7 @@ Default SLA windows, measured from when the ticket was created:
 | `low`    | 72 hours |
 
 - Changing priority recalculates the due date unless `dueAt` is sent in the same request.
-- `resolved` and `closed` are terminal: they stop the SLA clock. Resolving stamps `resolvedAt`, closing keeps it, reopening clears it.
+- `resolved` and `closed` are terminal: they stop the SLA clock. Resolving stamps `resolvedAt`, closing keeps it, reopening clears it and logs `ticket_reopened`.
 - Moving a ticket to `assigned` requires an assignee.
 - Tickets get a human-friendly number such as `TKT-0001`. Route parameters use the MongoDB `_id`.
 

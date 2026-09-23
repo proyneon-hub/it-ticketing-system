@@ -370,17 +370,72 @@ describe('ticket lifecycle', () => {
 
   test('sets resolvedAt on resolution, keeps it on close, and clears it on reopen', async () => {
     const ticket = await seedTicket({ status: 'in-progress' });
-    const patch = (body) =>
-      request(app).patch(`/api/tickets/${ticket.id}`).set(as('tech')).send(body).expect(200);
+    const patch = (role, body) =>
+      request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body).expect(200);
 
-    const resolved = (await patch({ status: 'resolved' })).body.ticket;
+    const resolved = (await patch('tech', { status: 'resolved' })).body.ticket;
     expect(resolved.resolvedAt).toBeDefined();
 
-    const closed = (await patch({ status: 'closed' })).body.ticket;
+    const closed = (await patch('tech', { status: 'closed' })).body.ticket;
     expect(closed.resolvedAt).toBe(resolved.resolvedAt);
 
-    const reopened = (await patch({ status: 'in-progress' })).body.ticket;
+    // Reopening a closed ticket is an admin action.
+    const reopened = (await patch('admin', { status: 'in-progress' })).body.ticket;
     expect(reopened.resolvedAt).toBeUndefined();
+  });
+
+  describe('workflow', () => {
+    const patchAs = (role, ticket, body) =>
+      request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body);
+
+    test('rejects a transition the workflow does not allow with 409 and changes nothing', async () => {
+      const ticket = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
+
+      const response = await patchAs('tech', ticket, { status: 'resolved' }).expect(409);
+
+      expect(response.body.message).toBe('Cannot move a ticket from open to resolved.');
+      const stored = await Ticket.findById(ticket.id);
+      expect(stored.status).toBe('open');
+      expect(stored.activity).toHaveLength(0);
+    });
+
+    test('only an admin can reopen a closed ticket', async () => {
+      const ticket = await seedTicket({ status: 'closed' });
+
+      const denied = await patchAs('tech', ticket, { status: 'in-progress' }).expect(403);
+      expect(denied.body.message).toMatch(/admin/i);
+      expect((await Ticket.findById(ticket.id)).status).toBe('closed');
+
+      await patchAs('admin', ticket, { status: 'in-progress' }).expect(200);
+    });
+
+    test('reopening a resolved ticket clears resolvedAt and logs ticket_reopened', async () => {
+      const ticket = await seedTicket({ status: 'in-progress' });
+      await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
+
+      const response = await patchAs('tech', ticket, { status: 'in-progress' }).expect(200);
+
+      expect(response.body.ticket.resolvedAt).toBeUndefined();
+      const actions = response.body.ticket.activity.map((entry) => entry.action);
+      expect(actions).toEqual([
+        'status_changed',
+        'ticket_resolved',
+        'status_changed',
+        'ticket_reopened',
+      ]);
+    });
+
+    test('re-sending the current status is accepted and does not log a second resolution', async () => {
+      const ticket = await seedTicket({ status: 'in-progress' });
+      await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
+
+      const response = await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
+
+      const resolutions = response.body.ticket.activity.filter(
+        (entry) => entry.action === 'ticket_resolved'
+      );
+      expect(resolutions).toHaveLength(1);
+    });
   });
 
   test('recalculates the SLA due date when priority changes', async () => {

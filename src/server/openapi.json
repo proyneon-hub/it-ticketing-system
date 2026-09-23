@@ -250,7 +250,7 @@
       "patch": {
         "tags": ["Tickets"],
         "summary": "Update a ticket",
-        "description": "Every change to status, priority or assignee is recorded in the ticket's activity history. Moving to `resolved` or `closed` stamps `resolvedAt`; reopening clears it. Changing priority recalculates the SLA due date unless `dueAt` is sent. Requesters may only change `title`, `description`, `priority` and `category` on their own tickets.",
+        "description": "Every change to status, priority or assignee is recorded in the ticket's activity history. Status moves follow the workflow: `open` to `assigned`, `in-progress` or `closed`; `assigned` to `in-progress` or `open`; `in-progress` to `resolved` or `assigned`; `resolved` to `closed` or `in-progress`; `closed` to `in-progress`, admins only. Any other move is a `409`, and reopening a closed ticket as a non-admin is a `403`. Moving to `resolved` or `closed` stamps `resolvedAt`; reopening clears it and logs `ticket_reopened`. Changing priority recalculates the SLA due date unless `dueAt` is sent. Requesters may only change `title`, `description`, `priority` and `category` on their own tickets.",
         "operationId": "updateTicket",
         "security": [{ "bearerAuth": [] }],
         "requestBody": {
@@ -269,7 +269,8 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
         }
       },
       "delete": {
@@ -387,6 +388,12 @@
       },
       "NotFound": {
         "description": "No such ticket, or one the caller may not see.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "Conflict": {
+        "description": "The change conflicts with the ticket's current state, for example a status move the workflow does not allow.",
         "content": {
           "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
         }

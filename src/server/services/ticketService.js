@@ -7,6 +7,7 @@ const {
   terminalStatuses,
 } = require('../../shared/ticket-constants.json');
 const { HttpError, badRequest, forbidden } = require('../errors');
+const { assertTransition, isReopen } = require('../domain/ticketWorkflow');
 
 const HOUR_MS = 60 * 60 * 1000;
 const DUE_SOON_WINDOW_MS = 24 * HOUR_MS;
@@ -175,9 +176,15 @@ function activityEntriesForPatch(user, existing, payload) {
       activityEntry(user, { action, from: existing[field], to: payload[field] })
     );
 
-  if (payload.status === 'resolved')
-    entries.push(activityEntry(user, { action: 'ticket_resolved' }));
-  if (payload.status === 'closed') entries.push(activityEntry(user, { action: 'ticket_closed' }));
+  // Milestones are logged when the status actually changes, not every time a
+  // client re-sends the current one.
+  if (payload.status && payload.status !== existing.status) {
+    if (payload.status === 'resolved')
+      entries.push(activityEntry(user, { action: 'ticket_resolved' }));
+    if (payload.status === 'closed') entries.push(activityEntry(user, { action: 'ticket_closed' }));
+    if (isReopen(existing.status, payload.status))
+      entries.push(activityEntry(user, { action: 'ticket_reopened' }));
+  }
 
   if (entries.length === 0) {
     entries.push(
@@ -270,6 +277,7 @@ async function updateTicket(user, id, payload) {
   if (!existing) throw notFound();
 
   assertCanMutateTicket(user, existing, payload);
+  if (payload.status) assertTransition(existing.status, payload.status, user.role);
 
   if (payload.status === 'assigned' && (payload.assignee || existing.assignee) === 'Unassigned') {
     throw badRequest('Assigned tickets need an assignee.');

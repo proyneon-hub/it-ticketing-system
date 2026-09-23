@@ -174,6 +174,12 @@ describe('responses match their documented schemas', () => {
   });
 
   test('errors share one documented shape and always carry a request id', async () => {
+    const open = await request(app)
+      .post('/api/tickets')
+      .set(as('admin'))
+      .send({ title: 'For a conflict' })
+      .expect(201);
+
     const responses = [
       await request(app).get('/api/tickets?limit=1000').set(as('admin')).expect(400),
       await request(app).post('/api/tickets').set(as('admin')).send({}).expect(400),
@@ -187,6 +193,12 @@ describe('responses match their documented schemas', () => {
         .set(as('tech'))
         .expect(403),
       await request(app).get('/api/tickets/665f0f40d5d4f541f8ef1234').set(as('admin')).expect(404),
+      // An open ticket cannot jump straight to resolved.
+      await request(app)
+        .patch(`/api/tickets/${open.body.ticket._id}`)
+        .set(as('admin'))
+        .send({ status: 'resolved' })
+        .expect(409),
     ];
 
     for (const response of responses) {

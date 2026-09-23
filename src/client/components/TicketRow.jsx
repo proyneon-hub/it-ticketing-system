@@ -1,11 +1,12 @@
 import { Fragment } from 'react';
-import { priorities, statuses } from '../constants.js';
+import { priorities } from '../constants.js';
 import { formatDate, getSlaState, label } from '../lib/format.js';
+import { allowedNextStatuses } from '../lib/workflow.js';
 import ActivityTimeline from './ActivityTimeline.jsx';
 
 // What each role may touch is decided by the API; the controls mirror it:
-// requesters can edit priority only, technicians can work the ticket, and only
-// admins can delete.
+// requesters can edit priority only, technicians can work the ticket within the
+// workflow, and only admins can delete or reopen a closed ticket.
 export default function TicketRow({ ticket, role, expanded, onToggleActivity, onPatch, onDelete }) {
   const slaState = getSlaState(ticket);
   const isRequester = role === 'user';
@@ -32,7 +33,7 @@ export default function TicketRow({ ticket, role, expanded, onToggleActivity, on
             aria-label={`Status for ${name}`}
             data-testid="ticket-status-select"
           >
-            {statuses.map((status) => (
+            {allowedNextStatuses(ticket.status, role).map((status) => (
               <option value={status} key={status}>
                 {label(status)}
               </option>
