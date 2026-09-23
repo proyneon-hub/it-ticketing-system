@@ -91,6 +91,13 @@ async function connectToDatabase() {
   return cachedConnection;
 }
 
+// Readiness probe: proves the database answers, not merely that a connection
+// object exists.
+async function pingDatabase() {
+  await connectToDatabase();
+  await mongoose.connection.db.admin().ping();
+}
+
 function isDatabaseConnectivityError(error) {
   // The Express error handler uses this to return a 503 with deployment guidance
   // for known network/connectivity failures.
@@ -101,4 +108,4 @@ function isDatabaseConnectivityError(error) {
   );
 }
 
-module.exports = { connectToDatabase, isDatabaseConnectivityError };
+module.exports = { connectToDatabase, isDatabaseConnectivityError, pingDatabase };

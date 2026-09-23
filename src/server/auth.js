@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { logger } = require('./logger');
 
 const roles = ['admin', 'technician', 'user'];
 
@@ -26,8 +27,21 @@ const demoUsers = [
   },
 ];
 
+const DEFAULT_AUTH_SECRET = 'local-demo-secret-change-me';
+let warnedAboutDefaultSecret = false;
+
 function getAuthSecret() {
-  return process.env.AUTH_SECRET || 'local-demo-secret-change-me';
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+
+  // server.js refuses to start in production without a secret. Serverless
+  // entry points cannot fail at boot without taking the demo offline, so they
+  // keep working and log loudly instead.
+  if (process.env.NODE_ENV === 'production' && !warnedAboutDefaultSecret) {
+    warnedAboutDefaultSecret = true;
+    logger.warn('AUTH_SECRET is not set; signing tokens with the public development secret.');
+  }
+
+  return DEFAULT_AUTH_SECRET;
 }
 
 function base64url(input) {

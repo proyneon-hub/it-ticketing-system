@@ -1,9 +1,11 @@
 const express = require('express');
 const { authenticateDemoUser, demoUsers, issueToken, requireAuth } = require('../auth');
 
+const { loginRateLimiter } = require('../middleware/security');
+
 const router = express.Router();
 
-router.post('/auth/login', (req, res) => {
+router.post('/auth/login', loginRateLimiter(), (req, res) => {
   const user = authenticateDemoUser(req.body.email, req.body.password);
 
   if (!user) {

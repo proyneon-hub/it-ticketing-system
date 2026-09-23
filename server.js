@@ -1,13 +1,17 @@
 require('dotenv').config();
 
 const app = require('./src/server/app');
+const { assertProductionConfig } = require('./src/server/config');
+const { logger } = require('./src/server/logger');
+
+assertProductionConfig();
 
 // The local Express server listens on PORT from .env when present.
 // Vite's dev proxy is configured to expect this API on port 5000 by default.
 const port = process.env.PORT || 5000;
 
 const server = app.listen(port, () => {
-  console.log(`IT Ticketing API running at http://localhost:${port}`);
+  logger.info({ port }, `IT Ticketing API running at http://localhost:${port}`);
 });
 
 // Surface a clear message when the API port is already taken. Without this,
