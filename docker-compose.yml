@@ -3,7 +3,7 @@
 # Open http://localhost:5000 and sign in with a demo account.
 services:
   mongo:
-    image: mongo:7
+    image: mongo:8
     restart: unless-stopped
     # Published on localhost only; the app reaches it over the compose network.
     ports:

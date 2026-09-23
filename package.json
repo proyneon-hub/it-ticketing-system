@@ -128,5 +128,11 @@
   },
   "engines": {
     "node": ">=22 <27"
+  },
+  "config": {
+    "mongodbMemoryServer": {
+      "version": "8.2.6",
+      "disablePostinstall": "1"
+    }
   }
 }
