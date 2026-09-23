@@ -1,6 +1,26 @@
+# Keep the build context small and never bake secrets or local state into an image.
 node_modules
 dist
+coverage
+playwright-report
+playwright-report-live
+test-results
 .git
+.github
+.vscode
 .env
-.env.local
+.env.*
+!.env.example
 npm-debug.log*
+dev-server*.log
+
+# Not needed to build or run the app.
+docs
+tests
+Support-Ops-Automation
+**/__tests__
+**/*.test.*
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
