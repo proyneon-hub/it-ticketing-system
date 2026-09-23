@@ -53,15 +53,17 @@ Every response carries an `x-request-id` header. Send your own (letters, digits,
 }
 ```
 
-| Status | Meaning                                                              |
-| ------ | -------------------------------------------------------------------- |
-| 400    | Validation failed; `errors` names the field                          |
-| 401    | Missing, expired or invalid token                                    |
-| 403    | Signed in but not permitted (for example a requester editing status) |
-| 404    | No such ticket, or one a requester may not see                       |
-| 409    | A unique value already exists                                        |
-| 429    | Too many failed sign-in attempts                                     |
-| 503    | The database is not configured or not reachable                      |
+| Status | Meaning                                                                                                                 |
+| ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| 400    | Validation failed; `errors` names the field                                                                             |
+| 401    | Missing, expired or invalid token                                                                                       |
+| 403    | Signed in but not permitted (for example a requester editing status)                                                    |
+| 409    | The change conflicts with the ticket's state: an illegal status move, or a stale `If-Match` version                     |
+| 503    | In production, `AUTH_SECRET` is missing or shorter than 32 characters: sign-in and authenticated routes are unavailable |
+| 404    | No such ticket, or one a requester may not see                                                                          |
+| 409    | A unique value already exists                                                                                           |
+| 429    | Too many failed sign-in attempts                                                                                        |
+| 503    | The database is not configured or not reachable                                                                         |
 
 Unexpected errors return a generic 500; details stay in the server log, where the request id finds them ([RUNBOOK.md](RUNBOOK.md)).
 
@@ -97,6 +99,14 @@ Default SLA windows, measured from when the ticket was created:
 - `resolved` and `closed` are terminal: they stop the SLA clock. Resolving stamps `resolvedAt`, closing keeps it, reopening clears it and logs `ticket_reopened`.
 - Moving a ticket to `assigned` requires an assignee.
 - Tickets get a human-friendly number such as `TKT-0001`. Route parameters use the MongoDB `_id`.
+
+## Editing a ticket safely
+
+Every ticket carries a version, `__v`, that increases by one on each update. `PATCH /tickets/:id` returns the new version in the body and in an `ETag` header.
+
+- **Send `If-Match: "<version>"`** with the version you loaded. If the ticket has changed since, the API answers `409` and writes nothing, so you cannot overwrite an edit you have not seen. The web app does this on every edit and reloads the list on a `409`.
+- **Without `If-Match`** the update is applied to the latest version. Each update is a single atomic write guarded by the version it was computed from; if another write lands first, the update is recomputed against the new state (up to three attempts), so the `from` value in the activity log is always the real previous value.
+- `If-Match` accepts `"3"`, `W/"3"` or `3`. `*` means any current version. Anything else is a `400`.
 
 ## Who can do what
 

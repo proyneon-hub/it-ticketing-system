@@ -18,6 +18,9 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 | [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)  | High     | Dashboard empty after sign-in against the real API             | Introduced and caught during the refactor |
 | [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                         | Low      | 401/403 responses had no `requestId`                           | Introduced and caught during the upgrade  |
 | [DEF-012](#def-012-input-validation-gaps)                                             | Low      | Malformed email and query-string objects accepted              | Original code                             |
+| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                | Medium   | Any status could jump to any other, including open to resolved | Original code                             |
+| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)    | Medium   | Concurrent edits were lost; activity `from` could be stale     | Original code                             |
+| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)         | High     | Serverless deployments signed tokens with a public secret      | Original code                             |
 
 ---
 
@@ -143,3 +146,37 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Actual:** a malformed requester email was accepted (`201`), and query-string objects such as `?search[$ne]=x` were accepted and stringified instead of rejected.
 - **Fix:** the Zod schemas reject both with a `400` and a specific message.
 - **Regression tests:** `rejects a malformed requester email` and `rejects the list query search[$ne]=x`.
+
+## DEF-013: Any status could jump to any other
+
+- **Severity:** Medium
+- **Found by:** Code review against the documented workflow (`open -> assigned -> in-progress -> resolved -> closed`).
+- **Reproduce:** `PATCH /api/tickets/:id` with `{"status": "resolved"}` on an `open`, unassigned ticket, or `{"status": "open"}` on a `closed` one.
+- **Expected:** a `409` for a move the workflow does not allow, and reopening a closed ticket limited to admins.
+- **Actual:** `200`. Tickets could be resolved without ever being worked, and closed tickets reopened by anyone.
+- **Root cause:** the API validated that the status was one of the five values, never that the move from the current status was allowed.
+- **Fix:** an explicit transition table in `src/shared/ticket-constants.json`, enforced by `src/server/domain/ticketWorkflow.js`. The status menu offers only the allowed moves. Reopening now also logs `ticket_reopened`, and re-sending the current status no longer logs a second `ticket_resolved`.
+- **Regression tests:** a table-driven unit test over all 25 status pairs for technicians and admins (the expected table is written out by hand, not read from the file under test), plus integration tests for the `409`, the admin-only reopen and the activity entries.
+
+## DEF-014: Concurrent edits were lost and the activity log could be wrong
+
+- **Severity:** Medium
+- **Found by:** Code review of `updateTicket`, which read the ticket and then wrote it in a separate call.
+- **Reproduce:** two clients edit the same ticket at once, for example one sets the priority while another sets the assignee. Both read the same ticket.
+- **Expected:** the second edit is refused or applied on top of the first, and each activity entry records the value that was actually replaced.
+- **Actual:** both writes succeeded and the `from` value in the activity entries came from the copy read before the other write, so the history could show a change that never happened in that order.
+- **Root cause:** read-then-write with no guard between the two.
+- **Fix:** tickets carry a version (`__v`). Every update is one atomic `findOneAndUpdate` filtered on the version it was computed from. `If-Match` lets a client refuse an edit made against a version it has not seen (`409`); without it a lost race is recomputed against the fresh ticket, up to three times.
+- **Regression tests:** two concurrent edits from the same version give exactly one `200` and one `409` and one activity entry; three concurrent edits without `If-Match` all succeed and the recorded `from`/`to` values chain correctly.
+- **Note:** the first client implementation cleared the "this ticket changed" message when the list reloaded after the `409`. The mocked browser test caught it, and a unit test now pins the order.
+
+## DEF-015: Serverless deployments signed tokens with a public secret
+
+- **Severity:** High (authentication)
+- **Found by:** Code review of `getAuthSecret()`.
+- **Reproduce:** deploy to a serverless platform without `AUTH_SECRET`. Build a token for any user with the development secret, which is in this repository, and call the API with it.
+- **Expected:** the deployment refuses to authenticate.
+- **Actual:** `server.js` refused to boot without a secret, but serverless entry points logged a warning and used the public development secret, so anyone could mint an admin token.
+- **Root cause:** the boot-time check does not run on serverless entry points, and the fallback was kept so the demo would not go offline.
+- **Fix:** in production, signing or verifying a token with a missing or sub-32-character secret returns `503 Server authentication is not configured.` The rest of the API stays up, and `/api/ready` reports `authConfigured` so a deployment can be checked without signing in. The live smoke test asserts it.
+- **Regression tests:** a token forged with the development secret is not accepted in production; sign-in returns `503` instead of issuing a token; unset, short and valid secrets in production and development.

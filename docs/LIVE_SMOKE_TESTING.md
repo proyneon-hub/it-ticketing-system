@@ -47,14 +47,15 @@ Without the enable flag, every test skips with a safety reason.
 
 ## Coverage
 
-| File                       | What it checks                                                                                                             |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `health.spec.ts`           | The liveness endpoint and its response shape                                                                               |
-| `readiness.spec.ts`        | The readiness probe reports the database up; an unauthenticated ticket request is refused and echoes a supplied request id |
-| `login.spec.ts`            | A real sign-in loads the dashboard **with data**, not only the page shell                                                  |
-| `requester-scope.spec.ts`  | A requester sees only their own tickets and has no delete controls                                                         |
-| `docs.spec.ts`             | The interactive API docs render under the Content-Security-Policy                                                          |
-| `ticket-lifecycle.spec.ts` | Create a dedicated test ticket, see it in the queue, delete it                                                             |
+| File                       | What it checks                                                                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `health.spec.ts`           | The liveness endpoint and its response shape                                                                                                   |
+| `readiness.spec.ts`        | The readiness probe reports the database up and auth configured; an unauthenticated ticket request is refused and echoes a supplied request id |
+| `login.spec.ts`            | A real sign-in loads the dashboard **with data**, not only the page shell                                                                      |
+| `requester-scope.spec.ts`  | A requester sees only their own tickets and has no delete controls                                                                             |
+| `docs.spec.ts`             | The interactive API docs render under the Content-Security-Policy                                                                              |
+| `ticket-lifecycle.spec.ts` | Create a dedicated test ticket, see it in the queue, delete it                                                                                 |
+| `workflow.spec.ts`         | The API refuses an illegal status move and a stale edit (`409`) and returns the new version; cleans up its ticket                              |
 
 Two of these tests exist because of a real miss: a dashboard that never loaded once passed both the login and the requester tests, because zero rows also satisfies "only my tickets". They now assert that the data loaded. See [DEF-010](DEFECT_LOG.md#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api).
 
