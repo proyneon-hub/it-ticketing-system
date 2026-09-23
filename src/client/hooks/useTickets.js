@@ -27,10 +27,10 @@ export function useTickets({ user, onError, onSuccess }) {
 
   // The search box updates instantly; the request waits until typing pauses.
   const debouncedSearch = useDebouncedValue(filters.search, SEARCH_DEBOUNCE_MS);
-  const activeFilters = useMemo(
-    () => ({ ...filters, search: debouncedSearch }),
-    [filters, debouncedSearch]
-  );
+  // Keyed by value, not identity: typing changes `filters` on every keystroke,
+  // but the request only changes when the debounced search (or another filter) does.
+  const filtersKey = JSON.stringify({ ...filters, search: debouncedSearch });
+  const activeFilters = useMemo(() => JSON.parse(filtersKey), [filtersKey]);
 
   const refresh = useCallback(() => setReloadKey((key) => key + 1), []);
 
@@ -43,6 +43,7 @@ export function useTickets({ user, onError, onSuccess }) {
 
     fetchTickets(activeFilters, { signal: controller.signal })
       .then((data) => {
+        if (controller.signal.aborted) return; // A newer request replaced this one.
         setTickets(data.data || data.tickets || []);
         setPagination(data.pagination || { ...emptyPagination, limit: activeFilters.limit });
         setLoading(false);
@@ -64,7 +65,9 @@ export function useTickets({ user, onError, onSuccess }) {
     const controller = new AbortController();
 
     fetchStats({ signal: controller.signal })
-      .then(setStats)
+      .then((data) => {
+        if (!controller.signal.aborted) setStats(data);
+      })
       .catch((error) => {
         if (controller.signal.aborted) return;
         setStats(null);
