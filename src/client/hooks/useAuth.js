@@ -9,6 +9,12 @@ import {
 } from '../api.js';
 import { defaultCredentials } from '../constants.js';
 
+// Sign-in returns the user as `id`, while /auth/me returns the token payload as
+// `sub`. Normalizing once here means nothing else needs to know about the difference.
+function toClientUser({ id, sub, name, email, role }) {
+  return { id: id ?? sub, name, email, role };
+}
+
 // Owns who is signed in: restoring a saved session, signing in and out, and
 // reacting when the API says the token is no longer valid.
 export function useAuth({ onError, onSessionExpired }) {
@@ -26,7 +32,7 @@ export function useAuth({ onError, onSessionExpired }) {
     // Only ask the server who we are if there is a saved session to restore.
     if (hasAuthToken()) {
       fetchMe()
-        .then((data) => active && setUser(data.user))
+        .then((data) => active && setUser(toClientUser(data.user)))
         .catch(() => setAuthToken(''));
     }
 
@@ -48,9 +54,10 @@ export function useAuth({ onError, onSessionExpired }) {
       try {
         const data = await loginRequest(nextCredentials);
         setAuthToken(data.token);
-        setUser(data.user);
+        const signedInUser = toClientUser(data.user);
+        setUser(signedInUser);
         setCredentials({ email: nextCredentials.email, password: nextCredentials.password });
-        return data.user;
+        return signedInUser;
       } catch (error) {
         onError(error);
         return null;

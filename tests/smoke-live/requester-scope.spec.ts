@@ -22,7 +22,7 @@ test(
     await loginPage.goto();
     await loginPage.login(credentials.email, credentials.password);
     await dashboardPage.expectLoaded();
-    await expect(page.getByText('Loading tickets...')).toHaveCount(0);
+    await dashboardPage.expectDataLoaded();
 
     const rows = page.getByTestId('ticket-row');
     await expect(rows.filter({ hasNotText: credentials.email })).toHaveCount(0);

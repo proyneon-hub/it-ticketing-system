@@ -1,17 +1,28 @@
 const HOUR = 60 * 60 * 1000;
 
+// Shapes copied from the real API (see src/server/openapi.json). Note they differ:
+// sign-in returns `id`, while /auth/me returns the token payload with `sub` and `exp`.
+// Tests that use one shape for both can hide bugs that only appear against the real server.
 export const users = {
-  admin: { sub: 'usr_admin', name: 'Priya Admin', email: 'admin@demo.local', role: 'admin' },
+  admin: { id: 'usr_admin', name: 'Priya Admin', email: 'admin@demo.local', role: 'admin' },
   technician: {
-    sub: 'usr_tech',
+    id: 'usr_tech',
     name: 'Theo Technician',
     email: 'tech@demo.local',
     role: 'technician',
   },
-  user: { sub: 'usr_user', name: 'Una User', email: 'user@demo.local', role: 'user' },
+  user: { id: 'usr_user', name: 'Una User', email: 'user@demo.local', role: 'user' },
 };
 
-export const demoUsers = Object.values(users).map(({ sub: _sub, ...user }) => ({
+export const sessionUser = (user) => ({
+  sub: user.id,
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  exp: Math.floor(Date.now() / 1000) + 3600,
+});
+
+export const demoUsers = Object.values(users).map((user) => ({
   ...user,
   demoPassword: `${user.role}-password`,
 }));

@@ -3,7 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 import * as api from './api.js';
-import { demoUsers, emptyStats, makeTicket, ticketPage, users } from './test/fixtures.js';
+import {
+  demoUsers,
+  emptyStats,
+  makeTicket,
+  sessionUser,
+  ticketPage,
+  users,
+} from './test/fixtures.js';
 
 vi.mock('./api.js', () => ({
   createTicket: vi.fn(),
@@ -84,7 +91,7 @@ describe('signed out', () => {
 
   it('restores a saved session without asking to sign in again', async () => {
     api.hasAuthToken.mockReturnValue(true);
-    api.fetchMe.mockResolvedValue({ user: users.technician });
+    api.fetchMe.mockResolvedValue({ user: sessionUser(users.technician) });
 
     render(<App />);
 

@@ -16,7 +16,7 @@ const emptyPagination = { page: 1, limit: defaultFilters.limit, total: 0, totalP
 // the actions that change them. Requests are cancelled when the filters change
 // again before they finish, so a slow response can never overwrite a newer one.
 export function useTickets({ user, onError, onSuccess }) {
-  const userId = user?.sub ?? null;
+  const userId = user?.id ?? null;
   const [filters, setFilters] = useState(defaultFilters);
   // The last request that finished, and the key it answered. `loading` is
   // derived from that key rather than stored, so it is true from the very first
