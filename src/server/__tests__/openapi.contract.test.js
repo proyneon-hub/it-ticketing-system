@@ -139,6 +139,7 @@ describe('responses match their documented schemas', () => {
       .expect(200);
     conforms('TicketEnvelope', updated.body);
     expect(updated.body.ticket.activity.length).toBeGreaterThan(1);
+    expect(updated.headers.etag).toBe(`"${updated.body.ticket.__v}"`);
     used('updateTicket');
 
     const list = await request(app)
@@ -193,6 +194,13 @@ describe('responses match their documented schemas', () => {
         .set(as('tech'))
         .expect(403),
       await request(app).get('/api/tickets/665f0f40d5d4f541f8ef1234').set(as('admin')).expect(404),
+      // An edit made against a version that is no longer current.
+      await request(app)
+        .patch(`/api/tickets/${open.body.ticket._id}`)
+        .set(as('admin'))
+        .set('If-Match', '"99"')
+        .send({ priority: 'high' })
+        .expect(409),
       // An open ticket cannot jump straight to resolved.
       await request(app)
         .patch(`/api/tickets/${open.body.ticket._id}`)
@@ -206,6 +214,7 @@ describe('responses match their documented schemas', () => {
       expect(response.body.requestId).toBe(response.headers['x-request-id']);
     }
     expect(responses[1].body.errors[0]).toMatchObject({ field: 'title' });
+    expect(responses[6].body.message).toMatch(/changed since you loaded/i);
   });
 
   test('every documented operation is exercised above', () => {

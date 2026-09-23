@@ -104,3 +104,38 @@ test(
     expect(options).toEqual(['Open', 'Assigned', 'In Progress', 'Closed']);
   }
 );
+
+test(
+  'TICKET-008 edits are sent against the loaded version and a conflict reloads the list',
+  { tag: ['@regression', '@technician', '@ticket', '@error'] },
+  async ({ page, loginPage, dashboardPage }) => {
+    let sentVersion: string | undefined;
+    let listRequests = 0;
+
+    await page.route('**/api/tickets?*', (route) => {
+      listRequests += 1;
+      return route.fallback();
+    });
+    // Someone else changed the ticket after this page loaded it.
+    await page.route('**/api/tickets/*', (route) => {
+      if (route.request().method() !== 'PATCH') return route.fallback();
+      sentVersion = route.request().headers()['if-match'];
+      return route.fulfill({
+        status: 409,
+        json: { message: 'This ticket changed since you loaded it. Reload it and try again.' },
+      });
+    });
+
+    await loginPage.loginAs('technician');
+    await dashboardPage.expectTicketVisible('TKT-0001');
+    const listRequestsBeforeEdit = listRequests;
+
+    await dashboardPage.updateTicketStatus('TKT-0001', 'in-progress');
+
+    await dashboardPage.expectError(
+      'This ticket changed since you loaded it. Reload it and try again.'
+    );
+    expect(sentVersion).toBe('"0"');
+    await expect.poll(() => listRequests).toBeGreaterThan(listRequestsBeforeEdit);
+  }
+);

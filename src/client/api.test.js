@@ -25,6 +25,31 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('updateTicket', () => {
+  it('sends the ticket version as a quoted If-Match so a stale edit is refused', async () => {
+    const api = await loadApi();
+    fetchMock.mockResolvedValue(json({ ticket: {} }));
+
+    await api.updateTicket('abc', { priority: 'high' }, { version: 3 });
+
+    const [url, options] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/tickets/abc');
+    expect(options.method).toBe('PATCH');
+    expect(options.headers['If-Match']).toBe('"3"');
+  });
+
+  it('sends no If-Match when the version is unknown, and treats version 0 as known', async () => {
+    const api = await loadApi();
+    fetchMock.mockResolvedValue(json({ ticket: {} }));
+
+    await api.updateTicket('abc', { priority: 'high' });
+    await api.updateTicket('abc', { priority: 'high' }, { version: 0 });
+
+    expect(fetchMock.mock.calls[0][1].headers['If-Match']).toBeUndefined();
+    expect(fetchMock.mock.calls[1][1].headers['If-Match']).toBe('"0"');
+  });
+});
+
 describe('requests', () => {
   it('leaves empty filters out of the query string and forwards the abort signal', async () => {
     const api = await loadApi();

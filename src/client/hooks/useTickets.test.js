@@ -196,16 +196,50 @@ describe('actions', () => {
     expect(onSuccess).not.toHaveBeenCalledWith('Ticket created successfully.');
   });
 
-  it('patches a ticket and refreshes the list', async () => {
+  it('patches a ticket against the version it loaded, then refreshes the list', async () => {
     api.updateTicket.mockResolvedValue({ ticket: {} });
+    const ticket = makeTicket({ __v: 7 });
+    api.fetchTickets.mockResolvedValue(ticketPage([ticket]));
     const { result } = setup();
-    await waitFor(() => expect(api.fetchTickets).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.tickets).toHaveLength(1));
 
-    await act(async () => result.current.patch('abc', { status: 'resolved' }));
+    await act(async () => result.current.patch(ticket._id, { status: 'resolved' }));
 
-    expect(api.updateTicket).toHaveBeenCalledWith('abc', { status: 'resolved' });
+    expect(api.updateTicket).toHaveBeenCalledWith(
+      ticket._id,
+      { status: 'resolved' },
+      { version: 7 }
+    );
     expect(onSuccess).toHaveBeenCalledWith('Ticket updated.');
     await waitFor(() => expect(api.fetchTickets).toHaveBeenCalledTimes(2));
+  });
+
+  it('reloads the list after a 409 so the user sees the ticket as it is now', async () => {
+    const conflict = Object.assign(new Error('This ticket changed since you loaded it.'), {
+      status: 409,
+    });
+    api.updateTicket.mockRejectedValue(conflict);
+    const { result } = setup();
+    await waitFor(() => expect(result.current.tickets).toHaveLength(1));
+    expect(api.fetchTickets).toHaveBeenCalledTimes(1);
+
+    await act(async () => result.current.patch(makeTicket()._id, { priority: 'urgent' }));
+
+    expect(onError).toHaveBeenCalledWith(conflict);
+    expect(onSuccess).not.toHaveBeenCalledWith('Ticket updated.');
+    await waitFor(() => expect(api.fetchTickets).toHaveBeenCalledTimes(2));
+    // The reload must not wipe the message that explains why it happened.
+    expect(onError.mock.calls.at(-1)).toEqual([conflict]);
+  });
+
+  it('does not reload after other failures', async () => {
+    api.updateTicket.mockRejectedValue(Object.assign(new Error('Forbidden.'), { status: 403 }));
+    const { result } = setup();
+    await waitFor(() => expect(result.current.tickets).toHaveLength(1));
+
+    await act(async () => result.current.patch(makeTicket()._id, { priority: 'urgent' }));
+
+    expect(api.fetchTickets).toHaveBeenCalledTimes(1);
   });
 
   it('reports a rejected patch', async () => {

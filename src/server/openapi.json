@@ -250,9 +250,10 @@
       "patch": {
         "tags": ["Tickets"],
         "summary": "Update a ticket",
-        "description": "Every change to status, priority or assignee is recorded in the ticket's activity history. Status moves follow the workflow: `open` to `assigned`, `in-progress` or `closed`; `assigned` to `in-progress` or `open`; `in-progress` to `resolved` or `assigned`; `resolved` to `closed` or `in-progress`; `closed` to `in-progress`, admins only. Any other move is a `409`, and reopening a closed ticket as a non-admin is a `403`. Moving to `resolved` or `closed` stamps `resolvedAt`; reopening clears it and logs `ticket_reopened`. Changing priority recalculates the SLA due date unless `dueAt` is sent. Requesters may only change `title`, `description`, `priority` and `category` on their own tickets.",
+        "description": "Every change to status, priority or assignee is recorded in the ticket's activity history. Status moves follow the workflow: `open` to `assigned`, `in-progress` or `closed`; `assigned` to `in-progress` or `open`; `in-progress` to `resolved` or `assigned`; `resolved` to `closed` or `in-progress`; `closed` to `in-progress`, admins only. Any other move is a `409`, and reopening a closed ticket as a non-admin is a `403`. Moving to `resolved` or `closed` stamps `resolvedAt`; reopening clears it and logs `ticket_reopened`. Updates are atomic and versioned: send `If-Match` to avoid overwriting a change you have not seen. Changing priority recalculates the SLA due date unless `dueAt` is sent. Requesters may only change `title`, `description`, `priority` and `category` on their own tickets.",
         "operationId": "updateTicket",
         "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/IfMatch" }],
         "requestBody": {
           "required": true,
           "content": {
@@ -262,6 +263,12 @@
         "responses": {
           "200": {
             "description": "The updated ticket.",
+            "headers": {
+              "ETag": {
+                "description": "The new ticket version, quoted. Send it as `If-Match` on the next edit.",
+                "schema": { "type": "string", "example": "\"3\"" }
+              }
+            },
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/TicketEnvelope" } }
             }
@@ -304,6 +311,13 @@
         "required": true,
         "description": "The ticket's MongoDB id (24 hex characters), not its `TKT-` number.",
         "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" }
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": false,
+        "description": "The ticket version the caller last saw (`__v`), as `\"3\"`, `W/\"3\"` or `3`. If the ticket has changed since, the update is refused with 409 and nothing is written. Without it the update is applied to the latest version.",
+        "schema": { "type": "string", "example": "\"3\"" }
       },
       "Page": {
         "name": "page",
@@ -393,7 +407,7 @@
         }
       },
       "Conflict": {
-        "description": "The change conflicts with the ticket's current state, for example a status move the workflow does not allow.",
+        "description": "The change conflicts with the ticket's current state: a status move the workflow does not allow, or an `If-Match` version that is no longer current.",
         "content": {
           "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
         }
@@ -544,10 +558,16 @@
           "dueAt",
           "activity",
           "createdAt",
-          "updatedAt"
+          "updatedAt",
+          "__v"
         ],
         "properties": {
           "_id": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+          "__v": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Ticket version, incremented on every update. Send it back as `If-Match` to refuse the edit if the ticket changed in the meantime."
+          },
           "ticketNumber": { "type": "string", "pattern": "^TKT-\\d{4,}$" },
           "title": { "type": "string", "maxLength": 120 },
           "description": { "type": "string", "maxLength": 2000 },

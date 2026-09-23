@@ -11,7 +11,8 @@ jest.mock('../models/Ticket', () => ({
   find: jest.fn(),
   findOne: jest.fn(),
   findById: jest.fn(),
-  findByIdAndUpdate: jest.fn(),
+  findOneAndUpdate: jest.fn(),
+  exists: jest.fn(),
   findByIdAndDelete: jest.fn(),
 }));
 
@@ -152,14 +153,17 @@ describe('API auth and ticket routes', () => {
   test('records structured activity when workflow fields change', async () => {
     const token = await loginAs('tech@demo.local', 'TechPass123!');
     const id = '665f0f40d5d4f541f8ef1234';
-    Ticket.findById.mockResolvedValue({
-      _id: id,
-      requesterEmail: 'user@demo.local',
-      status: 'assigned',
-      priority: 'urgent',
-      assignee: 'Theo Technician',
+    Ticket.findById.mockReturnValue({
+      lean: jest.fn().mockResolvedValue({
+        _id: id,
+        __v: 4,
+        requesterEmail: 'user@demo.local',
+        status: 'assigned',
+        priority: 'urgent',
+        assignee: 'Theo Technician',
+      }),
     });
-    Ticket.findByIdAndUpdate.mockResolvedValue({ _id: id, status: 'in-progress' });
+    Ticket.findOneAndUpdate.mockResolvedValue({ _id: id, __v: 5, status: 'in-progress' });
 
     await request(app)
       .patch(`/api/tickets/${id}`)
@@ -167,9 +171,11 @@ describe('API auth and ticket routes', () => {
       .send({ status: 'in-progress' })
       .expect(200);
 
-    expect(Ticket.findByIdAndUpdate).toHaveBeenCalledWith(
-      id,
+    // The write is guarded by the version that was read, so a concurrent edit cannot be overwritten.
+    expect(Ticket.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: id, __v: 4 },
       expect.objectContaining({
+        $inc: { __v: 1 },
         $push: {
           activity: {
             $each: [

@@ -174,9 +174,11 @@ describe('signed in', () => {
 
     await user.selectOptions(screen.getByTestId('ticket-status-select'), 'in-progress');
 
-    expect(api.updateTicket).toHaveBeenCalledWith('665f0f40d5d4f541f8ef1001', {
-      status: 'in-progress',
-    });
+    expect(api.updateTicket).toHaveBeenCalledWith(
+      '665f0f40d5d4f541f8ef1001',
+      { status: 'in-progress' },
+      { version: 2 }
+    );
     expect(await screen.findByText('Ticket updated.')).toBeInTheDocument();
   });
 

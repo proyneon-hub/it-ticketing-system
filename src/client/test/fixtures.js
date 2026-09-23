@@ -42,6 +42,7 @@ export function makeTicket(overrides = {}) {
     dueAt: new Date(Date.now() + 48 * HOUR).toISOString(),
     createdAt: new Date(Date.now() - 4 * HOUR).toISOString(),
     activity: [],
+    __v: 2,
     ...overrides,
   };
 }

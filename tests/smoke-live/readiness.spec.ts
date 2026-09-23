@@ -4,7 +4,7 @@ import { liveSmokeDisabledReason, liveSmokeEnabled } from './live-smoke';
 test.skip(!liveSmokeEnabled, liveSmokeDisabledReason);
 
 test(
-  'LIVE-READY-001 readiness probe confirms the database and returns a request id',
+  'LIVE-READY-001 readiness probe confirms the database, auth configuration and a request id',
   { tag: ['@smoke'] },
   async ({ request }) => {
     const response = await request.get('/api/ready');
@@ -14,6 +14,8 @@ test(
     expect((await response.json()) as unknown).toMatchObject({
       ok: true,
       database: 'up',
+      // False means AUTH_SECRET is missing or weak and production sign-in returns 503.
+      authConfigured: true,
       service: 'it-ticketing-system',
     });
   }

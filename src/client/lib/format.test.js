@@ -40,7 +40,8 @@ describe('getSlaState', () => {
 describe('activityLabel', () => {
   it('uses friendly names for known actions and a readable fallback otherwise', () => {
     expect(activityLabel({ action: 'status_changed' })).toBe('Status changed');
-    expect(activityLabel({ action: 'ticket_reopened' })).toBe('Ticket Reopened');
+    expect(activityLabel({ action: 'ticket_reopened' })).toBe('Ticket reopened');
+    expect(activityLabel({ action: 'comment_added' })).toBe('Comment Added');
     expect(activityLabel({})).toBe('Activity');
   });
 });
