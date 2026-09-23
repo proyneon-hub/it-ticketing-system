@@ -1,0 +1,73 @@
+name: Publish Reports
+
+# Publishes the latest Playwright report and both coverage reports to GitHub Pages,
+# so the test evidence can be opened from the README without running anything.
+# One-time setup: Settings > Pages > Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      # Chromium only: the full three-browser run already gates every pull request.
+      - name: Run browser tests
+        run: npx playwright test tests/e2e-mocked tests/accessibility --project=chromium
+
+      - name: Assemble the report site
+        if: always()
+        run: |
+          mkdir -p site
+          cp docs/report-site/index.html site/index.html
+          cp -r playwright-report site/playwright-report
+          cp -r coverage/server/lcov-report site/coverage-api
+          cp -r coverage/client/lcov-report site/coverage-frontend
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
