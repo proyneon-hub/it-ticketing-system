@@ -1,10 +1,16 @@
 # API Documentation
 
+The complete, interactive reference is served by the app itself at **`/api/docs`** (Swagger UI), and the machine-readable OpenAPI 3.1 document is at **`/api/openapi.json`** (source: [`src/server/openapi.json`](../src/server/openapi.json)). Use **Try it out** with the demo accounts below.
+
+The spec is not just documentation: [`openapi.contract.test.js`](../src/server/__tests__/openapi.contract.test.js) validates every real response against its schemas, so the docs and the API cannot drift apart without a test failing.
+
+This page covers the behaviour that is easiest to miss.
+
 Base URL: `/api`
 
 ## Authentication
 
-Demo sessions use a signed bearer token returned by `POST /auth/login`.
+Sign in with `POST /auth/login` to receive a signed bearer token valid for 8 hours.
 
 | Role       | Email              | Password        |
 | ---------- | ------------------ | --------------- |
@@ -12,99 +18,124 @@ Demo sessions use a signed bearer token returned by `POST /auth/login`.
 | Technician | `tech@demo.local`  | `TechPass123!`  |
 | User       | `user@demo.local`  | `UserPass123!`  |
 
-Send authenticated requests with:
-
 ```http
 Authorization: Bearer <token>
 ```
 
+Failed sign-ins are rate limited per client address (10 per 15 minutes by default). Successful sign-ins are never counted, so switching between demo accounts is always safe.
+
 ## Endpoints
 
-| Method | Endpoint           | Auth         | Purpose                                            |
-| ------ | ------------------ | ------------ | -------------------------------------------------- |
-| GET    | `/health`          | Public       | Deployment health check                            |
-| POST   | `/auth/login`      | Public       | Sign in with demo credentials                      |
-| GET    | `/auth/me`         | Bearer token | Return the current session                         |
-| GET    | `/auth/demo-users` | Public       | List seeded demo accounts                          |
-| GET    | `/tickets`         | Bearer token | List tickets with filters, sorting, and pagination |
-| GET    | `/tickets/export`  | Bearer token | Export visible tickets as CSV                      |
-| GET    | `/tickets/stats`   | Bearer token | Dashboard, priority, and SLA stats                 |
-| GET    | `/tickets/:id`     | Bearer token | Fetch one visible ticket                           |
-| POST   | `/tickets`         | Bearer token | Create a ticket                                    |
-| PATCH  | `/tickets/:id`     | Bearer token | Update ticket fields                               |
-| DELETE | `/tickets/:id`     | Admin only   | Delete a ticket                                    |
+| Method | Endpoint           | Auth         | Purpose                                             |
+| ------ | ------------------ | ------------ | --------------------------------------------------- |
+| GET    | `/health`          | Public       | Liveness: the process is up (no database)           |
+| GET    | `/ready`           | Public       | Readiness: the database answers; version and commit |
+| POST   | `/auth/login`      | Public       | Sign in with demo credentials                       |
+| GET    | `/auth/me`         | Bearer token | Return the current session                          |
+| GET    | `/auth/demo-users` | Public       | List seeded demo accounts                           |
+| GET    | `/tickets`         | Bearer token | List tickets with filters, sorting and pagination   |
+| GET    | `/tickets/export`  | Bearer token | Export visible tickets as CSV                       |
+| GET    | `/tickets/stats`   | Bearer token | Dashboard, priority and SLA stats                   |
+| GET    | `/tickets/:id`     | Bearer token | Fetch one visible ticket                            |
+| POST   | `/tickets`         | Bearer token | Create a ticket                                     |
+| PATCH  | `/tickets/:id`     | Bearer token | Update ticket fields                                |
+| DELETE | `/tickets/:id`     | Admin only   | Delete a ticket                                     |
 
-## Ticket Workflow
+## Errors and request ids
 
-Supported statuses:
+Every response carries an `x-request-id` header. Send your own (letters, digits, `.`, `_`, `-`, up to 64 characters) to trace a specific request; otherwise one is generated. Every error body has the same shape and repeats the id:
+
+```json
+{
+  "message": "Title must be 120 characters or fewer.",
+  "errors": [{ "field": "title", "message": "Title must be 120 characters or fewer." }],
+  "requestId": "0b6f2d0e-6a55-4a2b-9e4f-1f0c3f3f5d11"
+}
+```
+
+| Status | Meaning                                                              |
+| ------ | -------------------------------------------------------------------- |
+| 400    | Validation failed; `errors` names the field                          |
+| 401    | Missing, expired or invalid token                                    |
+| 403    | Signed in but not permitted (for example a requester editing status) |
+| 404    | No such ticket, or one a requester may not see                       |
+| 409    | A unique value already exists                                        |
+| 429    | Too many failed sign-in attempts                                     |
+| 503    | The database is not configured or not reachable                      |
+
+Unexpected errors return a generic 500; details stay in the server log, where the request id finds them ([RUNBOOK.md](RUNBOOK.md)).
+
+## Ticket workflow
 
 ```text
 open -> assigned -> in-progress -> resolved -> closed
 ```
 
-Supported priorities and default SLA windows:
+Default SLA windows, measured from when the ticket was created:
 
-| Priority | Default SLA |
-| -------- | ----------- |
-| `urgent` | 4 hours     |
-| `high`   | 24 hours    |
-| `medium` | 48 hours    |
-| `low`    | 72 hours    |
+| Priority | SLA      |
+| -------- | -------- |
+| `urgent` | 4 hours  |
+| `high`   | 24 hours |
+| `medium` | 48 hours |
+| `low`    | 72 hours |
 
-New tickets receive a human-friendly `ticketNumber` such as `TKT-0001`. MongoDB `_id` values are still used internally for route parameters.
+- Changing priority recalculates the due date unless `dueAt` is sent in the same request.
+- `resolved` and `closed` are terminal: they stop the SLA clock. Resolving stamps `resolvedAt`, closing keeps it, reopening clears it.
+- Moving a ticket to `assigned` requires an assignee.
+- Tickets get a human-friendly number such as `TKT-0001`. Route parameters use the MongoDB `_id`.
 
-## List Tickets
+## Who can do what
+
+| Action                                        | Admin | Technician | Requester        |
+| --------------------------------------------- | ----- | ---------- | ---------------- |
+| See the whole queue                           | Yes   | Yes        | Own tickets only |
+| Create a ticket                               | Yes   | Yes        | Yes              |
+| Change status, assignee, due date             | Yes   | Yes        | No               |
+| Change title, description, priority, category | Yes   | Yes        | Own tickets only |
+| Delete a ticket                               | Yes   | No         | No               |
+
+A requester asking for someone else's ticket gets `404`, not `403`, so ids cannot be probed. Tickets a requester creates always carry their identity, `open` status and `Unassigned` owner, whatever the request says.
+
+## Listing tickets
 
 `GET /tickets` supports:
 
-| Query        | Description                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------------- |
-| `page`       | Page number, minimum `1`                                                                            |
-| `limit`      | Page size, `1` to `100`                                                                             |
-| `sortBy`     | One of `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt`, `updatedAt` |
-| `sortOrder`  | `asc` or `desc`                                                                                     |
-| `status`     | `open`, `assigned`, `in-progress`, `resolved`, or `closed`                                          |
-| `priority`   | `low`, `medium`, `high`, or `urgent`                                                                |
-| `assignedTo` | Case-insensitive assignee filter                                                                    |
-| `search`     | Searches ticket number, title, description, requester, assignee, and category                       |
-| `sla`        | `breached` or `due-soon`                                                                            |
+| Query        | Description                                                                                                                                         |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page`       | Page number, `1` to `100000`                                                                                                                        |
+| `limit`      | Page size, `1` to `100` (default 10)                                                                                                                |
+| `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`                                                      |
+| `sortOrder`  | `asc` or `desc`                                                                                                                                     |
+| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                           |
+| `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                 |
+| `assignedTo` | Case-insensitive assignee match                                                                                                                     |
+| `search`     | Case-insensitive text search across number, title, description, requester, assignee and category. It is matched as literal text, never as a pattern |
+| `sla`        | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                       |
 
-Example:
+- Sorting by `priority` ranks by severity: descending gives urgent, high, medium, low.
+- Ties are broken by `_id`, so pages are stable.
+- Unknown filter values and non-text values (such as `search[$ne]=x`) are rejected with `400`.
 
 ```http
-GET /api/tickets?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=open&priority=high
+GET /api/tickets?page=1&limit=10&sortBy=priority&sortOrder=desc&status=open&sla=breached
 ```
 
-Response shape:
+The response has `data` (the rows), `pagination` (`page`, `limit`, `total`, `totalPages`), and `tickets`, a deprecated copy of `data` kept for older clients.
 
-```json
-{
-  "tickets": [],
-  "data": [],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 27,
-    "totalPages": 3
-  }
-}
-```
+## CSV export
 
-The `tickets` property is kept for compatibility; new clients can use `data`.
-
-## CSV Export
-
-`GET /tickets/export` returns a CSV file for the tickets visible to the current role. Admins and technicians export the full queue. Users export only their own scoped tickets.
-
-Recommended columns:
+`GET /tickets/export` takes the same filters as the list, ignores paging, and returns at most 10,000 rows scoped to what the caller may see.
 
 ```text
 Ticket ID, Title, Status, Priority, Requester, Assigned To, Created At, Updated At, SLA Due At, SLA Breached
 ```
 
-## Activity Timeline
+Text a requester controls can be exported by an admin, so cells beginning with `=`, `+`, `-`, `@`, tab or carriage return are prefixed with an apostrophe to stop spreadsheets running them as formulas.
 
-Ticket responses include an `activity` array. Workflow updates create structured entries such as:
+## Activity history
+
+Ticket responses include an `activity` array. Every change to status, priority or assignee appends an entry in the same database update as the change:
 
 ```json
 {
@@ -125,6 +156,7 @@ TOKEN=$(curl -s http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@demo.local","password":"AdminPass123!"}' | jq -r .token)
 
-curl http://localhost:5000/api/tickets/stats \
-  -H "Authorization: Bearer $TOKEN"
+curl "http://localhost:5000/api/tickets?sortBy=priority&sortOrder=desc&limit=5" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "x-request-id: my-trace-1"
 ```

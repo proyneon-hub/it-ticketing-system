@@ -1,28 +1,52 @@
 # Accessibility Testing
 
-## Automated Scope
+## Automated scope
 
-`npm run test:a11y` runs Axe against the mocked login page, authenticated dashboard, and ticket form. The scanner evaluates WCAG 2.0/2.1 A and AA rules and fails only for serious or critical findings.
+`npm run test:a11y` runs Axe against the mocked login page, authenticated dashboard and ticket form, in Chromium, Firefox and WebKit. The scanner evaluates WCAG 2.0/2.1 A and AA rules and fails for serious or critical findings.
 
-The tests use deterministic mocked API responses so accessibility failures can be reproduced without a live database.
+The tests use deterministic mocked API responses so an accessibility failure can be reproduced without a database.
 
-## Manual Scope
+Built into the UI for assistive technology:
 
-Automation does not replace manual checks for:
+- Errors use `role="alert"` and success messages use `role="status"`, so they are announced when they appear.
+- The activity toggle exposes `aria-expanded`.
+- Every table control has a ticket-specific accessible name, such as `Status for TKT-0001`.
+- Filters expose their names with `aria-label`; the login fields have visually hidden labels.
 
-- Keyboard-only workflows and focus order.
-- Screen-reader clarity and announcement quality.
-- Visual zoom, reflow, and responsive behavior.
-- Cognitive usability and the quality of alternative text.
-- Information conveyed by color alone.
+## Manual checklist
 
-Use [ACCESSIBILITY_CHECKLIST.md](ACCESSIBILITY_CHECKLIST.md) for those checks.
+Automation does not replace these. Repeat them after significant UI changes.
+
+**Keyboard**
+
+- Tab reaches the login fields, demo account buttons, ticket form inputs, filters, export, pagination and table controls, in a sensible order.
+- Enter submits the login and ticket forms.
+- Focus is visible on every input, select and button.
+
+**Labels and headings**
+
+- Every form field has an accessible label, including the ticket title, description, requester, priority, category and assignee.
+- The page has a single `h1`, sections use `h2`, and the activity timeline uses a nested heading inside the expanded row.
+
+**Colour and contrast**
+
+- Status, priority, SLA, success and error colours stay readable on their backgrounds.
+- Nothing relies on colour alone: status and SLA state are also shown as text.
+
+**Errors and screen readers**
+
+- API failures appear in a visible alert and are announced. Validation messages are short and actionable.
+- Buttons use visible text labels rather than icons alone.
+
+**Zoom and reflow**
+
+- The page stays usable at 200% zoom and at narrow widths.
 
 ## Triage
 
-- Fix serious and critical Axe findings in the affected UI where practical.
-- Do not broadly disable Axe rules to obtain a passing result.
-- If a temporary exclusion becomes necessary, document the affected selector, rationale, and tracking issue in this file.
+- Fix serious and critical Axe findings in the UI where practical.
+- Do not broadly disable Axe rules to obtain a passing run.
+- If a temporary exclusion is unavoidable, record the selector, the reason and a tracking issue in this file.
 
 ## Run
 

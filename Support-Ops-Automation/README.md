@@ -12,7 +12,7 @@ Application support work depends on repeatable checks, clear escalation notes, a
 
 ## Features
 
-- API health check with response-time threshold validation
+- API liveness check (`/api/health`) and readiness check (`/api/ready`, which proves the database answers), both with response-time thresholds; the readiness result records the request id so an escalation can point straight at the server logs
 - Synthetic login checks for admin, technician, user, and invalid credentials
 - Authenticated ticket API validation and protected-route verification
 - Markdown status report generation
@@ -59,7 +59,7 @@ Update `.env` when targeting a deployed app. Keep real `.env` values out of git.
 ## Commands
 
 ```bash
-python -m support_ops.health_check
+python -m support_ops.health_check      # liveness and readiness
 python -m support_ops.synthetic_login
 python -m support_ops.ticket_api_check
 python -m support_ops.report_generator

@@ -1,86 +1,90 @@
 # Architecture
 
-## High-Level Architecture
+## Overview
 
-The application uses a React/Vite frontend, an Express REST API, and MongoDB through Mongoose. The same Express app can serve local API routes, Docker deployments, and Vercel serverless adapters.
+A React single-page app talks to an Express REST API, which stores tickets in MongoDB through Mongoose. The same Express app runs locally, in a Docker container, and as Vercel serverless functions.
 
 ```mermaid
 flowchart LR
-  User[Browser User] --> Frontend[React / Vite Frontend]
-  Frontend --> API[Express REST API]
-  API --> Auth[Demo Auth / Role Middleware]
-  API --> Mongo[(MongoDB)]
-  API --> Stats[SLA / Ticket Stats]
-  CI[GitHub Actions] --> Tests[Jest / Supertest / Build Checks]
+  User[Browser] --> Client[React client<br/>components and hooks]
+  Client -->|/api, bearer token| Edge
+
+  subgraph API[Express API]
+    direction TB
+    Edge[Request id, logging,<br/>helmet, CORS] --> Routes[Routes<br/>validate input]
+    Routes --> Services[Ticket service<br/>rules, SLA, activity, CSV]
+    Routes --> Auth[Auth and role checks]
+    Edge --> Ops["/health, /ready, /docs"]
+    Errors[Central error handler]
+  end
+
+  Services --> Models[Mongoose models]
+  Models --> DB[(MongoDB)]
+  Ops -.->|ping| DB
+  CI[GitHub Actions] -.-> Tests[Unit, integration, contract,<br/>browser and real-stack tests]
 ```
 
-## Frontend Responsibilities
+## Backend
 
-- Render login, dashboard, ticket form, filters, and role-aware controls.
-- Store the demo bearer token in local storage.
-- Send authenticated API requests.
-- Show loading, success, and error states.
-- Disable controls that are not available to the current role.
+`src/server` is layered so each part has one job:
 
-## Backend Responsibilities
+| Layer              | Files                                 | Responsibility                                                             |
+| ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
+| App and middleware | `app.js`, `logger.js`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling     |
+| Routes             | `routes/auth.js`, `routes/tickets.js` | Translate HTTP: validate input, call a service, shape the response         |
+| Validation         | `validation/tickets.js`               | Zod schemas: the one place input is trimmed, coerced, bounded and rejected |
+| Services           | `services/ticketService.js`           | Business rules: role scoping, filters, SLA, timestamps, activity log, CSV  |
+| Models             | `models/`                             | Mongoose schemas, defaults, indexes                                        |
+| Auth               | `auth.js`                             | Signed tokens and role middleware                                          |
+| Shared constants   | `src/shared/ticket-constants.json`    | Statuses, priorities, SLA windows: read by the API, the models and the UI  |
+| API contract       | `openapi.json`, `docs.js`             | OpenAPI 3.1 document and the Swagger UI that serves it                     |
 
-- Authenticate signed demo bearer tokens.
-- Enforce role-based permissions.
-- Validate ticket input.
-- Scope ticket visibility by requester for user accounts.
-- Calculate SLA and ticket dashboard stats.
-- Return consistent JSON errors.
+Errors are thrown as `HttpError` (or by Mongoose) and leave through one handler, so every failure has the same JSON shape and a request id.
 
-## Database Responsibilities
+## Frontend
 
-- Store ticket documents.
-- Apply schema defaults and validation.
-- Track ticket timestamps and activity entries.
-- Support common dashboard filters through indexes.
+`src/client` keeps state in hooks and rendering in small components:
 
-## Request Flow
+- `hooks/useAuth`: who is signed in; restores a saved session; reacts to an expired token.
+- `hooks/useTickets`: the ticket page and stats, filters, debounced search, and the create, update, delete and export actions. Requests are cancelled when superseded, so a slow response cannot overwrite a newer one.
+- `hooks/useNotices`, `hooks/useDebouncedValue`: the alert banner and the search delay.
+- `components/`: header, demo accounts, stats, form, filters, table, row, activity timeline, pagination, alert.
+- `api.js`: the only place that calls `fetch`. It attaches the token, turns failures into `ApiError` (carrying the request id) and signs the user out on `401`.
 
-1. User signs in through `POST /api/auth/login`.
-2. API returns a signed bearer token and public user object.
-3. Frontend sends `Authorization: Bearer <token>` on protected requests.
-4. Express middleware verifies the token and attaches `req.user`.
-5. Ticket routes apply role scope, validate input, and query MongoDB.
-6. Frontend renders the response or a clear error message.
+## Request flow
 
-## Authentication Flow
+1. The user signs in with `POST /api/auth/login` and receives a signed token and the public user.
+2. The client sends `Authorization: Bearer <token>` on later requests.
+3. The request gets an id, is logged, and passes the security headers.
+4. `requireAuth` verifies the token and attaches `req.user`.
+5. The route validates the input with Zod.
+6. The ticket service applies the role scope, runs the query or change, and records activity.
+7. The response, or the error with its request id, goes back to the client.
 
-Demo credentials are checked against the in-code demo users. Successful login returns a signed token with user ID, name, email, role, and expiry. Protected routes reject missing, expired, malformed, or tampered tokens.
+## Authentication
 
-## Ticket Workflow
+Demo credentials are checked against in-code demo users. A successful sign-in returns an HMAC-signed token containing the user id, name, email, role and an 8 hour expiry. Protected routes reject missing, expired, malformed or tampered tokens. See [SECURITY_NOTES.md](SECURITY_NOTES.md) for the limits of this model.
 
-Supported ticket statuses:
+## Ticket workflow
 
 ```text
 open -> assigned -> in-progress -> resolved -> closed
 ```
 
-Resolved and closed tickets are treated as terminal for SLA breach calculations.
+Resolved and closed tickets are terminal: they stop the SLA clock. Each priority has an SLA window (urgent 4h, high 24h, medium 48h, low 72h) that sets the due date.
 
-## Role Permissions
+## Deployment
 
-| Action           | Admin | Technician | User |
-| ---------------- | ----- | ---------- | ---- |
-| View full queue  | Yes   | Yes        | No   |
-| View own tickets | Yes   | Yes        | Yes  |
-| Create ticket    | Yes   | Yes        | Yes  |
-| Update workflow  | Yes   | Yes        | No   |
-| Update priority  | Yes   | Yes        | Yes  |
-| Delete ticket    | Yes   | No         | No   |
+| Where  | How                                                                                                 |
+| ------ | --------------------------------------------------------------------------------------------------- |
+| Local  | `npm run dev` runs Vite and the API together; `npm run dev:db` starts a throwaway MongoDB           |
+| Docker | `docker compose up --build --wait`: a multi-stage, non-root image plus MongoDB, health checked      |
+| Vercel | The Vite build is served statically and `api/` adapters run the Express app as serverless functions |
 
-## Deployment Model
+See [DEPLOYMENT.md](../DEPLOYMENT.md) and [RUNBOOK.md](RUNBOOK.md).
 
-- Local development uses Vite and the Express API together through `npm run dev`.
-- Docker builds the frontend and serves frontend assets from Express.
-- Vercel deployment uses the `api/` adapter files for serverless functions and the Vite build output for static assets.
+## Decisions
 
-## Test Strategy
-
-- Jest verifies auth helpers and API route behavior.
-- Supertest exercises protected API endpoints without a browser.
-- CI runs formatting, tests, build, and a production-dependency audit that fails on high or critical findings.
-- The active Playwright framework covers login, role permissions, ticket workflows, accessibility, and separate Chromium screenshot capture.
+- [ADR 001: ticket document model](adr/001-ticket-document-model.md)
+- [ADR 002: layered test strategy](adr/002-layered-test-strategy.md)
+- [ADR 003: operability and request tracing](adr/003-operability-and-request-tracing.md)
