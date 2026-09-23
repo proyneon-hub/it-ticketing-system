@@ -21,5 +21,6 @@ test(
     await loginPage.goto();
     await loginPage.login(credentials.email, credentials.password);
     await dashboardPage.expectLoaded();
+    await dashboardPage.expectDataLoaded();
   }
 );

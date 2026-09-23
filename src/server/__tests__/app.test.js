@@ -1,6 +1,7 @@
 jest.mock('../db', () => ({
   connectToDatabase: jest.fn().mockResolvedValue({}),
   isDatabaseConnectivityError: jest.fn().mockReturnValue(false),
+  pingDatabase: jest.fn().mockResolvedValue(undefined),
 }));
 
 jest.mock('../models/Ticket', () => ({
@@ -106,7 +107,7 @@ describe('API auth and ticket routes', () => {
     });
     expect(response.body.data).toHaveLength(1);
     expect(Ticket.find).toHaveBeenCalledWith({ status: 'open', priority: 'high' });
-    expect(query.sort).toHaveBeenCalledWith({ ticketNumber: 1 });
+    expect(query.sort).toHaveBeenCalledWith({ ticketNumber: 1, _id: 1 });
     expect(query.skip).toHaveBeenCalledWith(10);
     expect(query.limit).toHaveBeenCalledWith(10);
   });

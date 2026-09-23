@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
-
-const slaHoursByPriority = {
-  low: 72,
-  medium: 48,
-  high: 24,
-  urgent: 4,
-};
+const {
+  priorities,
+  roles,
+  slaHoursByPriority,
+  statuses,
+  terminalStatuses,
+} = require('../../shared/ticket-constants.json');
 
 // Mongoose schema for a support ticket. The schema is the source of truth for
 // validation, defaults, and the shape of documents stored in MongoDB.
@@ -54,12 +54,12 @@ const ticketSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['open', 'assigned', 'in-progress', 'resolved', 'closed'],
+      enum: statuses,
       default: 'open',
     },
     priority: {
       type: String,
-      enum: ['low', 'medium', 'high', 'urgent'],
+      enum: priorities,
       default: 'medium',
     },
     assignee: {
@@ -94,7 +94,7 @@ const ticketSchema = new mongoose.Schema(
         },
         actorRole: {
           type: String,
-          enum: ['admin', 'technician', 'user'],
+          enum: roles,
           default: 'user',
         },
         actorEmail: {
@@ -126,7 +126,7 @@ const ticketSchema = new mongoose.Schema(
     ],
     createdByRole: {
       type: String,
-      enum: ['admin', 'technician', 'user'],
+      enum: roles,
       default: 'user',
     },
   },
@@ -135,11 +135,17 @@ const ticketSchema = new mongoose.Schema(
 
 ticketSchema.pre('validate', function setSlaDueDate(next) {
   if (!this.dueAt) {
-    const created = this.createdAt || new Date();
+    let created = this.createdAt;
+    if (!created) {
+      // Pin createdAt to the same instant the SLA is measured from; otherwise
+      // Mongoose stamps it a few milliseconds later and the two drift apart.
+      created = new Date();
+      if (this.isNew) this.createdAt = created;
+    }
     this.dueAt = new Date(created.getTime() + slaHoursByPriority[this.priority] * 60 * 60 * 1000);
   }
 
-  if (['resolved', 'closed'].includes(this.status) && !this.resolvedAt) {
+  if (terminalStatuses.includes(this.status) && !this.resolvedAt) {
     this.resolvedAt = new Date();
   }
 

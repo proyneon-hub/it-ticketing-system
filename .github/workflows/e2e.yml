@@ -6,8 +6,17 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
+  # Fast and deterministic: the browser talks to controlled API responses.
   playwright:
+    name: Mocked UI regression and accessibility
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -17,7 +26,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -52,3 +61,72 @@ jobs:
           path: test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+  # Nothing is mocked: the production Docker image, a real MongoDB and a real
+  # browser. Catches what mocks cannot, such as a broken image, database wiring
+  # or a Content-Security-Policy that blocks the built frontend.
+  real-stack:
+    name: Real stack smoke (Docker Compose)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The demo accounts are public and seeded by the app; they are not secrets.
+      LIVE_SMOKE_ENABLED: 'true'
+      LIVE_BASE_URL: http://127.0.0.1:5000
+      E2E_ADMIN_EMAIL: admin@demo.local
+      E2E_ADMIN_PASSWORD: AdminPass123!
+      E2E_USER_EMAIL: user@demo.local
+      E2E_USER_PASSWORD: UserPass123!
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # --wait blocks until MongoDB and the app report healthy (/api/ready).
+      - name: Start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 180
+        env:
+          GIT_COMMIT: ${{ github.sha }}
+
+      - name: Seed demo data
+        run: docker compose run --rm seed
+
+      - name: Run smoke tests against the stack
+        run: npm run test:smoke:live
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-real-stack
+          path: playwright-report-live/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload smoke failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-real-stack-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes

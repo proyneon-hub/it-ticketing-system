@@ -1,13 +1,16 @@
 const express = require('express');
 const { authenticateDemoUser, demoUsers, issueToken, requireAuth } = require('../auth');
 
+const { unauthorized } = require('../errors');
+const { loginRateLimiter } = require('../middleware/security');
+
 const router = express.Router();
 
-router.post('/auth/login', (req, res) => {
+router.post('/auth/login', loginRateLimiter(), (req, res) => {
   const user = authenticateDemoUser(req.body.email, req.body.password);
 
   if (!user) {
-    return res.status(401).json({ message: 'Invalid email or password.' });
+    throw unauthorized('Invalid email or password.');
   }
 
   res.json({ token: issueToken(user), user });

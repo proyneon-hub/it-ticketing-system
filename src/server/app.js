@@ -1,22 +1,55 @@
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
-const { connectToDatabase, isDatabaseConnectivityError } = require('./db');
+const { version } = require('../../package.json');
+const { connectToDatabase, pingDatabase } = require('./db');
+const { resolveTrustProxy } = require('./config');
+const { requestLogger } = require('./logger');
+const { docsRouter } = require('./docs');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { corsPolicy, securityHeaders } = require('./middleware/security');
 const authRoutes = require('./routes/auth');
 const ticketRoutes = require('./routes/tickets');
 
 const app = express();
 
-// CORS allows the Vite dev server and the API server to talk across ports.
-app.use(cors());
+app.set('trust proxy', resolveTrustProxy());
+
+// The request id is created first so every later log line and error response can carry it.
+app.use(requestLogger);
+app.use(securityHeaders());
+app.use(corsPolicy());
 // All API endpoints accept JSON bodies. The 1mb limit is plenty for ticket text
 // and prevents accidentally accepting very large payloads.
 app.use(express.json({ limit: '1mb' }));
 
-// Lightweight endpoint for deployment checks and quick local API verification.
+// Liveness: the process is up. Deliberately does not touch the database, so an
+// orchestrator restarting on failure is not triggered by a database blip.
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'it-ticketing-system' });
 });
+
+// Readiness: the app can serve traffic, which requires a working database.
+app.get('/api/ready', async (req, res) => {
+  const details = {
+    service: 'it-ticketing-system',
+    version,
+    commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'unknown',
+    uptimeSeconds: Math.round(process.uptime()),
+  };
+
+  try {
+    await pingDatabase();
+    res.json({ ok: true, database: 'up', ...details });
+  } catch (error) {
+    req.log.error({ err: error }, 'Readiness check failed');
+    res.status(503).json({ ok: false, database: 'down', ...details });
+  }
+});
+
+// Interactive API documentation. Public and database-free; set API_DOCS=off to hide it.
+if (process.env.API_DOCS !== 'off') {
+  app.use('/api', docsRouter);
+}
 
 // Demo authentication routes are intentionally available before the database
 // middleware so reviewers can sign in even while configuring MongoDB.
@@ -33,7 +66,7 @@ app.use('/api', async (_req, _res, next) => {
   }
 });
 
-// Mount the ticket CRUD routes under /api, producing URLs like /api/tickets.
+// Mount the ticket routes under /api, producing URLs like /api/tickets.
 app.use('/api', ticketRoutes);
 
 if (process.env.NODE_ENV === 'production') {
@@ -46,40 +79,9 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Any request that reaches this point did not match a route above.
-app.use((req, res) => {
-  res.status(404).json({ message: `Route not found: ${req.method} ${req.path}` });
-});
+app.use(notFoundHandler);
 
-// Central error handler. Route handlers call next(error), then this converts the
-// error into a consistent JSON response for the frontend.
-app.use((error, _req, res, _next) => {
-  if (error.message && error.message.includes('MONGODB_URI is missing')) {
-    console.error(error.message);
-    return res.status(503).json({
-      message:
-        'Database is not configured. Add MONGODB_URI in Vercel Project Settings, then redeploy.',
-    });
-  }
-
-  // Known MongoDB connection failures become a service-unavailable response
-  // with deployment guidance instead of a vague internal server error.
-  if (isDatabaseConnectivityError(error)) {
-    console.error('Database connection failed:', error.message);
-    return res.status(503).json({
-      message:
-        'Database unavailable. Check MONGODB_URI in Vercel and allow access from Vercel in MongoDB Atlas Network Access.',
-    });
-  }
-
-  const statusCode = error.statusCode || 500;
-  const message = statusCode === 500 ? 'Internal server error.' : error.message;
-
-  // Log only unexpected server errors to avoid noisy logs for normal 400/404s.
-  if (statusCode === 500) {
-    console.error(error);
-  }
-
-  res.status(statusCode).json({ message });
-});
+// Central error handler: every failure leaves as consistent JSON with a request id.
+app.use(errorHandler);
 
 module.exports = app;

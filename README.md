@@ -1,184 +1,149 @@
 # IT Ticketing System
 
-![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)
-![Playwright Regression](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml/badge.svg)
+[![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml)
+[![Playwright Regression](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A production-style IT service desk application with role-based ticket management and a TypeScript Playwright QA framework. It demonstrates support workflows, API validation, cross-browser regression testing, accessibility checks, and CI diagnostics.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered Node.js/Express API on MongoDB, a React client, an OpenAPI contract, 216 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
 
-## Live Demo
-
-Try the deployed application at [it-ticketing-system-pi.vercel.app](https://it-ticketing-system-pi.vercel.app/). The deployment health endpoint is available at [`/api/health`](https://it-ticketing-system-pi.vercel.app/api/health).
-
-## Screenshots
-
-### Admin Dashboard
+**[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
 
 ![Admin dashboard](docs/screenshots/admin-dashboard.png)
 
-### Ticket Creation
+## What this project demonstrates
 
-![Ticket creation form](docs/screenshots/ticket-create-form.png)
+| Building software                                                                                       | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
+| ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own | 216 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
+| React client split into hooks and small components; debounced search that cancels stale requests        | 12 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
+| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                             | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
+| Role-based access enforced in the API and in the database query, not just the UI                        | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
 
-### Ticket Activity
+## Try it
 
-![Ticket activity timeline](docs/screenshots/ticket-update-flow.png)
+The [live demo](https://it-ticketing-system-pi.vercel.app/) shows the demo accounts on the page. Click one to sign in and compare what each role can do:
 
-### Technician and Requester Views
+| Role       | What to try                                                                |
+| ---------- | -------------------------------------------------------------------------- |
+| Admin      | The whole queue, workflow changes, assignment and **Delete**               |
+| Technician | The whole queue and workflow changes, but no delete                        |
+| Requester  | Only your own tickets; create a ticket, but status and assignee are locked |
 
-![Technician dashboard](docs/screenshots/technician-dashboard.png)
+Things worth poking at: sort by priority (it ranks by severity, not alphabetically), filter by SLA state, open a ticket's **Activity** timeline, **Export CSV**, and trigger an error to see the support reference under it.
 
-![Requester dashboard](docs/screenshots/user-dashboard.png)
+## Run it locally
 
-## Business Problem
+With Docker, nothing else to install:
 
-IT teams need a clear way to record requests, prioritize work, assign ownership, track SLA risk, and enforce permissions. This project models those workflows while keeping the API responsible for authorization and validation.
+```bash
+docker compose up --build --wait
+docker compose run --rm seed        # optional demo tickets
+```
 
-## Main Features
+Open <http://localhost:5000> (API docs at `/api/docs`).
 
-- Signed demo authentication with admin, technician, and requester roles.
-- Ticket creation, updates, deletion, assignment, filtering, sorting, pagination, SLA status, and structured activity history.
-- Role-scoped ticket visibility and CSV export.
-- Express REST API backed by MongoDB/Mongoose, plus Vite/React frontend.
-- Jest/Supertest API coverage and TypeScript Playwright browser coverage.
-
-## User Roles
-
-| Role       | Access                                                    |
-| ---------- | --------------------------------------------------------- |
-| Admin      | Full queue, ticket updates, assignment, and deletion.     |
-| Technician | Full queue and workflow updates, without delete controls. |
-| Requester  | Create tickets and view only requester-scoped records.    |
-
-Demo accounts are shown in the app for portfolio review. They are not production authentication accounts.
-
-## Technology Stack
-
-| Layer         | Tooling                                            |
-| ------------- | -------------------------------------------------- |
-| Frontend      | React 18, Vite                                     |
-| Backend       | Node.js, Express                                   |
-| Database      | MongoDB, Mongoose                                  |
-| API tests     | Jest, Supertest                                    |
-| Browser tests | TypeScript, Playwright, Axe                        |
-| Delivery      | GitHub Actions, Docker, Vercel-ready API functions |
-
-## Architecture
-
-The frontend calls an Express REST API through `/api`; the API applies demo authentication and role checks before reading or writing MongoDB data. The full QA execution model is documented in [QA Architecture](docs/QA_ARCHITECTURE.md).
-
-## QA Automation
-
-The repository includes a TypeScript Playwright framework with:
-
-- Page Objects, typed fixtures, and reusable test users/tickets.
-- A deterministic mocked UI regression suite in `tests/e2e-mocked`.
-- 19 tagged functional regression tests across Chromium, Firefox, and WebKit (57 cross-browser executions), plus a separate Chromium portfolio-screenshot workflow with 1 screenshot-capture test.
-- Axe checks for the login, dashboard, and ticket form.
-- Failure screenshots, video, traces, HTML reports, and CI artifact uploads.
-- A separate safety-gated live smoke suite for health, configured login, and dedicated test-ticket cleanup.
-
-### Mocked regression suite
-
-Mocked tests install controlled API responses for fast, deterministic browser coverage of authentication, permissions, ticket workflows, validation, filters, exports, errors, and loading states. Run with `npm run test:e2e`.
-
-### Live smoke suite
-
-Live smoke tests never install API mocks. They are disabled by default and require `LIVE_SMOKE_ENABLED=true` plus configured test credentials; ticket creation uses a `PW-LIVE-` prefix and cleanup. See [Live Smoke Testing](docs/LIVE_SMOKE_TESTING.md).
-
-## Test Strategy
-
-| Layer                | Purpose                                                       | Command                   |
-| -------------------- | ------------------------------------------------------------- | ------------------------- |
-| API                  | Auth, authorization, validation, and ticket endpoints         | `npm test`                |
-| Mocked UI regression | Deterministic role and ticket workflows across three browsers | `npm run test:e2e`        |
-| Accessibility        | Serious/critical Axe checks on three critical screens         | `npm run test:a11y`       |
-| Live smoke           | Real integration checks when safely configured                | `npm run test:smoke:live` |
-
-## Local Setup
-
-1. Use Node.js 24 (the tested CI runtime; `.nvmrc` is included).
-
-2. Install dependencies:
-
-   ```bash
-   npm ci
-   ```
-
-3. Copy `.env.example` to `.env` and configure `MONGODB_URI`, `PORT`, and `AUTH_SECRET`.
-
-4. Start the local app:
-
-   ```bash
-   npm run dev
-   ```
-
-   Open `http://localhost:5173`.
-
-5. Optionally seed predictable tickets:
-
-   ```bash
-   npm run seed
-   ```
-
-## Environment Variables
-
-| Variable                                 | Purpose                                    |
-| ---------------------------------------- | ------------------------------------------ |
-| `MONGODB_URI`                            | MongoDB connection string.                 |
-| `AUTH_SECRET`                            | Signs demo bearer tokens.                  |
-| `LIVE_BASE_URL`                          | Target for live smoke testing.             |
-| `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` | Live-smoke admin credentials.              |
-| `LIVE_SMOKE_ENABLED`                     | Must be `true` to enable live smoke tests. |
-
-Never commit real credentials. The live-suite variables are optional unless running configured live smoke tests.
-
-## Test Commands
+Without Docker (Node.js 24; `.nvmrc` is included):
 
 ```bash
 npm ci
-npm run typecheck:playwright
-npm test
-npm run test:e2e
-npm run test:e2e:headed
-npm run test:e2e:ui
-npm run test:a11y
-npm run test:smoke:live
-npm run screenshots:portfolio
-npm run format:check
-npm run build
+cp .env.example .env
+npm run dev:db          # terminal 1: a throwaway in-memory MongoDB
+npm run seed && npm run dev   # terminal 2: API and Vite, then open http://localhost:5173
 ```
+
+## Engineering highlights
+
+- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-012](docs/DEFECT_LOG.md)).
+- **A bug every mock missed.** The real-stack smoke test caught a regression that all 66 mocked browser runs and 88 unit tests passed: sign-in returns the user as `id`, `/auth/me` returns `sub`, and the mocks had used `sub` for both. The fix, and the fidelity rule that came out of it, are in [ADR 002](docs/adr/002-layered-test-strategy.md).
+- **Docs that cannot drift.** A contract test validates every real API response against the OpenAPI schemas, and fails if an operation is added without being exercised.
+- **Support-friendly by design.** A user sees `Reference: <id>`; `grep <id>` finds the request and, for a failure, its stack ([ADR 003](docs/adr/003-operability-and-request-tracing.md), [runbook](docs/RUNBOOK.md#tracing-a-user-reported-error)).
+- **Security that fits a demo honestly.** Helmet and a strict CSP, failed-login rate limiting that never locks out demo visitors, CSV formula neutralisation, and a plain list of what is not production-grade ([Security notes](docs/SECURITY_NOTES.md)).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  Browser --> Client[React client<br/>hooks and components]
+  Client -->|/api| Edge[Request id, logs,<br/>helmet, CORS]
+  Edge --> Routes[Routes and Zod validation]
+  Routes --> Services[Ticket service<br/>roles, SLA, activity]
+  Services --> DB[(MongoDB)]
+  Edge --> Ops["/health, /ready, /docs"]
+```
+
+Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](docs/adr).
+
+## Test strategy
+
+| Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
+| --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
+| API unit and integration    | Jest, Supertest, in-memory MongoDB       | 84                 | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
+| Frontend unit and component | Vitest, Testing Library                  | 94                 | Hooks (debounce, stale responses, session), components and the whole `App`      | `npm run test:unit`                  |
+| Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
+| Mocked browser regression   | Playwright, page objects, typed fixtures | 19 (57 runs)       | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
+| Accessibility               | Playwright and Axe                       | 3 (9 runs)         | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
+| Real-stack smoke            | Playwright against Docker Compose        | 7                  | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
+| Support monitoring          | pytest                                   | 9                  | The Python health, sign-in and report tooling                                   | `pytest` in `Support-Ops-Automation` |
+
+`npm test` runs the API and frontend suites; `npm run test:coverage` adds coverage thresholds. The strategy, and why each layer exists, is in [ADR 002](docs/adr/002-layered-test-strategy.md); the map from requirement to test is in the [Test plan](docs/TEST_PLAN.md).
 
 ## CI/CD
 
-The main CI workflow runs on Node.js 24 and performs formatting, API tests, a production build, and a high/critical production-dependency audit. The Playwright regression workflow installs Chromium, Firefox, and WebKit; type-checks the suite; runs mocked regression and Axe checks; always uploads HTML reports; and uploads diagnostics only after a failure.
+| Workflow            | What it does                                                                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`            | Format check, lint, tests with coverage thresholds, production build, dependency audit; builds the Docker image and publishes it to GHCR from `main` |
+| `e2e.yml`           | Mocked regression and Axe in three browsers, plus the real-stack smoke job against Docker Compose                                                    |
+| `reports.yml`       | Publishes the Playwright report and coverage to GitHub Pages                                                                                         |
+| `live-smoke.yml`    | Manual smoke run against a deployed environment, inert until its secrets exist                                                                       |
+| `support-ops-*.yml` | Tests the Python tooling and runs a scheduled health check                                                                                           |
 
-The live-smoke workflow is manual-only and performs no checks until the required repository secrets are configured.
+Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
+
+## Tech stack
+
+| Layer             | Tooling                                                                        |
+| ----------------- | ------------------------------------------------------------------------------ |
+| Frontend          | React 18, Vite                                                                 |
+| Backend           | Node.js, Express, Mongoose, Zod, helmet, pino                                  |
+| Database          | MongoDB                                                                        |
+| Contract and docs | OpenAPI 3.1, Swagger UI, Ajv                                                   |
+| Tests             | Jest, Supertest, Vitest, Testing Library, Playwright (TypeScript), Axe, pytest |
+| Delivery          | GitHub Actions, Docker, GHCR, Vercel                                           |
+| Quality           | ESLint, Prettier, Dependabot                                                   |
+
+## Project structure
+
+```text
+src/server/       Express API: routes, validation, services, models, middleware, OpenAPI spec
+src/client/       React app: components, hooks, API client, unit tests
+src/shared/       Constants used by both (statuses, priorities, SLA windows)
+tests/            Playwright: mocked regression, accessibility, real-stack smoke, page objects
+Support-Ops-Automation/   Python health, sign-in and status-report tooling with its own tests
+api/              Vercel serverless adapters for the Express app
+docs/             Architecture, decisions, test plan, runbook, security notes, defect log
+```
 
 ## Documentation
 
-- [API Documentation](docs/API.md)
-- [Test Plan](docs/TEST_PLAN.md)
-- [Automated Test Cases](docs/TEST_CASES.md)
-- [QA Architecture](docs/QA_ARCHITECTURE.md)
-- [Accessibility Testing](docs/ACCESSIBILITY_TESTING.md)
-- [Live Smoke Testing](docs/LIVE_SMOKE_TESTING.md)
-- [GitHub Secrets Setup](docs/GITHUB_SECRETS_SETUP.md)
-- [Bug Report Examples](docs/BUG_REPORT_EXAMPLES.md)
-- [Security Notes](docs/SECURITY_NOTES.md)
-- [Application Support Runbook](docs/RUNBOOK.md)
-- [Portfolio Project Copy](docs/PORTFOLIO_PROJECT_COPY.md)
+- [Architecture](docs/ARCHITECTURE.md) and [decision records](docs/adr)
+- [API reference](docs/API.md) (interactive version at `/api/docs`)
+- [Test plan](docs/TEST_PLAN.md), [automated cases](docs/TEST_CASES.md), [QA architecture](docs/QA_ARCHITECTURE.md), [live smoke testing](docs/LIVE_SMOKE_TESTING.md), [accessibility testing](docs/ACCESSIBILITY_TESTING.md)
+- [Defect log](docs/DEFECT_LOG.md)
+- [Runbook](docs/RUNBOOK.md), [deployment](DEPLOYMENT.md), [security notes](docs/SECURITY_NOTES.md), [GitHub secrets setup](docs/GITHUB_SECRETS_SETUP.md)
+- [Support-Ops-Automation](Support-Ops-Automation/README.md)
 
-## Security and Limitations
+## Security and limitations
 
-This is a portfolio demo with in-code demo accounts, not a production identity system. Review [Security Notes](docs/SECURITY_NOTES.md) before adapting it for production. The configured live smoke suite passed against the resettable demo deployment; CI stays gated until its test secrets are configured.
+This is a portfolio demo with in-code demo accounts, not a production identity system: there is no user database or password hashing, and the token lives in `localStorage`. [Security notes](docs/SECURITY_NOTES.md) lists what is implemented, what is not, and what a production version would add.
 
-## Future Improvements
+## Roadmap
 
-- Persisted user administration with password hashing.
-- Notification workflows for assignment and SLA risk.
-- Saved filters, advanced reporting, and production identity-provider integration.
-- Configure test-only live-smoke credentials and manually verify post-deployment behavior.
+- Persisted users with password hashing and an OIDC provider
+- Notifications for assignment and SLA risk
+- Saved filters and reporting views
+- A shared rate-limit store for multi-instance deployments
+- Migrating the server and client to TypeScript
 
 ## License
 
-MIT
+MIT. Built by [Pramit Roy](https://pramitroy.tech).

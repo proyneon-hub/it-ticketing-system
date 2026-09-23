@@ -1,0 +1,23 @@
+{
+  "roles": ["admin", "technician", "user"],
+  "statuses": ["open", "assigned", "in-progress", "resolved", "closed"],
+  "priorities": ["low", "medium", "high", "urgent"],
+  "terminalStatuses": ["resolved", "closed"],
+  "slaHoursByPriority": {
+    "low": 72,
+    "medium": 48,
+    "high": 24,
+    "urgent": 4
+  },
+  "slaFilters": ["breached", "due-soon"],
+  "sortFields": [
+    "ticketNumber",
+    "title",
+    "status",
+    "priority",
+    "assignee",
+    "dueAt",
+    "createdAt",
+    "updatedAt"
+  ]
+}

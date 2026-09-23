@@ -1,23 +1,52 @@
+# Runs the whole stack locally:  docker compose up --build --wait
+# Then load demo tickets:        docker compose run --rm seed
+# Open http://localhost:5000 and sign in with a demo account.
 services:
   mongo:
-    image: mongo:7
+    image: mongo:8
     restart: unless-stopped
+    # Published on localhost only; the app reaches it over the compose network.
     ports:
-      - '27017:27017'
+      - '127.0.0.1:27017:27017'
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   app:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-local}
+    image: it-ticketing-system:local
+    restart: unless-stopped
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 5000
-      AUTH_SECRET: local-compose-secret
+      # Demo default so compose works out of the box. Set AUTH_SECRET for anything shared.
+      AUTH_SECRET: ${AUTH_SECRET:-local-compose-secret}
       MONGODB_URI: mongodb://mongo:27017/it_ticketing
     ports:
       - '5000:5000'
+    # Health is defined by the image's HEALTHCHECK (/api/ready).
+
+  # One-shot job that replaces the tickets with a known demo data set.
+  seed:
+    image: it-ticketing-system:local
+    profiles: ['seed']
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/it_ticketing
+    command: ['node', 'scripts/seed.js']
 
 volumes:
   mongo-data:

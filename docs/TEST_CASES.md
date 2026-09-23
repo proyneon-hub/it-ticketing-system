@@ -1,6 +1,8 @@
 # Automated Mocked Regression Cases
 
-The cases below run against controlled API responses in `tests/e2e-mocked`. They do not contact the live backend or database.
+The cases below run in a real browser against controlled API responses in `tests/e2e-mocked`, in Chromium, Firefox and WebKit. They do not contact a backend or database, which keeps them fast and deterministic.
+
+The mock responses copy the shapes of the real API (for example, sign-in returns the user as `id` while `/auth/me` returns `sub`), so a client that mixes them up fails here. Behaviour that needs a real database, such as role scoping in queries, SLA logic and pagination, is covered by the API integration tests, and the whole stack is covered by the real-stack smoke tests. The full map is in [TEST_PLAN.md](TEST_PLAN.md).
 
 | ID         | Area           | Scenario                             | Preconditions            | Steps                           | Expected Result                                            | Automated                   |
 | ---------- | -------------- | ------------------------------------ | ------------------------ | ------------------------------- | ---------------------------------------------------------- | --------------------------- |

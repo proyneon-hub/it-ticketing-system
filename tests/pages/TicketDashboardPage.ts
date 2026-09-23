@@ -8,6 +8,15 @@ export class TicketDashboardPage {
     await expect(this.page.getByRole('heading', { name: 'Ticket Dashboard' })).toBeVisible();
   }
 
+  // The heading renders before any data arrives, so `expectLoaded` alone passes even
+  // when the tickets and stats never load. Use this where "nothing to show" would
+  // otherwise look the same as "shown correctly".
+  async expectDataLoaded(): Promise<void> {
+    const totalCard = this.page.locator('.stat-card').filter({ hasText: 'Total Tickets' });
+    await expect(totalCard.locator('strong')).toHaveText(/^\d+$/);
+    await expect(this.page.getByText('Loading tickets...')).toHaveCount(0);
+  }
+
   async search(term: string): Promise<void> {
     await this.page.getByLabel('Search tickets').fill(term);
   }

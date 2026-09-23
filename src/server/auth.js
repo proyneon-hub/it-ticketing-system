@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const { forbidden, unauthorized } = require('./errors');
+const { logger } = require('./logger');
 
 const roles = ['admin', 'technician', 'user'];
 
@@ -26,8 +28,21 @@ const demoUsers = [
   },
 ];
 
+const DEFAULT_AUTH_SECRET = 'local-demo-secret-change-me';
+let warnedAboutDefaultSecret = false;
+
 function getAuthSecret() {
-  return process.env.AUTH_SECRET || 'local-demo-secret-change-me';
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+
+  // server.js refuses to start in production without a secret. Serverless
+  // entry points cannot fail at boot without taking the demo offline, so they
+  // keep working and log loudly instead.
+  if (process.env.NODE_ENV === 'production' && !warnedAboutDefaultSecret) {
+    warnedAboutDefaultSecret = true;
+    logger.warn('AUTH_SECRET is not set; signing tokens with the public development secret.');
+  }
+
+  return DEFAULT_AUTH_SECRET;
 }
 
 function base64url(input) {
@@ -95,10 +110,12 @@ function getTokenFromRequest(req) {
   return header.startsWith('Bearer ') ? header.slice(7) : '';
 }
 
+// Failures go through next() so they leave via the central error handler, with
+// the same JSON shape and request id as every other error.
 function requireAuth(req, res, next) {
   const user = verifyToken(getTokenFromRequest(req));
   if (!user) {
-    return res.status(401).json({ message: 'Authentication required.' });
+    return next(unauthorized('Authentication required.'));
   }
   req.user = user;
   next();
@@ -107,9 +124,7 @@ function requireAuth(req, res, next) {
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: 'You do not have permission to perform this action.' });
+      return next(forbidden('You do not have permission to perform this action.'));
     }
     next();
   };

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from support_ops.config import SupportOpsConfig, load_config
-from support_ops.health_check import run_health_check, utc_now
+from support_ops.health_check import run_health_check, run_readiness_check, utc_now
 from support_ops.synthetic_login import run_synthetic_login
 from support_ops.ticket_api_check import run_ticket_api_check
 
@@ -103,6 +103,7 @@ def generate_status_report(
     generated_at = utc_now()
     results = [
         run_health_check(config),
+        run_readiness_check(config),
         run_synthetic_login(config),
         run_ticket_api_check(config),
     ]

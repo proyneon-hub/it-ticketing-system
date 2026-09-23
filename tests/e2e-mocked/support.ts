@@ -227,7 +227,15 @@ export async function installApiMocks(page: Page): Promise<void> {
       }
 
       currentUser = matchedUser;
-      return route.fulfill({ json: { token: `token-${matchedUser.role}`, user: matchedUser } });
+      // The real API returns `id` here and `sub` from /auth/me. The mock keeps the
+      // same difference so a client that mixes them up fails here, not only in production.
+      const { sub, name, email: userEmail, role } = matchedUser;
+      return route.fulfill({
+        json: {
+          token: `token-${matchedUser.role}`,
+          user: { id: sub, name, email: userEmail, role },
+        },
+      });
     }
 
     if (path === '/api/tickets/stats') {

@@ -1,155 +1,101 @@
-# Deployment Guide for Pramit
+# Deployment
 
-This project is prepared for:
+The same Express app runs three ways: locally, in Docker, and as Vercel serverless functions. Pick the one you need; all of them use MongoDB.
 
-- GitHub owner: `proyneon-hub`
-- Suggested repo: `it-ticketing-system`
-- Vercel account/team path: `pramits-projects-ce654619`
-- Database: MongoDB Atlas using `MONGODB_URI`
+| Target                            | Best for                                       | Database                             |
+| --------------------------------- | ---------------------------------------------- | ------------------------------------ |
+| [Docker Compose](#docker-compose) | Running the whole stack on one machine, and CI | Bundled MongoDB container            |
+| [Vercel](#vercel)                 | The public demo                                | MongoDB Atlas                        |
+| Local development                 | Day-to-day work (see the [README](README.md))  | `npm run dev:db` or your own MongoDB |
 
-## What is already done
+## Configuration
 
-- Full-stack source code is included.
-- Git repository is initialized locally.
-- `origin` is set to:
+| Variable       | Required          | Notes                                                                                                                                                                         |
+| -------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`  | Yes               | Connection string, for example `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/it_ticketing?retryWrites=true&w=majority`                                              |
+| `AUTH_SECRET`  | Yes in production | A long random value. `server.js` refuses to start in production without it. On Vercel a missing value logs a warning and falls back to a public development secret, so set it |
+| `CORS_ORIGINS` | No                | Only needed if another origin calls the API from a browser                                                                                                                    |
 
-```bash
-https://github.com/proyneon-hub/it-ticketing-system.git
-```
+The full list is in the [runbook](docs/RUNBOOK.md#environment-variables). Never commit real values; `.env.example` shows the names.
 
-- Vercel config is included in `vercel.json`.
-- The frontend build command is `npm run build`.
-- The production output folder is `dist`.
-- Express API routes are served through the root `/api` directory.
-
-## Step 1: Create the GitHub repository
-
-Go to GitHub and create a new empty repository named:
-
-```text
-it-ticketing-system
-```
-
-Use this owner/account:
-
-```text
-proyneon-hub
-```
-
-Important: create it empty. Do not add a README, `.gitignore`, or license from GitHub, because this project already includes those files.
-
-## Step 2: Push the code to GitHub
-
-After unzipping the project, open a terminal inside the `it-ticketing-system` folder and run:
+## Docker Compose
 
 ```bash
-git branch -M main
-git remote set-url origin https://github.com/proyneon-hub/it-ticketing-system.git
-git push -u origin main
+docker compose up --build --wait     # builds the image, starts MongoDB and the app, waits until healthy
+docker compose run --rm seed         # optional: load demo tickets
 ```
 
-If Git asks you to sign in, sign in with your GitHub account. If GitHub rejects password login, use GitHub Desktop, GitHub CLI, or a personal access token.
+Open `http://localhost:5000`. The API docs are at `/api/docs`.
 
-### Alternative using GitHub CLI
+- The image is multi-stage, runs as the unprivileged `node` user, and contains production dependencies only.
+- Its `HEALTHCHECK` probes `/api/ready`, so the container is unhealthy while the database is unreachable.
+- MongoDB is published to `127.0.0.1` only.
+- Compose supplies a demo `AUTH_SECRET`. Set your own for anything shared: `AUTH_SECRET=... docker compose up`.
 
-If you have GitHub CLI installed:
+Stop and remove everything, including data: `docker compose down --volumes`.
+
+### Published image
+
+CI builds the image on every pull request and pushes it to GitHub Container Registry from `main`:
 
 ```bash
-gh auth login
-gh repo create proyneon-hub/it-ticketing-system --public --source=. --remote=origin --push
+docker pull ghcr.io/proyneon-hub/it-ticketing-system:latest
 ```
 
-## Step 3: Set up MongoDB Atlas
+Tags: `latest` and `sha-<commit>`. Running an older tag is the fastest rollback.
 
-Create a MongoDB Atlas cluster and get a connection string like:
+## Vercel
 
-```text
-mongodb+srv://USERNAME:PASSWORD@cluster0.xxxxx.mongodb.net/it_ticketing?retryWrites=true&w=majority
-```
+The frontend is built by Vite and served statically; `api/` contains thin adapters that run the same Express app as serverless functions (`api/[...path].js` is the catch-all). `vercel.json` holds the build settings.
 
-Save this value. You will need it as `MONGODB_URI`.
+1. Create a MongoDB Atlas cluster and a database user. In Network Access, allow the deployment. For a demo, "allow from anywhere" is common; restrict it for anything real.
+2. In Vercel choose **Add New Project**, import the GitHub repository, and use these settings:
 
-## Step 4: Deploy on Vercel from GitHub
+   | Setting          | Value           |
+   | ---------------- | --------------- |
+   | Framework Preset | Vite            |
+   | Build Command    | `npm run build` |
+   | Output Directory | `dist`          |
 
-1. Go to Vercel.
-2. Choose **Add New Project**.
-3. Import `proyneon-hub/it-ticketing-system`.
-4. Use these project settings:
+3. Add the environment variables `MONGODB_URI` and `AUTH_SECRET`.
+4. Deploy. Pushes to `main` redeploy automatically.
 
-| Setting          | Value           |
-| ---------------- | --------------- |
-| Framework Preset | Vite            |
-| Build Command    | `npm run build` |
-| Output Directory | `dist`          |
-| Install Command  | `npm install`   |
-
-5. Add this environment variable:
-
-```text
-MONGODB_URI=your_mongodb_atlas_connection_string
-```
-
-6. Deploy.
-
-## Step 5: Deploy using Vercel CLI instead
-
-From inside the project folder:
+Or with the CLI:
 
 ```bash
-npm install
-npm run build
 npm install -g vercel
 vercel login
 vercel
 vercel env add MONGODB_URI
+vercel env add AUTH_SECRET
 vercel --prod
 ```
 
-When Vercel asks for the scope/team, choose:
+Environment variable changes only take effect after a redeploy.
 
-```text
-pramits-projects-ce654619
-```
+## Verify a deployment
 
-When Vercel asks for the project name, use:
+1. `GET /api/health` returns `{"ok":true,"service":"it-ticketing-system"}`.
+2. `GET /api/ready` returns `200` with `"database":"up"` and the deployed `commit`. This is the check that proves the app can reach MongoDB.
+3. Open `/api/docs`, or the app itself, and sign in with each demo role.
+4. On an environment that is safe to write to, run the [smoke suite](docs/LIVE_SMOKE_TESTING.md) or the manual `Live Smoke` workflow.
 
-```text
-it-ticketing-system
-```
+The scheduled `Support Ops Scheduled Health Check` workflow runs the Python health and readiness checks daily once the `BASE_URL` secret is set (see [Support-Ops-Automation](Support-Ops-Automation/README.md)).
 
-## Step 6: Verify after deployment
+## GitHub setup
 
-Open your deployed site and test:
+Some features need a one-time switch in the repository settings:
 
-```text
-https://it-ticketing-system-pi.vercel.app/api/health
-```
-
-You should see:
-
-```json
-{
-  "ok": true,
-  "service": "it-ticketing-system"
-}
-```
-
-Then open the main app URL and create a sample ticket.
+- **Test reports on GitHub Pages:** Settings, Pages, Source: "GitHub Actions". The `Publish Reports` workflow then publishes the Playwright report and coverage to `https://<owner>.github.io/<repo>/` after each push to `main`.
+- **Container images:** no setup; the workflow uses the built-in `GITHUB_TOKEN`. Make the package public under the repository's Packages settings if others should pull it.
+- **Live smoke against a deployment:** add repository secrets as described in [GITHUB_SECRETS_SETUP.md](docs/GITHUB_SECRETS_SETUP.md).
 
 ## Common issues
 
-### API works locally but not on Vercel
+**The API works locally but not on Vercel.** Confirm `MONGODB_URI` is set under Project Settings, Environment Variables, then redeploy.
 
-Check that `MONGODB_URI` is added in Vercel Project Settings under Environment Variables, then redeploy.
+**`Database unavailable` or a 503 from `/api/ready`.** Check that the user and password in the URI are right, that the database user exists, and that Atlas Network Access allows the deployment.
 
-### MongoDB connection error
+**`/api/docs` shows a blank or unstyled page on Vercel.** Swagger UI serves its assets from `node_modules/swagger-ui-dist`; `vercel.json` includes them in the functions with `includeFiles`. If a change to that setting breaks the page, check the function's bundled files in the Vercel deployment details.
 
-In MongoDB Atlas, make sure:
-
-- The database user exists.
-- The password in the URI is correct.
-- Network access allows the deployment. For simple portfolio testing, many developers temporarily allow access from anywhere, but restrict it later for security.
-
-### Git push says repository not found
-
-Create the empty repo first at GitHub, then run the push command again.
+**A user reports an error.** Ask for the reference shown under it and follow [Tracing a user-reported error](docs/RUNBOOK.md#tracing-a-user-reported-error).

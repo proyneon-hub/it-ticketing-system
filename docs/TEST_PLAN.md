@@ -1,120 +1,116 @@
 # Test Plan
 
-## Project Overview
+## Project overview
 
-The IT Ticketing System is a full-stack service desk application with role-based access, ticket lifecycle management, SLA tracking, and demo authentication. This plan defines the manual and automated checks used to verify the main workflows.
+The IT Ticketing System is a full-stack service desk with role-based access, ticket lifecycle management, SLA tracking and demo authentication. This plan defines what is tested, at which layer, and how to run it. The strategy and its rationale are in [ADR 002](adr/002-layered-test-strategy.md); the suites and diagrams are in [QA_ARCHITECTURE.md](QA_ARCHITECTURE.md).
 
-## Test Scope
+## Scope
 
 In scope:
 
-- Demo login for admin, technician, and user roles
+- Demo sign-in for the admin, technician and requester roles
 - Role-based ticket visibility and permissions
-- Ticket creation, update, delete, filtering, and SLA display
-- Protected API behavior and validation errors
+- Ticket creation, update, delete, filtering, sorting, pagination, export and SLA display
+- Protected API behaviour, validation and error handling
 - Dashboard stats and seeded demo data
-- Build and CI checks
+- Operability: health and readiness probes, request ids, the Docker image
+- Accessibility of the main screens
+- Build, lint and CI checks
 
-Out of scope for the current demo:
+Out of scope for the demo:
 
 - Real password reset flows
 - Persistent user administration
 - Email or notification delivery
-- Production identity provider integration
+- A production identity provider
 
-## Test Environment
+## Test environments
 
-- Local frontend: `http://localhost:5173`
-- Local API: `http://localhost:5000/api`
-- Database: local MongoDB or MongoDB Atlas through `MONGODB_URI`
-- Browser: Chrome or Edge current stable
-- Node.js: 24 (tested; supported range is 22 through 26)
+| Environment                                              | Used for                                          |
+| -------------------------------------------------------- | ------------------------------------------------- |
+| Node.js 24 (supported range 22 through 26)               | All local and CI runs                             |
+| In-memory MongoDB (`mongodb-memory-server`)              | API integration and contract tests                |
+| Vite dev server with mocked API responses                | Mocked browser regression and accessibility tests |
+| Docker Compose stack (production image and real MongoDB) | Real-stack smoke tests, in CI and locally         |
+| A deployed demo                                          | Post-deploy smoke tests, run manually             |
+| Chromium, Firefox, WebKit                                | Mocked browser regression and Axe                 |
 
-## User Roles
+## User roles
 
-| Role       | Purpose            | Expected Access                                    |
+| Role       | Purpose            | Expected access                                    |
 | ---------- | ------------------ | -------------------------------------------------- |
 | Admin      | Service desk owner | Full ticket queue, update workflow, delete tickets |
 | Technician | Support analyst    | Full ticket queue, update workflow and assignment  |
 | User       | Requester          | Create and view only their own tickets             |
 
-## Manual Smoke Tests
+## Automated coverage map
 
-| ID     | Area            | Test Case                                        |
-| ------ | --------------- | ------------------------------------------------ |
-| TC-001 | Login           | Admin can log in                                 |
-| TC-002 | Login           | Technician can log in                            |
-| TC-003 | Login           | User can log in                                  |
-| TC-004 | Ticket Creation | User can create ticket                           |
-| TC-005 | Role Access     | User sees only their own tickets                 |
-| TC-006 | Role Access     | Technician sees full ticket queue                |
-| TC-007 | Role Access     | User cannot delete tickets                       |
-| TC-008 | Role Access     | Technician cannot delete tickets                 |
-| TC-009 | Admin           | Admin can delete ticket                          |
-| TC-010 | Workflow        | Ticket can move from open to assigned            |
-| TC-011 | Workflow        | Ticket can move to in-progress                   |
-| TC-012 | Workflow        | Ticket can move to resolved                      |
-| TC-013 | SLA             | SLA dashboard shows breached/due-soon tickets    |
-| TC-014 | API             | Protected routes reject unauthenticated requests |
-| TC-015 | API             | Invalid ticket payload returns validation error  |
+| Requirement                                           | Where it is tested                                                                                                                                    |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in, token expiry and tampered tokens             | `auth.test.js`, `security.test.js`, `tests/e2e-mocked/auth.spec.ts`, `tests/smoke-live/login.spec.ts`                                                 |
+| Role permissions and requester scoping                | `tickets.integration.test.js` (real database), `app.test.js`, `tests/e2e-mocked/role-permissions.spec.ts`, `tests/smoke-live/requester-scope.spec.ts` |
+| Ticket lifecycle, workflow rules and activity history | `tickets.integration.test.js`, `tests/e2e-mocked/ticket-lifecycle.spec.ts`, `tests/smoke-live/ticket-lifecycle.spec.ts`                               |
+| SLA due dates, breached and due-soon filters, stats   | `tickets.integration.test.js`, `TicketRow.test.jsx`, `format.test.js`                                                                                 |
+| Filters, search, sorting and pagination               | `tickets.integration.test.js`, `useTickets.test.js`, `tests/e2e-mocked/filters-export.spec.ts`                                                        |
+| CSV export, including formula neutralisation          | `tickets.integration.test.js`, `tests/e2e-mocked/filters-export.spec.ts`                                                                              |
+| Input validation and error responses                  | `tickets.integration.test.js`, `security.test.js`, `openapi.contract.test.js`                                                                         |
+| API contract and documentation                        | `openapi.contract.test.js`, `tests/smoke-live/docs.spec.ts`                                                                                           |
+| Loading, empty and error states, request-id reference | `App.test.jsx`, `SmallComponents.test.jsx`, `tests/e2e-mocked/error-handling.spec.ts`                                                                 |
+| Search debounce and stale-response handling           | `useTickets.test.js`, `App.test.jsx`                                                                                                                  |
+| Session restore and expiry                            | `useAuth.test.js`, `api.test.js`, `App.test.jsx`                                                                                                      |
+| Security headers, CORS, rate limiting, startup config | `security.test.js`                                                                                                                                    |
+| Health, readiness and request tracing                 | `tickets.integration.test.js`, `security.test.js`, `tests/smoke-live/readiness.spec.ts`, Support-Ops `test_health_check.py`                           |
+| Accessibility                                         | `tests/accessibility/` and the manual checklist in [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md)                                               |
+| Production image and the whole stack                  | The real-stack job in `.github/workflows/e2e.yml`                                                                                                     |
 
-## Regression Tests
+## Manual smoke tests
 
-- Existing demo credentials continue to work.
-- Seeded demo tickets appear after running `npm run seed`.
-- Dashboard cards load without API errors.
-- Filters do not expose tickets outside the current role scope.
-- The production build completes with `npm run build`.
+Run these after significant changes, or to demonstrate the app.
 
-## Traceability Summary
+| ID     | Area            | Test case                                                           |
+| ------ | --------------- | ------------------------------------------------------------------- |
+| TC-001 | Sign-in         | Admin can sign in                                                   |
+| TC-002 | Sign-in         | Technician can sign in                                              |
+| TC-003 | Sign-in         | Requester can sign in                                               |
+| TC-004 | Ticket creation | Requester can create a ticket                                       |
+| TC-005 | Role access     | Requester sees only their own tickets                               |
+| TC-006 | Role access     | Technician sees the full ticket queue                               |
+| TC-007 | Role access     | Requester cannot delete tickets                                     |
+| TC-008 | Role access     | Technician cannot delete tickets                                    |
+| TC-009 | Admin           | Admin can delete a ticket                                           |
+| TC-010 | Workflow        | A ticket can move from open to assigned                             |
+| TC-011 | Workflow        | A ticket can move to in-progress                                    |
+| TC-012 | Workflow        | A ticket can move to resolved                                       |
+| TC-013 | SLA             | The dashboard shows breached and due-soon tickets                   |
+| TC-014 | API             | Protected routes reject unauthenticated requests                    |
+| TC-015 | API             | An invalid ticket payload returns a validation error                |
+| TC-016 | Operations      | An error in the UI shows a reference that appears in the server log |
+| TC-017 | Docs            | `/api/docs` loads and **Try it out** works with a signed-in token   |
 
-| Requirement area                                   | Root automated coverage                                                                                                                     |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication and session rejection               | `tests/e2e-mocked/auth.spec.ts`, `src/server/__tests__/auth.test.js`, and configured `tests/smoke-live/login.spec.ts`                       |
-| Role permissions and requester scoping             | `tests/e2e-mocked/role-permissions.spec.ts`, `src/server/__tests__/app.test.js`                                                             |
-| Ticket lifecycle, validation, and protected routes | `tests/e2e-mocked/ticket-lifecycle.spec.ts`, `src/server/__tests__/app.test.js`, and configured `tests/smoke-live/ticket-lifecycle.spec.ts` |
-| Filters, exports, loading, and error states        | `tests/e2e-mocked/filters-export.spec.ts` and `tests/e2e-mocked/error-handling.spec.ts`                                                     |
-| Accessibility                                      | `tests/accessibility/`                                                                                                                      |
-| Live service health                                | configured `tests/smoke-live/health.spec.ts`                                                                                                |
+## Edge cases and where they are covered
 
-## Role-Based Permission Tests
+| Edge case                                       | Covered by                                                               |
+| ----------------------------------------------- | ------------------------------------------------------------------------ |
+| Database unavailable                            | `security.test.js` (503 with guidance; readiness reports `down`)         |
+| Expired or malformed bearer token               | `auth.test.js`, `security.test.js`, `api.test.js`, `useAuth.test.js`     |
+| Empty search result                             | `tests/e2e-mocked/filters-export.spec.ts`, `App.test.jsx`                |
+| Assigned status with no assignee                | `tickets.integration.test.js`                                            |
+| Resolved or closed tickets with an overdue date | `tickets.integration.test.js` (excluded from breached), `format.test.js` |
+| Reopening a resolved ticket                     | `tickets.integration.test.js` (`resolvedAt` cleared)                     |
+| Concurrent ticket creation                      | `tickets.integration.test.js` (unique, gap-free numbers)                 |
+| Tickets that tie on the sort key                | `tickets.integration.test.js` (stable pages)                             |
+| Regex characters and operators in search        | `tickets.integration.test.js`                                            |
+| Long text near the model limits                 | `tickets.integration.test.js` (title over 120 characters rejected)       |
+| Slow responses arriving out of order            | `useTickets.test.js`                                                     |
 
-- Admin can create, update, and delete tickets.
-- Technician can update ticket status, priority, and assignee but cannot delete tickets.
-- User-created tickets are forced to the signed-in user's name and email.
-- Users cannot update workflow fields such as status, assignee, or SLA due date.
-- API routes return `401` without a bearer token and `403` for forbidden actions.
+Defects found by this plan are recorded in [DEFECT_LOG.md](DEFECT_LOG.md).
 
-## API Validation Tests
+## Acceptance criteria
 
-- Missing ticket title returns `400`.
-- Invalid ticket status returns `400`.
-- Invalid priority returns `400`.
-- Invalid SLA due date returns `400`.
-- Invalid ticket ID format returns `400`.
-- Unknown ticket ID returns `404`.
-
-## UI Validation Tests
-
-- Required title field prevents empty ticket creation.
-- Email input uses browser email validation where applicable.
-- Error alerts are shown when API requests fail.
-- Loading and empty states are visible for ticket lists.
-- Disabled controls communicate role restrictions.
-
-## Edge Cases
-
-- Database unavailable during ticket loading.
-- Expired or malformed bearer token.
-- Empty search result set.
-- Assigned status with no assignee.
-- Closed or resolved tickets with overdue SLA dates.
-- Long ticket descriptions near the model limit.
-
-## Acceptance Criteria
-
-- `npm test` passes.
-- `npm run format:check` passes.
+- `npm run format:check`, `npm run lint` and `npm run typecheck:playwright` pass.
+- `npm run test:coverage` passes with the coverage thresholds met.
+- `npm run test:e2e` and `npm run test:a11y` pass in all three browsers.
 - `npm run build` passes.
-- Admin, technician, and user demo workflows function locally.
-- No role can access or mutate data outside its expected permission boundary.
+- The real-stack smoke suite passes against the Docker Compose stack.
+- Admin, technician and requester workflows work end to end.
+- No role can read or change data outside its permission boundary.
