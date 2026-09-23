@@ -46,7 +46,7 @@ function describeError(error) {
   return { status: 500, message: 'Internal server error.' };
 }
 
-// eslint-disable-next-line no-unused-vars -- Express identifies error handlers by their 4 arguments.
+// Express identifies error handlers by their four arguments, so `_next` must stay.
 function errorHandler(error, req, res, _next) {
   const { status, message, errors } = describeError(error);
   const log = req.log || logger;

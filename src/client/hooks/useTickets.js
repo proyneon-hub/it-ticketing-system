@@ -16,14 +16,26 @@ const emptyPagination = { page: 1, limit: defaultFilters.limit, total: 0, totalP
 // the actions that change them. Requests are cancelled when the filters change
 // again before they finish, so a slow response can never overwrite a newer one.
 export function useTickets({ user, onError, onSuccess }) {
+  const userId = user?.sub ?? null;
   const [filters, setFilters] = useState(defaultFilters);
-  const [tickets, setTickets] = useState([]);
+  // The last request that finished, and the key it answered. `loading` is
+  // derived from that key rather than stored, so it is true from the very first
+  // render of a new request and there is no state to keep in sync.
+  const [settled, setSettled] = useState({ key: null, tickets: [], pagination: emptyPagination });
   const [stats, setStats] = useState(null);
-  const [pagination, setPagination] = useState(emptyPagination);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  // A different person signing in (or out) starts from a clean slate. Adjusting
+  // state during render like this is React's pattern for resetting on a changed input.
+  const [previousUserId, setPreviousUserId] = useState(userId);
+  if (previousUserId !== userId) {
+    setPreviousUserId(userId);
+    setFilters(defaultFilters);
+    setSettled({ key: null, tickets: [], pagination: emptyPagination });
+    setStats(null);
+  }
 
   // The search box updates instantly; the request waits until typing pauses.
   const debouncedSearch = useDebouncedValue(filters.search, SEARCH_DEBOUNCE_MS);
@@ -31,36 +43,37 @@ export function useTickets({ user, onError, onSuccess }) {
   // but the request only changes when the debounced search (or another filter) does.
   const filtersKey = JSON.stringify({ ...filters, search: debouncedSearch });
   const activeFilters = useMemo(() => JSON.parse(filtersKey), [filtersKey]);
+  const requestKey = `${userId}#${filtersKey}#${reloadKey}`;
 
   const refresh = useCallback(() => setReloadKey((key) => key + 1), []);
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!userId) return undefined;
 
     const controller = new AbortController();
-    setLoading(true);
     onError(null);
 
     fetchTickets(activeFilters, { signal: controller.signal })
       .then((data) => {
         if (controller.signal.aborted) return; // A newer request replaced this one.
-        setTickets(data.data || data.tickets || []);
-        setPagination(data.pagination || { ...emptyPagination, limit: activeFilters.limit });
-        setLoading(false);
+        setSettled({
+          key: requestKey,
+          tickets: data.data || data.tickets || [],
+          pagination: data.pagination || { ...emptyPagination, limit: activeFilters.limit },
+        });
       })
       .catch((error) => {
         if (controller.signal.aborted) return; // Superseded by a newer request.
-        setTickets([]);
-        setLoading(false);
+        setSettled({ key: requestKey, tickets: [], pagination: emptyPagination });
         onError(error);
       });
 
     return () => controller.abort();
-  }, [user, activeFilters, reloadKey, onError]);
+  }, [userId, activeFilters, requestKey, onError]);
 
   // Stats do not depend on the filters, so they reload only after a change.
   useEffect(() => {
-    if (!user) return undefined;
+    if (!userId) return undefined;
 
     const controller = new AbortController();
 
@@ -75,16 +88,10 @@ export function useTickets({ user, onError, onSuccess }) {
       });
 
     return () => controller.abort();
-  }, [user, reloadKey, onError]);
+  }, [userId, reloadKey, onError]);
 
-  useEffect(() => {
-    if (!user) {
-      // Signed out: drop the previous person's data and filters.
-      setTickets([]);
-      setStats(null);
-      setFilters(defaultFilters);
-    }
-  }, [user]);
+  const loading = Boolean(userId) && settled.key !== requestKey;
+  const { tickets, pagination } = settled;
 
   const updateFilter = useCallback((field, value) => {
     setFilters((current) => ({ ...current, [field]: value, page: 1 }));
