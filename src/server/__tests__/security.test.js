@@ -133,11 +133,35 @@ describe('database unavailable', () => {
   });
 });
 
+describe('readiness reports whether authentication is configured', () => {
+  const original = process.env.AUTH_SECRET;
+  afterEach(() => {
+    if (original === undefined) delete process.env.AUTH_SECRET;
+    else process.env.AUTH_SECRET = original;
+  });
+
+  test.each([
+    [undefined, false],
+    ['short', false],
+    ['x'.repeat(32), true],
+  ])('AUTH_SECRET %p -> authConfigured %p', async (secret, expected) => {
+    if (secret === undefined) delete process.env.AUTH_SECRET;
+    else process.env.AUTH_SECRET = secret;
+
+    // The database is unreachable in this suite, so readiness is 503; the flag is still reported.
+    const ready = await request(app).get('/api/ready');
+    expect(ready.body.authConfigured).toBe(expected);
+  });
+});
+
 describe('startup configuration', () => {
-  test('refuses to start in production without AUTH_SECRET', () => {
+  test('refuses to start in production without a strong AUTH_SECRET', () => {
     expect(() => assertProductionConfig({ NODE_ENV: 'production' })).toThrow(/AUTH_SECRET/);
+    expect(() => assertProductionConfig({ NODE_ENV: 'production', AUTH_SECRET: 's3cret' })).toThrow(
+      /at least 32 characters/
+    );
     expect(() =>
-      assertProductionConfig({ NODE_ENV: 'production', AUTH_SECRET: 's3cret' })
+      assertProductionConfig({ NODE_ENV: 'production', AUTH_SECRET: 'x'.repeat(32) })
     ).not.toThrow();
     expect(() => assertProductionConfig({ NODE_ENV: 'development' })).not.toThrow();
   });

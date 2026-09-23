@@ -30,8 +30,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      # Demo default so compose works out of the box. Set AUTH_SECRET for anything shared.
-      AUTH_SECRET: ${AUTH_SECRET:-local-compose-secret}
+      # Demo default (32+ characters, which production mode requires) so compose works
+      # out of the box. Set AUTH_SECRET for anything shared.
+      AUTH_SECRET: ${AUTH_SECRET:-local-compose-demo-secret-do-not-reuse}
       MONGODB_URI: mongodb://mongo:27017/it_ticketing
     ports:
       - '5000:5000'

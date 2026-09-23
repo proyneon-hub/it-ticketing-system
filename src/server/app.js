@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const { version } = require('../../package.json');
 const { connectToDatabase, pingDatabase } = require('./db');
-const { resolveTrustProxy } = require('./config');
+const { hasStrongAuthSecret, resolveTrustProxy } = require('./config');
 const { requestLogger } = require('./logger');
 const { docsRouter } = require('./docs');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
@@ -35,6 +35,9 @@ app.get('/api/ready', async (req, res) => {
     version,
     commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.GIT_COMMIT || 'unknown',
     uptimeSeconds: Math.round(process.uptime()),
+    // True when AUTH_SECRET is set and strong enough. Lets a deploy be checked
+    // without exposing the secret or attempting a sign-in.
+    authConfigured: hasStrongAuthSecret(),
   };
 
   try {

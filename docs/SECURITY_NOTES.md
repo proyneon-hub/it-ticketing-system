@@ -21,7 +21,7 @@ Demo users are defined in code and receive HMAC-SHA256 signed bearer tokens that
 | Information exposure | Unexpected errors return a generic 500; stacks stay in the server log; headers and tokens are never logged                                                        |
 | Request size         | JSON bodies are capped at 1 MB                                                                                                                                    |
 | Traceability         | Every request has an id that appears in the response, the logs and any error                                                                                      |
-| Configuration        | `server.js` refuses to start in production without `AUTH_SECRET`                                                                                                  |
+| Configuration        | Production refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters: `server.js` fails to start, and serverless functions answer 503       |
 | Container            | The image runs as the unprivileged `node` user, contains production dependencies only, and MongoDB is published to localhost only in Compose                      |
 | Supply chain         | `npm audit` gates CI (high or critical production findings fail the build), and Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker        |
 
@@ -31,7 +31,6 @@ Demo users are defined in code and receive HMAC-SHA256 signed bearer tokens that
 - **Token stored in `localStorage`.** Script injection could read it. The Content-Security-Policy limits that risk; httpOnly cookies with CSRF protection would remove it.
 - **No token refresh or revocation.** A token stays valid until it expires or `AUTH_SECRET` changes.
 - **Rate limit store is per instance.** It is exact on a single container and best effort across serverless instances.
-- **Serverless fallback secret.** Serverless entry points cannot fail at boot without taking the demo offline, so a missing `AUTH_SECRET` logs a warning and uses the public development secret. Set `AUTH_SECRET` on every real deployment.
 - **No audit trail beyond ticket activity.** Sign-ins and permission failures appear in the request log but are not recorded as security events.
 
 ## What a production version would add

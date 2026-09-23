@@ -12,5 +12,6 @@ class HttpError extends Error {
 const badRequest = (message, errors) => new HttpError(400, message, errors);
 const unauthorized = (message) => new HttpError(401, message);
 const forbidden = (message) => new HttpError(403, message);
+const serviceUnavailable = (message) => new HttpError(503, message);
 
-module.exports = { HttpError, badRequest, unauthorized, forbidden };
+module.exports = { HttpError, badRequest, unauthorized, forbidden, serviceUnavailable };

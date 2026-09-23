@@ -1,5 +1,6 @@
 const crypto = require('crypto');
-const { forbidden, unauthorized } = require('./errors');
+const { MIN_AUTH_SECRET_LENGTH, hasStrongAuthSecret } = require('./config');
+const { forbidden, serviceUnavailable, unauthorized } = require('./errors');
 const { logger } = require('./logger');
 
 const roles = ['admin', 'technician', 'user'];
@@ -29,20 +30,22 @@ const demoUsers = [
 ];
 
 const DEFAULT_AUTH_SECRET = 'local-demo-secret-change-me';
-let warnedAboutDefaultSecret = false;
 
+// The development fallback is public (it is in this repository), so a token signed
+// with it proves nothing. In production a missing or weak secret therefore stops
+// authentication with a 503 instead of quietly accepting forgeable tokens. The
+// rest of the API, such as health and docs, keeps working.
 function getAuthSecret() {
-  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  if (process.env.NODE_ENV !== 'production') return process.env.AUTH_SECRET || DEFAULT_AUTH_SECRET;
 
-  // server.js refuses to start in production without a secret. Serverless
-  // entry points cannot fail at boot without taking the demo offline, so they
-  // keep working and log loudly instead.
-  if (process.env.NODE_ENV === 'production' && !warnedAboutDefaultSecret) {
-    warnedAboutDefaultSecret = true;
-    logger.warn('AUTH_SECRET is not set; signing tokens with the public development secret.');
+  if (!hasStrongAuthSecret()) {
+    logger.error(
+      `AUTH_SECRET is missing or shorter than ${MIN_AUTH_SECRET_LENGTH} characters; authentication is disabled.`
+    );
+    throw serviceUnavailable('Server authentication is not configured.');
   }
 
-  return DEFAULT_AUTH_SECRET;
+  return process.env.AUTH_SECRET;
 }
 
 function base64url(input) {

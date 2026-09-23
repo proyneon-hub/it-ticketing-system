@@ -418,14 +418,26 @@
       },
       "Readiness": {
         "type": "object",
-        "required": ["ok", "database", "service", "version", "commit", "uptimeSeconds"],
+        "required": [
+          "ok",
+          "database",
+          "service",
+          "version",
+          "commit",
+          "uptimeSeconds",
+          "authConfigured"
+        ],
         "properties": {
           "ok": { "type": "boolean" },
           "database": { "type": "string", "enum": ["up", "down"] },
           "service": { "type": "string" },
           "version": { "type": "string" },
           "commit": { "type": "string", "description": "Git commit the running build came from." },
-          "uptimeSeconds": { "type": "integer", "minimum": 0 }
+          "uptimeSeconds": { "type": "integer", "minimum": 0 },
+          "authConfigured": {
+            "type": "boolean",
+            "description": "False when AUTH_SECRET is missing or shorter than 32 characters. In production, sign-in and authenticated routes then return 503."
+          }
         }
       },
       "Error": {

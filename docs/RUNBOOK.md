@@ -70,19 +70,19 @@ Without Docker:
 
 ## Environment variables
 
-| Variable                              | Required          | Purpose                                                                                                                                                          |
-| ------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MONGODB_URI`                         | Yes               | MongoDB connection string                                                                                                                                        |
-| `AUTH_SECRET`                         | Yes in production | Signs bearer tokens. `server.js` refuses to start in production without it; serverless entry points log a warning and fall back to the public development secret |
-| `PORT`                                | Local and Docker  | Express port (default 5000)                                                                                                                                      |
-| `CORS_ORIGINS`                        | No                | Comma-separated origins allowed to call the API from a browser. Unset means same-origin only                                                                     |
-| `LOG_LEVEL`                           | No                | pino level, default `info`                                                                                                                                       |
-| `LOGIN_RATE_LIMIT_MAX`                | No                | Failed sign-ins allowed per window, default 10                                                                                                                   |
-| `LOGIN_RATE_LIMIT_WINDOW_MS`          | No                | Rate-limit window, default 15 minutes                                                                                                                            |
-| `TRUST_PROXY`                         | No                | Number of reverse-proxy hops to trust for the client address. Set automatically on Vercel; leave unset when the app is exposed directly                          |
-| `API_DOCS`                            | No                | Set to `off` to hide `/api/docs` and `/api/openapi.json`                                                                                                         |
-| `GIT_COMMIT`                          | No                | Reported by `/api/ready`; the Docker build sets it                                                                                                               |
-| `MONGODB_SERVER_SELECTION_TIMEOUT_MS` | No                | Database connection timeout, default 5000                                                                                                                        |
+| Variable                              | Required          | Purpose                                                                                                                                                                                                    |
+| ------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`                         | Yes               | MongoDB connection string                                                                                                                                                                                  |
+| `AUTH_SECRET`                         | Yes in production | Signs bearer tokens; 32+ characters. In production `server.js` refuses to start without it, and serverless functions answer 503 on sign-in and authenticated routes. `/api/ready` reports `authConfigured` |
+| `PORT`                                | Local and Docker  | Express port (default 5000)                                                                                                                                                                                |
+| `CORS_ORIGINS`                        | No                | Comma-separated origins allowed to call the API from a browser. Unset means same-origin only                                                                                                               |
+| `LOG_LEVEL`                           | No                | pino level, default `info`                                                                                                                                                                                 |
+| `LOGIN_RATE_LIMIT_MAX`                | No                | Failed sign-ins allowed per window, default 10                                                                                                                                                             |
+| `LOGIN_RATE_LIMIT_WINDOW_MS`          | No                | Rate-limit window, default 15 minutes                                                                                                                                                                      |
+| `TRUST_PROXY`                         | No                | Number of reverse-proxy hops to trust for the client address. Set automatically on Vercel; leave unset when the app is exposed directly                                                                    |
+| `API_DOCS`                            | No                | Set to `off` to hide `/api/docs` and `/api/openapi.json`                                                                                                                                                   |
+| `GIT_COMMIT`                          | No                | Reported by `/api/ready`; the Docker build sets it                                                                                                                                                         |
+| `MONGODB_SERVER_SELECTION_TIMEOUT_MS` | No                | Database connection timeout, default 5000                                                                                                                                                                  |
 
 ## MongoDB connection troubleshooting
 
@@ -110,12 +110,12 @@ Without Docker:
 
 - `docker compose up --wait` times out: run `docker compose ps` and `docker compose logs app`. The app is unhealthy while it cannot reach MongoDB.
 - The container is marked `unhealthy` but keeps running: Docker does not restart unhealthy containers by itself. Restart it, or run it under an orchestrator that does.
-- `AUTH_SECRET must be set when NODE_ENV=production`: set `AUTH_SECRET` (Compose supplies a demo default).
+- `AUTH_SECRET must be set` or `must be at least 32 characters` when `NODE_ENV=production`: set a longer `AUTH_SECRET` (Compose supplies a demo default).
 - Port already in use: change the published port in `docker-compose.yml`, or `npm run free:api-port` on Windows for the local API.
 
 ## Vercel deployment troubleshooting
 
-- Confirm the project has `MONGODB_URI` (and `AUTH_SECRET`), then redeploy after any change.
+- Confirm the project has `MONGODB_URI` and a 32+ character `AUTH_SECRET` (`/api/ready` shows `authConfigured: true`), then redeploy after any change. Without the secret, sign-in returns 503 "Server authentication is not configured."
 - Check the function logs for `/api` routes, and search them by request id.
 - Confirm `api/[...path].js` is deployed and the frontend build output exists in `dist`.
 - `/api/ready` is the quickest check that the deployed functions can reach the database.
