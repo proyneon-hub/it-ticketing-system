@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { forbidden, unauthorized } = require('./errors');
 const { logger } = require('./logger');
 
 const roles = ['admin', 'technician', 'user'];
@@ -109,10 +110,12 @@ function getTokenFromRequest(req) {
   return header.startsWith('Bearer ') ? header.slice(7) : '';
 }
 
+// Failures go through next() so they leave via the central error handler, with
+// the same JSON shape and request id as every other error.
 function requireAuth(req, res, next) {
   const user = verifyToken(getTokenFromRequest(req));
   if (!user) {
-    return res.status(401).json({ message: 'Authentication required.' });
+    return next(unauthorized('Authentication required.'));
   }
   req.user = user;
   next();
@@ -121,9 +124,7 @@ function requireAuth(req, res, next) {
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({ message: 'You do not have permission to perform this action.' });
+      return next(forbidden('You do not have permission to perform this action.'));
     }
     next();
   };

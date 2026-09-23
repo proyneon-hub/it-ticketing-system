@@ -4,6 +4,7 @@ const { version } = require('../../package.json');
 const { connectToDatabase, pingDatabase } = require('./db');
 const { resolveTrustProxy } = require('./config');
 const { requestLogger } = require('./logger');
+const { docsRouter } = require('./docs');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { corsPolicy, securityHeaders } = require('./middleware/security');
 const authRoutes = require('./routes/auth');
@@ -44,6 +45,11 @@ app.get('/api/ready', async (req, res) => {
     res.status(503).json({ ok: false, database: 'down', ...details });
   }
 });
+
+// Interactive API documentation. Public and database-free; set API_DOCS=off to hide it.
+if (process.env.API_DOCS !== 'off') {
+  app.use('/api', docsRouter);
+}
 
 // Demo authentication routes are intentionally available before the database
 // middleware so reviewers can sign in even while configuring MongoDB.

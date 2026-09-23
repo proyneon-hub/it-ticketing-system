@@ -1,0 +1,647 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IT Ticketing System API",
+    "version": "1.0.0",
+    "description": "REST API for a role-based IT service desk. Sign in with `POST /auth/login` (demo accounts are listed by `GET /auth/demo-users`), then use **Authorize** to send the returned token as a bearer token.\n\nEvery response carries an `x-request-id` header; error bodies repeat it as `requestId`, so a reported problem can be matched to a server log line. Send your own `x-request-id` to trace a specific request.",
+    "license": { "name": "MIT", "url": "https://opensource.org/licenses/MIT" }
+  },
+  "servers": [{ "url": "/api" }],
+  "tags": [
+    { "name": "Operations", "description": "Liveness and readiness probes." },
+    { "name": "Auth", "description": "Demo authentication with signed bearer tokens." },
+    {
+      "name": "Tickets",
+      "description": "Ticket lifecycle. Requesters only see and change their own tickets; technicians work the whole queue; only admins delete."
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Liveness probe",
+        "description": "The process is running. Does not touch the database.",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "The service is up.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Health" } }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Readiness probe",
+        "description": "The service can reach its database and is able to serve traffic.",
+        "operationId": "getReadiness",
+        "responses": {
+          "200": {
+            "description": "Ready.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+            }
+          },
+          "503": {
+            "description": "The database is unreachable.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Readiness" } }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Sign in",
+        "description": "Exchanges demo credentials for a bearer token valid for 8 hours. Failed attempts are rate limited per client address; successful sign-ins are not counted.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/LoginResponse" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "429": { "$ref": "#/components/responses/TooManyRequests" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Current session",
+        "operationId": "getSession",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "The signed-in user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["user"],
+                  "properties": { "user": { "$ref": "#/components/schemas/SessionUser" } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/demo-users": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "List demo accounts",
+        "description": "The seeded accounts and their public demo passwords, so reviewers can try each role. Demo data only.",
+        "operationId": "listDemoUsers",
+        "responses": {
+          "200": {
+            "description": "The demo accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["users"],
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/DemoUser" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tickets": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "List tickets",
+        "description": "Filtered, sorted and paginated. Requesters only ever receive their own tickets. Sorting by `priority` ranks by severity (urgent first when descending), not alphabetically.",
+        "operationId": "listTickets",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "$ref": "#/components/parameters/SortBy" },
+          { "$ref": "#/components/parameters/SortOrder" },
+          { "$ref": "#/components/parameters/StatusFilter" },
+          { "$ref": "#/components/parameters/PriorityFilter" },
+          { "$ref": "#/components/parameters/SlaFilter" },
+          { "$ref": "#/components/parameters/AssignedTo" },
+          { "$ref": "#/components/parameters/Search" }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of tickets.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TicketList" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      },
+      "post": {
+        "tags": ["Tickets"],
+        "summary": "Create a ticket",
+        "description": "Assigns the next ticket number (`TKT-0001`, ...) and an SLA due date from the priority. When a requester creates a ticket, the requester identity, `open` status and `Unassigned` owner are forced by the server.",
+        "operationId": "createTicket",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/TicketCreate" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created ticket.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TicketEnvelope" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "503": { "$ref": "#/components/responses/ServiceUnavailable" }
+        }
+      }
+    },
+    "/tickets/export": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Export tickets as CSV",
+        "description": "Takes the same filters as the list, ignores paging, and returns at most 10,000 rows. Cells that begin with `=`, `+`, `-` or `@` are prefixed with an apostrophe so spreadsheets do not run them as formulas.",
+        "operationId": "exportTickets",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/SortBy" },
+          { "$ref": "#/components/parameters/SortOrder" },
+          { "$ref": "#/components/parameters/StatusFilter" },
+          { "$ref": "#/components/parameters/PriorityFilter" },
+          { "$ref": "#/components/parameters/SlaFilter" },
+          { "$ref": "#/components/parameters/AssignedTo" },
+          { "$ref": "#/components/parameters/Search" }
+        ],
+        "responses": {
+          "200": {
+            "description": "A CSV file.",
+            "content": { "text/csv": { "schema": { "type": "string" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/tickets/stats": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Dashboard statistics",
+        "description": "Counts by status and priority, plus SLA risk, scoped to what the caller may see.",
+        "operationId": "getTicketStats",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Aggregated counts.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Stats" } }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/tickets/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/TicketId" }],
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Get a ticket",
+        "description": "A requester asking for someone else's ticket receives 404, so ticket ids cannot be probed.",
+        "operationId": "getTicket",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "The ticket.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TicketEnvelope" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Tickets"],
+        "summary": "Update a ticket",
+        "description": "Every change to status, priority or assignee is recorded in the ticket's activity history. Moving to `resolved` or `closed` stamps `resolvedAt`; reopening clears it. Changing priority recalculates the SLA due date unless `dueAt` is sent. Requesters may only change `title`, `description`, `priority` and `category` on their own tickets.",
+        "operationId": "updateTicket",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/TicketPatch" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated ticket.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TicketEnvelope" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Tickets"],
+        "summary": "Delete a ticket",
+        "description": "Admins only.",
+        "operationId": "deleteTicket",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "204": { "description": "Deleted." },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token returned by `POST /auth/login`."
+      }
+    },
+    "parameters": {
+      "TicketId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "The ticket's MongoDB id (24 hex characters), not its `TKT-` number.",
+        "schema": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100000, "default": 1 }
+      },
+      "Limit": {
+        "name": "limit",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 }
+      },
+      "SortBy": {
+        "name": "sortBy",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "ticketNumber",
+            "title",
+            "status",
+            "priority",
+            "assignee",
+            "dueAt",
+            "createdAt",
+            "updatedAt"
+          ],
+          "default": "createdAt"
+        }
+      },
+      "SortOrder": {
+        "name": "sortOrder",
+        "in": "query",
+        "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" }
+      },
+      "StatusFilter": {
+        "name": "status",
+        "in": "query",
+        "schema": { "$ref": "#/components/schemas/Status" }
+      },
+      "PriorityFilter": {
+        "name": "priority",
+        "in": "query",
+        "schema": { "$ref": "#/components/schemas/Priority" }
+      },
+      "SlaFilter": {
+        "name": "sla",
+        "in": "query",
+        "description": "Unresolved tickets that are overdue (`breached`) or due within 24 hours (`due-soon`). Combines with `status`; a resolved or closed status matches nothing.",
+        "schema": { "type": "string", "enum": ["breached", "due-soon"] }
+      },
+      "AssignedTo": {
+        "name": "assignedTo",
+        "in": "query",
+        "description": "Case-insensitive match on the assignee.",
+        "schema": { "type": "string", "maxLength": 80 }
+      },
+      "Search": {
+        "name": "search",
+        "in": "query",
+        "description": "Case-insensitive text search across ticket number, title, description, requester, assignee and category. Treated as literal text, not a pattern.",
+        "schema": { "type": "string", "maxLength": 100 }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request failed validation.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "Unauthorized": {
+        "description": "Missing, expired or invalid credentials.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "Forbidden": {
+        "description": "Signed in, but not permitted to do this.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "NotFound": {
+        "description": "No such ticket, or one the caller may not see.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too many failed sign-in attempts from this address.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      },
+      "ServiceUnavailable": {
+        "description": "The database is not configured or not reachable.",
+        "content": {
+          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+        }
+      }
+    },
+    "schemas": {
+      "Role": { "type": "string", "enum": ["admin", "technician", "user"] },
+      "Status": {
+        "type": "string",
+        "enum": ["open", "assigned", "in-progress", "resolved", "closed"]
+      },
+      "Priority": { "type": "string", "enum": ["low", "medium", "high", "urgent"] },
+      "Health": {
+        "type": "object",
+        "required": ["ok", "service"],
+        "properties": { "ok": { "const": true }, "service": { "type": "string" } }
+      },
+      "Readiness": {
+        "type": "object",
+        "required": ["ok", "database", "service", "version", "commit", "uptimeSeconds"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "database": { "type": "string", "enum": ["up", "down"] },
+          "service": { "type": "string" },
+          "version": { "type": "string" },
+          "commit": { "type": "string", "description": "Git commit the running build came from." },
+          "uptimeSeconds": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string" },
+          "requestId": {
+            "type": "string",
+            "description": "Matches the `x-request-id` response header and the server log line."
+          },
+          "errors": {
+            "type": "array",
+            "description": "Field-level detail for validation failures.",
+            "items": {
+              "type": "object",
+              "required": ["message"],
+              "properties": { "field": { "type": "string" }, "message": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "examples": ["admin@demo.local"] },
+          "password": { "type": "string", "examples": ["AdminPass123!"] }
+        }
+      },
+      "PublicUser": {
+        "type": "object",
+        "required": ["id", "name", "email", "role"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "$ref": "#/components/schemas/Role" }
+        }
+      },
+      "DemoUser": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PublicUser" },
+          {
+            "type": "object",
+            "required": ["demoPassword"],
+            "properties": { "demoPassword": { "type": "string" } }
+          }
+        ]
+      },
+      "SessionUser": {
+        "type": "object",
+        "required": ["sub", "name", "email", "role", "exp"],
+        "properties": {
+          "sub": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "$ref": "#/components/schemas/Role" },
+          "exp": { "type": "integer", "description": "Token expiry, seconds since the epoch." }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": ["token", "user"],
+        "properties": {
+          "token": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/PublicUser" }
+        }
+      },
+      "ActivityEntry": {
+        "type": "object",
+        "required": ["action", "actorName", "actorRole", "actorEmail", "createdAt"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "examples": ["ticket_created", "status_changed", "priority_changed", "assignee_changed"]
+          },
+          "actorName": { "type": "string" },
+          "actorRole": { "$ref": "#/components/schemas/Role" },
+          "actorEmail": { "type": "string" },
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "detail": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Ticket": {
+        "type": "object",
+        "required": [
+          "_id",
+          "ticketNumber",
+          "title",
+          "status",
+          "priority",
+          "assignee",
+          "category",
+          "dueAt",
+          "activity",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "_id": { "type": "string", "pattern": "^[a-f0-9]{24}$" },
+          "ticketNumber": { "type": "string", "pattern": "^TKT-\\d{4,}$" },
+          "title": { "type": "string", "maxLength": 120 },
+          "description": { "type": "string", "maxLength": 2000 },
+          "requesterName": { "type": "string", "maxLength": 80 },
+          "requesterEmail": { "type": "string", "maxLength": 120 },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "priority": { "$ref": "#/components/schemas/Priority" },
+          "assignee": { "type": "string", "maxLength": 80 },
+          "category": { "type": "string", "maxLength": 80 },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "SLA deadline, derived from priority unless set explicitly."
+          },
+          "resolvedAt": { "type": "string", "format": "date-time" },
+          "activity": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ActivityEntry" }
+          },
+          "createdByRole": { "$ref": "#/components/schemas/Role" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TicketEnvelope": {
+        "type": "object",
+        "required": ["ticket"],
+        "properties": { "ticket": { "$ref": "#/components/schemas/Ticket" } }
+      },
+      "Pagination": {
+        "type": "object",
+        "required": ["page", "limit", "total", "totalPages"],
+        "properties": {
+          "page": { "type": "integer", "minimum": 1 },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "total": { "type": "integer", "minimum": 0 },
+          "totalPages": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "TicketList": {
+        "type": "object",
+        "required": ["tickets", "data", "pagination"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Ticket" }
+          },
+          "tickets": {
+            "type": "array",
+            "description": "Same rows as `data`, kept for older clients.",
+            "items": { "$ref": "#/components/schemas/Ticket" },
+            "deprecated": true
+          },
+          "pagination": { "$ref": "#/components/schemas/Pagination" }
+        }
+      },
+      "Stats": {
+        "type": "object",
+        "required": ["total", "byStatus", "byPriority", "sla"],
+        "properties": {
+          "total": { "type": "integer", "minimum": 0 },
+          "byStatus": {
+            "type": "object",
+            "required": ["open", "assigned", "in-progress", "resolved", "closed"],
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "byPriority": {
+            "type": "object",
+            "required": ["low", "medium", "high", "urgent"],
+            "additionalProperties": { "type": "integer", "minimum": 0 }
+          },
+          "sla": {
+            "type": "object",
+            "required": ["breached", "dueSoon"],
+            "properties": {
+              "breached": { "type": "integer", "minimum": 0 },
+              "dueSoon": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      },
+      "TicketCreate": {
+        "type": "object",
+        "required": ["title"],
+        "description": "Unknown fields are ignored.",
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "description": { "type": "string", "maxLength": 2000 },
+          "requesterName": { "type": "string", "maxLength": 80 },
+          "requesterEmail": { "type": "string", "maxLength": 120 },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "priority": { "$ref": "#/components/schemas/Priority" },
+          "assignee": { "type": "string", "maxLength": 80 },
+          "category": { "type": "string", "maxLength": 80 },
+          "dueAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TicketPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "description": "Send only the fields to change. Unknown fields are ignored; a body with none is rejected.",
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "description": { "type": "string", "maxLength": 2000 },
+          "requesterName": { "type": "string", "maxLength": 80 },
+          "requesterEmail": { "type": "string", "maxLength": 120 },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "priority": { "$ref": "#/components/schemas/Priority" },
+          "assignee": { "type": "string", "maxLength": 80 },
+          "category": { "type": "string", "maxLength": 80 },
+          "dueAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
