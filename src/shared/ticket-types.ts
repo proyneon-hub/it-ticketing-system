@@ -59,3 +59,21 @@ export interface Comment {
   author: { id: string; name: string; email: string; role: Role };
   createdAt: string;
 }
+
+// What the trends endpoint returns: the numbers behind the trends chart.
+export interface Trends {
+  days: number;
+  timeZone: string;
+  series: { date: string; opened: number; resolved: number }[];
+  resolution: {
+    resolved: number;
+    // Mean time to resolve, in hours to one decimal place. Null when nothing was resolved.
+    meanHours: number | null;
+  };
+  sla: {
+    resolved: number;
+    met: number;
+    // Share of resolved tickets that met their deadline, one decimal place. Null when nothing was resolved.
+    compliancePercent: number | null;
+  };
+}

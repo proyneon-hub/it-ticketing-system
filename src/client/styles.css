@@ -668,3 +668,269 @@ a.ticket-number:hover {
   background: #fee2e2;
   color: #991b1b;
 }
+
+/* Comments */
+.comment-thread {
+  margin-top: 20px;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.comment {
+  padding: 12px 14px;
+  border: 1px solid #dbe2ec;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.comment.internal {
+  border-style: dashed;
+  border-color: #b45309;
+  background: #fffbeb;
+}
+
+.comment p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comment-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.comment-meta span,
+.comment-meta small {
+  color: #647186;
+  font-size: 0.8rem;
+}
+
+.comment-meta .comment-badge {
+  color: #92400e;
+  font-weight: 700;
+}
+
+.comment-form {
+  display: grid;
+  gap: 8px;
+}
+
+.comment-form textarea {
+  width: 100%;
+}
+
+.comment-visibility {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.comment-visibility legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  color: #647186;
+}
+
+.comment-visibility label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.comment-form .primary-button {
+  justify-self: start;
+}
+
+/* Trends */
+.trend-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.trend-content.refreshing {
+  opacity: 0.55;
+}
+
+.trend-chart {
+  --surface-1: #fcfcfb;
+  --text-secondary: #52514e;
+  --grid: #e3e3df;
+  --series-opened: #2a78d6;
+  --series-resolved: #eb6834;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #dbe2ec;
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
+.trend-chart figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.trend-legend {
+  display: flex;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.trend-legend li,
+.tooltip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-key {
+  display: inline-block;
+  width: 16px;
+  height: 0;
+  border-top: 2px solid currentColor;
+  border-radius: 2px;
+}
+
+.legend-key.series-opened,
+.line.series-opened {
+  color: var(--series-opened);
+  stroke: var(--series-opened);
+}
+
+.legend-key.series-resolved,
+.line.series-resolved {
+  color: var(--series-resolved);
+  stroke: var(--series-resolved);
+}
+
+.trend-plot {
+  position: relative;
+  border-radius: 6px;
+}
+
+.trend-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.trend-plot .grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+}
+
+.trend-plot .axis-label {
+  fill: var(--text-secondary);
+  font-size: 12px;
+}
+
+.trend-plot .line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.trend-plot .crosshair {
+  stroke: #9a9a94;
+  stroke-width: 1;
+}
+
+.trend-plot .dot {
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+
+.trend-plot .dot.series-opened {
+  fill: var(--series-opened);
+}
+
+.trend-plot .dot.series-resolved {
+  fill: var(--series-resolved);
+}
+
+.trend-tooltip {
+  position: absolute;
+  top: 8px;
+  transform: translateX(12px);
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid #dbe2ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  font-size: 0.85rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.trend-tooltip.flip {
+  transform: translateX(calc(-100% - 12px));
+}
+
+.trend-tooltip .tooltip-date {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.trend-table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+.trend-table th,
+.trend-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e5eaf1;
+  text-align: left;
+}
+
+.trend-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Global button and input rules stretch to the full width; these sit in a row. */
+.trend-filters button,
+.trend-chart figcaption button,
+.comment-form .primary-button {
+  width: auto;
+}
+
+.comment-visibility input {
+  width: auto;
+  margin: 0;
+}
+
+.comment-visibility label {
+  flex-direction: row;
+  font-weight: 600;
+}
+
+.comment-thread {
+  margin-bottom: 20px;
+}

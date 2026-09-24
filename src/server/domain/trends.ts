@@ -1,3 +1,7 @@
+import type { Trends } from '../../shared/ticket-types';
+
+export type { Trends };
+
 // Pure rules behind the trends chart: which days a window covers and how raw daily
 // counts become the numbers people read. No database here; the repository supplies
 // the counts and the service hands them over.
@@ -57,23 +61,6 @@ export interface ResolvedRow {
   totalMs: number;
   // How many of the day's tickets were resolved on or before their SLA deadline.
   met: number;
-}
-
-export interface Trends {
-  days: number;
-  timeZone: string;
-  series: { date: string; opened: number; resolved: number }[];
-  resolution: {
-    resolved: number;
-    // Mean time to resolve, in hours to one decimal place. Null when nothing was resolved.
-    meanHours: number | null;
-  };
-  sla: {
-    resolved: number;
-    met: number;
-    // Share of resolved tickets that met their deadline, one decimal place. Null when nothing was resolved.
-    compliancePercent: number | null;
-  };
 }
 
 const round1 = (value: number): number => Math.round(value * 10) / 10;

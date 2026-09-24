@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import NotFoundPage from './pages/NotFoundPage';
 import TicketDetailPage from './pages/TicketDetailPage';
+import TrendsPage from './pages/TrendsPage';
 
 // Every page, and who may open it. Anything under RequireAuth needs a signed-in user;
 // the admin pages also need the admin role. Kept as data so the tests can mount the
@@ -23,7 +24,11 @@ export const routes: RouteObject[] = [
           { path: '/tickets', element: <DashboardPage /> },
           { path: '/tickets/:id', element: <TicketDetailPage /> },
           {
-            element: <RequireRole role="admin" />,
+            element: <RequireRole roles={['admin', 'technician']} />,
+            children: [{ path: '/trends', element: <TrendsPage /> }],
+          },
+          {
+            element: <RequireRole roles={['admin']} />,
             children: [
               { path: '/admin/users', element: <AdminUsersPage /> },
               { path: '/admin/audit', element: <AdminAuditPage /> },

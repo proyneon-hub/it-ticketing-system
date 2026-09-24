@@ -42,6 +42,7 @@ function MainNav() {
       <NavLink to="/tickets" end={false}>
         Tickets
       </NavLink>
+      {user.role !== 'user' ? <NavLink to="/trends">Trends</NavLink> : null}
       {user.role === 'admin' ? (
         <>
           <NavLink to="/admin/users">Users</NavLink>
