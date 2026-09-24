@@ -4,23 +4,24 @@ Real defects found while reviewing and testing this project, with how each was f
 
 Severity follows impact: **High** breaks a security boundary or core workflow, **Medium** gives wrong results or a wrong status code, **Low** is cosmetic or narrow.
 
-| ID                                                                                    | Severity | Summary                                                        | Origin                                    |
-| ------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- | ----------------------------------------- |
-| [DEF-001](#def-001-a-requester-could-move-their-ticket-into-another-users-queue)      | High     | Requester could reassign their own ticket to another requester | Original code                             |
-| [DEF-002](#def-002-priority-sorting-was-alphabetical)                                 | Medium   | Sorting by priority was alphabetical                           | Original code                             |
-| [DEF-003](#def-003-the-sla-filter-overwrote-the-status-filter)                        | Medium   | SLA filter overwrote the status filter                         | Original code                             |
-| [DEF-004](#def-004-an-over-long-title-returned-500)                                   | Medium   | Over-long title returned 500 instead of 400                    | Original code                             |
-| [DEF-005](#def-005-csv-export-allowed-spreadsheet-formula-injection)                  | Medium   | CSV export allowed spreadsheet formula injection               | Original code                             |
-| [DEF-006](#def-006-resolvedat-was-reset-and-never-cleared)                            | Medium   | `resolvedAt` reset on every update and never cleared on reopen | Original code                             |
-| [DEF-007](#def-007-the-sla-due-date-ignored-priority-changes)                         | Medium   | SLA due date ignored priority changes                          | Original code                             |
-| [DEF-008](#def-008-page-order-was-not-deterministic)                                  | Low      | Page order not deterministic when tickets tie                  | Original code                             |
-| [DEF-009](#def-009-search-fired-a-request-per-keystroke-and-could-show-stale-results) | Low      | Search request per keystroke; stale responses could win        | Original code                             |
-| [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)  | High     | Dashboard empty after sign-in against the real API             | Introduced and caught during the refactor |
-| [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                         | Low      | 401/403 responses had no `requestId`                           | Introduced and caught during the upgrade  |
-| [DEF-012](#def-012-input-validation-gaps)                                             | Low      | Malformed email and query-string objects accepted              | Original code                             |
-| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                | Medium   | Any status could jump to any other, including open to resolved | Original code                             |
-| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)    | Medium   | Concurrent edits were lost; activity `from` could be stale     | Original code                             |
-| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)         | High     | Serverless deployments signed tokens with a public secret      | Original code                             |
+| ID                                                                                    | Severity | Summary                                                        | Origin                                       |
+| ------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- | -------------------------------------------- |
+| [DEF-001](#def-001-a-requester-could-move-their-ticket-into-another-users-queue)      | High     | Requester could reassign their own ticket to another requester | Original code                                |
+| [DEF-002](#def-002-priority-sorting-was-alphabetical)                                 | Medium   | Sorting by priority was alphabetical                           | Original code                                |
+| [DEF-003](#def-003-the-sla-filter-overwrote-the-status-filter)                        | Medium   | SLA filter overwrote the status filter                         | Original code                                |
+| [DEF-004](#def-004-an-over-long-title-returned-500)                                   | Medium   | Over-long title returned 500 instead of 400                    | Original code                                |
+| [DEF-005](#def-005-csv-export-allowed-spreadsheet-formula-injection)                  | Medium   | CSV export allowed spreadsheet formula injection               | Original code                                |
+| [DEF-006](#def-006-resolvedat-was-reset-and-never-cleared)                            | Medium   | `resolvedAt` reset on every update and never cleared on reopen | Original code                                |
+| [DEF-007](#def-007-the-sla-due-date-ignored-priority-changes)                         | Medium   | SLA due date ignored priority changes                          | Original code                                |
+| [DEF-008](#def-008-page-order-was-not-deterministic)                                  | Low      | Page order not deterministic when tickets tie                  | Original code                                |
+| [DEF-009](#def-009-search-fired-a-request-per-keystroke-and-could-show-stale-results) | Low      | Search request per keystroke; stale responses could win        | Original code                                |
+| [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)  | High     | Dashboard empty after sign-in against the real API             | Introduced and caught during the refactor    |
+| [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                         | Low      | 401/403 responses had no `requestId`                           | Introduced and caught during the upgrade     |
+| [DEF-012](#def-012-input-validation-gaps)                                             | Low      | Malformed email and query-string objects accepted              | Original code                                |
+| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                | Medium   | Any status could jump to any other, including open to resolved | Original code                                |
+| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)    | Medium   | Concurrent edits were lost; activity `from` could be stale     | Original code                                |
+| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)         | High     | Serverless deployments signed tokens with a public secret      | Original code                                |
+| [DEF-016](#def-016-the-api-docs-link-returned-404-on-vercel)                          | Medium   | The `/api/docs` link returned 404 on Vercel                    | Introduced with the docs, found after deploy |
 
 ---
 
@@ -180,3 +181,15 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Root cause:** the boot-time check does not run on serverless entry points, and the fallback was kept so the demo would not go offline.
 - **Fix:** in production, signing or verifying a token with a missing or sub-32-character secret returns `503 Server authentication is not configured.` The rest of the API stays up, and `/api/ready` reports `authConfigured` so a deployment can be checked without signing in. The live smoke test asserts it.
 - **Regression tests:** a token forged with the development secret is not accepted in production; sign-in returns `503` instead of issuing a token; unset, short and valid secrets in production and development.
+
+## DEF-016: The API docs link returned 404 on Vercel
+
+- **Severity:** Medium (the live demo's documentation link was dead)
+- **Found by:** probing production after the TypeScript release, not by any test: every test ran against a local server.
+- **Reproduce:** open `https://<deployment>/api/docs`.
+- **Expected:** the Swagger UI page.
+- **Actual:** a redirect to `/api/docs/`, which Vercel answered with its own `NOT_FOUND` page (`X-Vercel-Error: NOT_FOUND`).
+- **Root cause:** Swagger UI's page uses relative asset URLs, which only resolve under a trailing slash, so the route redirected `/api/docs` to `/api/docs/`. Vercel never routes a trailing-slash URL to the function, so the redirect target could not be served.
+- **Fix:** the page is served at `/api/docs` itself, with a `<base href="/api/docs/">` tag so its assets load from `/api/docs/...` (paths that do route). No redirect.
+- **Regression tests:** the contract test asserts `/api/docs` returns 200 with the base tag and that the init script is served; the live smoke test opens `/api/docs` in a browser and checks the URL is unchanged and that no Content-Security-Policy violation occurs.
+- **Why the tests missed it:** the difference is a hosting-platform routing rule that no local server reproduces. It is now covered by the post-deploy smoke run; a live-site check remains the only real proof.
