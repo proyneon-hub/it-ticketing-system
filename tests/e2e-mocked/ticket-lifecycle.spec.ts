@@ -78,7 +78,10 @@ test(
       route.request().method() === 'PATCH'
         ? route.fulfill({
             status: 409,
-            json: { message: 'Cannot move a ticket from open to resolved.' },
+            json: {
+              message: 'Cannot move a ticket from open to resolved.',
+              code: 'INVALID_TRANSITION',
+            },
           })
         : route.fallback()
     );
@@ -122,7 +125,10 @@ test(
       sentVersion = route.request().headers()['if-match'];
       return route.fulfill({
         status: 409,
-        json: { message: 'This ticket changed since you loaded it. Reload it and try again.' },
+        json: {
+          message: 'This ticket changed since you loaded it. Reload it and try again.',
+          code: 'VERSION_CONFLICT',
+        },
       });
     });
 

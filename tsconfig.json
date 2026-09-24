@@ -1,0 +1,17 @@
+{
+  // What `npm run typecheck` checks for the server: the build inputs plus the tests.
+  // The Playwright suite has its own config (tsconfig.playwright.json).
+  "extends": "./tsconfig.server.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "server.ts",
+    "src/server/**/*.ts",
+    "src/shared/**/*.ts",
+    "scripts/seed.ts",
+    "scripts/sync-indexes.ts"
+  ],
+  "exclude": []
+}

@@ -217,6 +217,7 @@ describe('actions', () => {
   it('reloads the list after a 409 so the user sees the ticket as it is now', async () => {
     const conflict = Object.assign(new Error('This ticket changed since you loaded it.'), {
       status: 409,
+      code: 'VERSION_CONFLICT',
     });
     api.updateTicket.mockRejectedValue(conflict);
     const { result } = setup();
@@ -232,8 +233,24 @@ describe('actions', () => {
     expect(onError.mock.calls.at(-1)).toEqual([conflict]);
   });
 
-  it('does not reload after other failures', async () => {
-    api.updateTicket.mockRejectedValue(Object.assign(new Error('Forbidden.'), { status: 403 }));
+  it('also reloads when the status move is no longer allowed from the current state', async () => {
+    const stale = Object.assign(new Error('Cannot move a ticket from open to resolved.'), {
+      status: 409,
+      code: 'INVALID_TRANSITION',
+    });
+    api.updateTicket.mockRejectedValue(stale);
+    const { result } = setup();
+    await waitFor(() => expect(result.current.tickets).toHaveLength(1));
+
+    await act(async () => result.current.patch(makeTicket()._id, { status: 'resolved' }));
+
+    await waitFor(() => expect(api.fetchTickets).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not reload after other failures, even another 409', async () => {
+    api.updateTicket.mockRejectedValue(
+      Object.assign(new Error('Forbidden.'), { status: 403, code: 'FORBIDDEN' })
+    );
     const { result } = setup();
     await waitFor(() => expect(result.current.tickets).toHaveLength(1));
 

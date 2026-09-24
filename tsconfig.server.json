@@ -1,0 +1,31 @@
+{
+  // Compiles the API to dist-server/ (the same tree runs in Docker, on Vercel and
+  // under `npm start`). Tests are type-checked by tsconfig.json but not emitted.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "rootDir": ".",
+    "outDir": "dist-server",
+    "types": ["node"]
+  },
+  "include": [
+    "server.ts",
+    "src/server/**/*.ts",
+    "src/shared/**/*.ts",
+    "scripts/seed.ts",
+    "scripts/sync-indexes.ts"
+  ],
+  "exclude": ["src/server/**/*.test.ts", "src/server/__tests__/**"]
+}

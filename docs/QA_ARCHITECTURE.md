@@ -7,7 +7,7 @@ flowchart TD
     Dev[Push or pull request] --> CI[GitHub Actions]
 
     CI --> Static[Format, lint, type-check]
-    CI --> Unit[Unit and component tests<br/>Jest, Vitest, Testing Library]
+    CI --> Unit[Unit and component tests<br/>Vitest, Testing Library]
     CI --> Integration[API integration and contract tests<br/>Supertest, in-memory MongoDB, Ajv]
     CI --> Browser[Browser regression and Axe<br/>Playwright: Chromium, Firefox, WebKit]
     CI --> Stack[Real-stack smoke<br/>Playwright against Docker Compose]
@@ -29,7 +29,7 @@ flowchart TD
 | Suite                       | Location                                        | Runs                            | Purpose                                                                                                                   |
 | --------------------------- | ----------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | API unit and integration    | `src/server/__tests__/`                         | `npm run test:api`              | Routes, permissions and validation, plus tests that run the real app on a real (in-memory) MongoDB                        |
-| Contract                    | `src/server/__tests__/openapi.contract.test.js` | `npm run test:api`              | Every real response matches the OpenAPI schemas; the docs cannot drift                                                    |
+| Contract                    | `src/server/__tests__/openapi.contract.test.ts` | `npm run test:api`              | Every real response matches the OpenAPI schemas; the docs cannot drift                                                    |
 | Frontend unit and component | `src/client/**/*.test.*`                        | `npm run test:unit`             | Format helpers, the API client, hooks (debounce, stale responses), components and the whole `App` with the network mocked |
 | Mocked browser regression   | `tests/e2e-mocked`                              | `npm run test:e2e`              | User workflows across three browsers with deterministic API responses, using page objects and typed fixtures              |
 | Accessibility               | `tests/accessibility`                           | `npm run test:a11y`             | Axe scans of the login, dashboard and ticket form                                                                         |
@@ -41,11 +41,11 @@ flowchart TD
 
 | Suite                     | Tests | Executions          |
 | ------------------------- | ----- | ------------------- |
-| API (Jest)                | 84    | 84                  |
-| Frontend (Vitest)         | 94    | 94                  |
-| Mocked browser regression | 19    | 57 (three browsers) |
+| API (Vitest)              | 227   | 227                 |
+| Frontend (Vitest)         | 105   | 105                 |
+| Mocked browser regression | 22    | 66 (three browsers) |
 | Accessibility (Axe)       | 3     | 9 (three browsers)  |
-| Real-stack smoke          | 7     | 7 (Chromium)        |
+| Real-stack smoke          | 8     | 8 (Chromium)        |
 | Support-Ops (pytest)      | 9     | 9                   |
 
 Coverage is enforced by thresholds (API 88% statements / 78% branches, frontend 85% / 80%) and published with the Playwright report on GitHub Pages.

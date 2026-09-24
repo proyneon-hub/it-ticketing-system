@@ -2,7 +2,7 @@
 
 The complete, interactive reference is served by the app itself at **`/api/docs`** (Swagger UI), and the machine-readable OpenAPI 3.1 document is at **`/api/openapi.json`** (source: [`src/server/openapi.json`](../src/server/openapi.json)). Use **Try it out** with the demo accounts below.
 
-The spec is not just documentation: [`openapi.contract.test.js`](../src/server/__tests__/openapi.contract.test.js) validates every real response against its schemas, so the docs and the API cannot drift apart without a test failing.
+The spec is not just documentation: [`openapi.contract.test.ts`](../src/server/__tests__/openapi.contract.test.ts) validates every real response against its schemas, so the docs and the API cannot drift apart without a test failing.
 
 This page covers the behaviour that is easiest to miss.
 
@@ -48,24 +48,30 @@ Every response carries an `x-request-id` header. Send your own (letters, digits,
 ```json
 {
   "message": "Title must be 120 characters or fewer.",
+  "code": "VALIDATION_FAILED",
   "errors": [{ "field": "title", "message": "Title must be 120 characters or fewer." }],
   "requestId": "0b6f2d0e-6a55-4a2b-9e4f-1f0c3f3f5d11"
 }
 ```
 
-| Status | Meaning                                                                                                                 |
-| ------ | ----------------------------------------------------------------------------------------------------------------------- |
-| 400    | Validation failed; `errors` names the field                                                                             |
-| 401    | Missing, expired or invalid token                                                                                       |
-| 403    | Signed in but not permitted (for example a requester editing status)                                                    |
-| 409    | The change conflicts with the ticket's state: an illegal status move, or a stale `If-Match` version                     |
-| 503    | In production, `AUTH_SECRET` is missing or shorter than 32 characters: sign-in and authenticated routes are unavailable |
-| 404    | No such ticket, or one a requester may not see                                                                          |
-| 409    | A unique value already exists                                                                                           |
-| 429    | Too many failed sign-in attempts                                                                                        |
-| 503    | The database is not configured or not reachable                                                                         |
+`message` is written for people and may change. **Branch on `code`**, which is stable:
 
-Unexpected errors return a generic 500; details stay in the server log, where the request id finds them ([RUNBOOK.md](RUNBOOK.md)).
+| Status | `code`                    | Meaning                                                                                         |
+| ------ | ------------------------- | ----------------------------------------------------------------------------------------------- |
+| 400    | `VALIDATION_FAILED`       | The request is malformed or breaks a rule; `errors` names the field                             |
+| 401    | `UNAUTHORIZED`            | Missing, expired or invalid token, or wrong credentials                                         |
+| 403    | `FORBIDDEN`               | Signed in but not permitted (a requester editing status, a non-admin reopening a closed ticket) |
+| 404    | `NOT_FOUND`               | No such ticket (or one a requester may not see), or no such route                               |
+| 409    | `INVALID_TRANSITION`      | The status move is not allowed from the ticket's current status                                 |
+| 409    | `VERSION_CONFLICT`        | The `If-Match` version is no longer current: someone else changed the ticket                    |
+| 409    | `DUPLICATE`               | A unique value already exists                                                                   |
+| 429    | `RATE_LIMITED`            | Too many failed sign-in attempts                                                                |
+| 503    | `AUTH_NOT_CONFIGURED`     | In production `AUTH_SECRET` is missing or shorter than 32 characters                            |
+| 503    | `DATABASE_NOT_CONFIGURED` | `MONGODB_URI` is not set                                                                        |
+| 503    | `DATABASE_UNAVAILABLE`    | The database cannot be reached                                                                  |
+| 500    | `INTERNAL_ERROR`          | Unexpected; details stay in the server log                                                      |
+
+Unexpected errors return a generic message; details stay in the server log, where the request id finds them ([RUNBOOK.md](RUNBOOK.md)).
 
 ## Ticket workflow
 
@@ -84,7 +90,7 @@ stateDiagram-v2
     closed --> in_progress: reopen (admin only)
 ```
 
-The transition table is `statusTransitions` in [`src/shared/ticket-constants.json`](../src/shared/ticket-constants.json). The API enforces it ([`ticketWorkflow.js`](../src/server/domain/ticketWorkflow.js)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
+The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
 Default SLA windows, measured from when the ticket was created:
 
@@ -124,19 +130,22 @@ A requester asking for someone else's ticket gets `404`, not `403`, so ids canno
 
 `GET /tickets` supports:
 
-| Query        | Description                                                                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `page`       | Page number, `1` to `100000`                                                                                                                        |
-| `limit`      | Page size, `1` to `100` (default 10)                                                                                                                |
-| `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`                                                      |
-| `sortOrder`  | `asc` or `desc`                                                                                                                                     |
-| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                           |
-| `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                 |
-| `assignedTo` | Case-insensitive assignee match                                                                                                                     |
-| `search`     | Case-insensitive text search across number, title, description, requester, assignee and category. It is matched as literal text, never as a pattern |
-| `sla`        | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                       |
+| Query        | Description                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page`       | Page number, `1` to `100000`                                                                                                                            |
+| `limit`      | Page size, `1` to `100` (default 10)                                                                                                                    |
+| `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`. Default: `createdAt`, or best match first with `search` |
+| `sortOrder`  | `asc` or `desc`                                                                                                                                         |
+| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                               |
+| `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                     |
+| `assignedTo` | Case-insensitive assignee match                                                                                                                         |
+| `search`     | Full-text search across number, title, description, requester, assignee and category. See below                                                         |
+| `sla`        | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                           |
 
 - Sorting by `priority` ranks by severity: descending gives urgent, high, medium, low.
+- **Search matches whole words, not fragments.** `connecting` finds "Cannot connect to Wi-Fi", but `conn` and `prin` do not find "connect" or "printer". A hit in the title or ticket number ranks above one in the description, and with no `sortBy` the best match comes first. Case is ignored.
+- **Ticket numbers match by prefix.** `TKT-0012`, `tkt-00` and `TKT` are read as ticket numbers, not words.
+- Search is plain words: a leading `-` (which would exclude a word) and quotes (which would demand a phrase) are stripped, and regular-expression characters are just text.
 - Ties are broken by `_id`, so pages are stable.
 - Unknown filter values and non-text values (such as `search[$ne]=x`) are rejected with `400`.
 
@@ -148,7 +157,7 @@ The response has `data` (the rows), `pagination` (`page`, `limit`, `total`, `tot
 
 ## CSV export
 
-`GET /tickets/export` takes the same filters as the list, ignores paging, and returns at most 10,000 rows scoped to what the caller may see.
+`GET /tickets/export` takes the same filters and ordering as the list, ignores paging, and returns every matching row the caller may see. The body is streamed in chunks (`Transfer-Encoding: chunked`) from a database cursor, so the size of an export does not affect the server's memory.
 
 ```text
 Ticket ID, Title, Status, Priority, Requester, Assigned To, Created At, Updated At, SLA Due At, SLA Breached

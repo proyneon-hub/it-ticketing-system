@@ -33,7 +33,7 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Actual:** `200`. The ticket left the requester's own scope and appeared in another requester's queue.
 - **Root cause:** `requesterName` and `requesterEmail` were in the list of fields a requester may edit, and requester scoping is based on `requesterEmail`.
 - **Fix:** Requesters may edit only `title`, `description`, `priority` and `category`. The 403 message now names requester fields.
-- **Regression test:** `a requester cannot reassign a ticket to another requester` (`tickets.integration.test.js`).
+- **Regression test:** `a requester cannot reassign a ticket to another requester` (`tickets.integration.test.ts`).
 
 ## DEF-002: Priority sorting was alphabetical
 
@@ -155,7 +155,7 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Expected:** a `409` for a move the workflow does not allow, and reopening a closed ticket limited to admins.
 - **Actual:** `200`. Tickets could be resolved without ever being worked, and closed tickets reopened by anyone.
 - **Root cause:** the API validated that the status was one of the five values, never that the move from the current status was allowed.
-- **Fix:** an explicit transition table in `src/shared/ticket-constants.json`, enforced by `src/server/domain/ticketWorkflow.js`. The status menu offers only the allowed moves. Reopening now also logs `ticket_reopened`, and re-sending the current status no longer logs a second `ticket_resolved`.
+- **Fix:** an explicit transition table in `src/shared/ticket-constants.json` (now `.ts`), enforced by `src/server/domain/ticketWorkflow.ts`. The status menu offers only the allowed moves. Reopening now also logs `ticket_reopened`, and re-sending the current status no longer logs a second `ticket_resolved`.
 - **Regression tests:** a table-driven unit test over all 25 status pairs for technicians and admins (the expected table is written out by hand, not read from the file under test), plus integration tests for the `409`, the admin-only reopen and the activity entries.
 
 ## DEF-014: Concurrent edits were lost and the activity log could be wrong
@@ -176,7 +176,7 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Found by:** Code review of `getAuthSecret()`.
 - **Reproduce:** deploy to a serverless platform without `AUTH_SECRET`. Build a token for any user with the development secret, which is in this repository, and call the API with it.
 - **Expected:** the deployment refuses to authenticate.
-- **Actual:** `server.js` refused to boot without a secret, but serverless entry points logged a warning and used the public development secret, so anyone could mint an admin token.
+- **Actual:** `server.ts` refused to boot without a secret, but serverless entry points logged a warning and used the public development secret, so anyone could mint an admin token.
 - **Root cause:** the boot-time check does not run on serverless entry points, and the fallback was kept so the demo would not go offline.
 - **Fix:** in production, signing or verifying a token with a missing or sub-32-character secret returns `503 Server authentication is not configured.` The rest of the API stays up, and `/api/ready` reports `authConfigured` so a deployment can be checked without signing in. The live smoke test asserts it.
 - **Regression tests:** a token forged with the development secret is not accepted in production; sign-in returns `503` instead of issuing a token; unset, short and valid secrets in production and development.

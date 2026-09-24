@@ -12,13 +12,15 @@ flowchart LR
   subgraph API[Express API]
     direction TB
     Edge[Request id, logging,<br/>helmet, CORS] --> Routes[Routes<br/>validate input]
-    Routes --> Services[Ticket service<br/>rules, SLA, activity, CSV]
+    Routes --> Services[Ticket service<br/>one function per use case]
     Routes --> Auth[Auth and role checks]
+    Services --> Domain[Domain rules<br/>workflow, SLA, activity,<br/>permissions, CSV]
+    Services --> Repo[Ticket repository<br/>all Mongoose queries]
     Edge --> Ops["/health, /ready, /docs"]
     Errors[Central error handler]
   end
 
-  Services --> Models[Mongoose models]
+  Repo --> Models[Mongoose models]
   Models --> DB[(MongoDB)]
   Ops -.->|ping| DB
   CI[GitHub Actions] -.-> Tests[Unit, integration, contract,<br/>browser and real-stack tests]
@@ -26,20 +28,24 @@ flowchart LR
 
 ## Backend
 
-`src/server` is layered so each part has one job:
+The API is TypeScript (`strict`). `tsc` compiles it to `dist-server/`, which is what `npm start`, the Docker image and the Vercel functions run; `tsx` runs the same sources in development. `src/server` is layered so each part has one job, and dependencies point one way, down the table:
 
-| Layer              | Files                                 | Responsibility                                                             |
-| ------------------ | ------------------------------------- | -------------------------------------------------------------------------- |
-| App and middleware | `app.js`, `logger.js`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling     |
-| Routes             | `routes/auth.js`, `routes/tickets.js` | Translate HTTP: validate input, call a service, shape the response         |
-| Validation         | `validation/tickets.js`               | Zod schemas: the one place input is trimmed, coerced, bounded and rejected |
-| Services           | `services/ticketService.js`           | Business rules: role scoping, filters, SLA, timestamps, activity log, CSV  |
-| Models             | `models/`                             | Mongoose schemas, defaults, indexes                                        |
-| Auth               | `auth.js`                             | Signed tokens and role middleware                                          |
-| Shared constants   | `src/shared/ticket-constants.json`    | Statuses, priorities, SLA windows: read by the API, the models and the UI  |
-| API contract       | `openapi.json`, `docs.js`             | OpenAPI 3.1 document and the Swagger UI that serves it                     |
+| Layer              | Files                                 | Responsibility                                                                                       |
+| ------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| App and middleware | `app.ts`, `logger.ts`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling                               |
+| Routes             | `routes/auth.ts`, `routes/tickets.ts` | Translate HTTP: parse input, call a service, shape the response (and stream the CSV)                 |
+| Validation         | `validation/tickets.ts`               | Turns untrusted input into a typed value, or a 400 naming the field                                  |
+| Services           | `services/ticketService.ts`           | One function per use case: check the caller, apply domain rules, persist through the repository      |
+| Domain             | `domain/`                             | Pure rules with no framework or database: workflow, SLA and timestamps, activity, permissions, CSV   |
+| Repositories       | `repositories/ticketRepository.ts`    | The only code that queries Mongoose. Takes criteria and change objects, so nothing above knows Mongo |
+| Models             | `models/`                             | Mongoose schemas, defaults, indexes (including the text index behind search)                         |
+| Auth               | `auth.ts`                             | Signed tokens and role middleware                                                                    |
+| Shared             | `src/shared/`                         | `ticket-constants.ts` (statuses, transitions, SLA windows), `schemas.ts` (Zod), `ticket-types.ts`    |
+| API contract       | `openapi.json`, `docs.ts`             | OpenAPI 3.1 document and the Swagger UI that serves it                                               |
 
-Errors are thrown as `HttpError` (or by Mongoose) and leave through one handler, so every failure has the same JSON shape and a request id.
+`architecture.test.ts` enforces the boundaries against the real import statements: routes cannot reach the database, services cannot import Mongoose, and the domain cannot import a framework. (`typescript-eslint` does not run on TypeScript 7 yet, so a test does the job of an import-restriction lint rule.)
+
+Errors the API raises on purpose are `AppError` subclasses with an HTTP status and a stable `code` (see [API.md](API.md#errors-and-request-ids)); anything else is logged and returned as a generic 500. Both leave through one handler, so every failure has the same JSON shape and a request id.
 
 ## Frontend
 
@@ -58,7 +64,7 @@ Errors are thrown as `HttpError` (or by Mongoose) and leave through one handler,
 3. The request gets an id, is logged, and passes the security headers.
 4. `requireAuth` verifies the token and attaches `req.user`.
 5. The route validates the input with Zod.
-6. The ticket service applies the role scope, runs the query or change, and records activity.
+6. The ticket service applies the role scope and the domain rules, the repository runs the query or the versioned change, and activity is recorded with it.
 7. The response, or the error with its request id, goes back to the client.
 
 ## Authentication
@@ -82,7 +88,7 @@ stateDiagram-v2
     closed --> in_progress: reopen (admin only)
 ```
 
-The transition table is `statusTransitions` in [`src/shared/ticket-constants.json`](../src/shared/ticket-constants.json). The API enforces it ([`ticketWorkflow.js`](../src/server/domain/ticketWorkflow.js)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
+The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
 Resolved and closed tickets are terminal: they stop the SLA clock. Each priority has an SLA window (urgent 4h, high 24h, medium 48h, low 72h) that sets the due date.
 

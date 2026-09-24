@@ -47,7 +47,7 @@ services:
         condition: service_healthy
     environment:
       MONGODB_URI: mongodb://mongo:27017/it_ticketing
-    command: ['node', 'scripts/seed.js']
+    command: ['node', 'dist-server/scripts/seed.js']
 
 volumes:
   mongo-data:

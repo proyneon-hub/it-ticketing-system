@@ -5,7 +5,10 @@ test(
   { tag: ['@regression', '@error'] },
   async ({ page, loginPage, dashboardPage }) => {
     await page.route('**/api/tickets?*', (route) =>
-      route.fulfill({ status: 503, json: { message: 'Tickets are temporarily unavailable.' } })
+      route.fulfill({
+        status: 503,
+        json: { message: 'Tickets are temporarily unavailable.', code: 'DATABASE_UNAVAILABLE' },
+      })
     );
 
     await loginPage.loginAs('admin');

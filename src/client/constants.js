@@ -1,8 +1,8 @@
-import shared from '../shared/ticket-constants.json';
+import { priorities, statuses, terminalStatuses } from '../shared/ticket-constants';
 
-// Status and priority lists come from the same file the API validates against,
+// Status and priority lists come from the same module the API validates against,
 // so the UI can never offer a value the server would reject.
-export const { statuses, priorities, terminalStatuses } = shared;
+export { priorities, statuses, terminalStatuses };
 
 export const sortOptions = [
   ['createdAt', 'Newest first'],

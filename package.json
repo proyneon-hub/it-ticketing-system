@@ -12,19 +12,19 @@
   "bugs": {
     "url": "https://github.com/proyneon-hub/it-ticketing-system/issues"
   },
-  "main": "server.js",
+  "main": "dist-server/server.js",
   "type": "commonjs",
   "scripts": {
     "dev": "npm run dev:client",
-    "dev:api": "nodemon server.js",
+    "dev:api": "tsx watch server.ts",
     "dev:client": "concurrently -k \"npm run dev:api\" \"npm run dev:vite\"",
     "dev:vite": "vite --host 0.0.0.0",
     "dev:db": "node scripts/dev-mongo.js",
-    "start": "node server.js",
-    "build": "vite build",
+    "start": "node --enable-source-maps dist-server/server.js",
+    "build": "npm run build:client && npm run build:server",
     "test": "npm run test:api && npm run test:unit",
-    "test:api": "jest --runInBand",
-    "test:api:coverage": "jest --runInBand --coverage",
+    "test:api": "vitest run -c vitest.server.config.mjs",
+    "test:api:coverage": "vitest run -c vitest.server.config.mjs --coverage",
     "test:unit": "vitest run",
     "test:unit:coverage": "vitest run --coverage",
     "test:coverage": "npm run test:api:coverage && npm run test:unit:coverage",
@@ -40,11 +40,18 @@
     "test:all": "npm test && npm run test:e2e",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.js\" \"src/**/*.{js,jsx,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --write",
-    "format:check": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.js\" \"src/**/*.{js,jsx,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --check",
+    "format": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.{js,ts}\" \"perf/**/*.js\" \"src/**/*.{js,jsx,ts,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --write",
+    "format:check": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.{js,ts}\" \"perf/**/*.js\" \"src/**/*.{js,jsx,ts,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --check",
     "preview": "vite preview --host 0.0.0.0",
     "free:api-port": "powershell -ExecutionPolicy Bypass -File scripts/free-api-port.ps1",
-    "seed": "node scripts/seed.js"
+    "seed": "tsx scripts/seed.ts",
+    "test:api:unit": "vitest run -c vitest.server.config.mjs --project unit",
+    "test:integration": "vitest run -c vitest.server.config.mjs --project integration",
+    "build:client": "vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.playwright.json",
+    "perf": "k6 run perf/load.js",
+    "db:sync-indexes": "tsx scripts/sync-indexes.ts"
   },
   "keywords": [
     "it-ticketing",
@@ -81,7 +88,11 @@
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
     "@types/node": "^26.1.1",
+    "@types/supertest": "^7.2.1",
+    "@types/swagger-ui-express": "^4.1.8",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^5.0.1",
     "ajv": "^8.20.0",
@@ -91,41 +102,14 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
-    "jest": "^29.7.0",
     "jsdom": "^30.1.1",
     "mongodb-memory-server": "^11.3.0",
-    "nodemon": "^3.1.9",
     "prettier": "^3.9.4",
     "supertest": "^7.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^6.0.7",
     "vitest": "^5.0.1"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "testMatch": [
-      "**/src/server/**/*.test.js"
-    ],
-    "clearMocks": true,
-    "collectCoverageFrom": [
-      "src/server/**/*.js",
-      "!src/server/__tests__/**",
-      "!src/server/**/*.test.js"
-    ],
-    "coverageDirectory": "coverage/server",
-    "coverageReporters": [
-      "text",
-      "json-summary",
-      "lcov"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "statements": 88,
-        "branches": 78,
-        "functions": 88,
-        "lines": 88
-      }
-    }
   },
   "engines": {
     "node": ">=22 <27"

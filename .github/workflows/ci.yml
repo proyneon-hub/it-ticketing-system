@@ -37,9 +37,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # API tests include integration tests against an in-memory MongoDB; both
-      # suites fail the build if coverage drops below its threshold.
-      - name: Run tests with coverage
+      - name: Type-check (API and Playwright)
+        run: npm run typecheck
+
+      # Database-free API tests first, so a logic failure shows up in seconds.
+      - name: API unit tests
+        run: npm run test:api:unit
+
+      # Integration and contract tests run against an in-memory MongoDB. Every
+      # suite fails the build if coverage drops below its threshold.
+      - name: Tests with coverage (API and frontend)
         run: npm run test:coverage
 
       - name: Summarize coverage

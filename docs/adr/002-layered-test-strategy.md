@@ -12,9 +12,9 @@ Test at several layers, and let each one catch what the layer below cannot.
 
 | Layer              | Tooling                                     | What it proves                                                                                  |
 | ------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Unit and component | Jest, Vitest, Testing Library               | Pure logic, hooks and components, including race conditions such as stale search responses      |
-| API integration    | Jest, Supertest, in-memory MongoDB          | Query building, role scoping, SLA logic, pagination and persistence against a real database     |
-| Contract           | Jest, Ajv, OpenAPI                          | Every real response matches the published schema, and the docs cannot drift from the code       |
+| Unit and component | Vitest, Testing Library                     | Pure logic, hooks and components, including race conditions such as stale search responses      |
+| API integration    | Vitest, Supertest, in-memory MongoDB        | Query building, role scoping, SLA logic, pagination and persistence against a real database     |
+| Contract           | Vitest, Ajv, OpenAPI                        | Every real response matches the published schema, and the docs cannot drift from the code       |
 | Browser regression | Playwright, Axe (Chromium, Firefox, WebKit) | User workflows and accessibility, with controlled API responses so it is fast and deterministic |
 | Real-stack smoke   | Playwright against Docker Compose           | The production image, a real MongoDB and a real browser working together                        |
 | Post-deploy smoke  | Same suite, run manually                    | The deployed environment, guarded by an enable flag and cleaned-up test data                    |

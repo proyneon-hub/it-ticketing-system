@@ -122,7 +122,10 @@ describe('errors', () => {
   it('raises an ApiError with the message, status and request id from the body', async () => {
     const api = await loadApi();
     fetchMock.mockResolvedValue(
-      json({ message: 'Title is required.', requestId: 'req-42' }, { status: 400 })
+      json(
+        { message: 'Title is required.', code: 'VALIDATION_FAILED', requestId: 'req-42' },
+        { status: 400 }
+      )
     );
 
     const error = await api.createTicket({}).catch((caught) => caught);
@@ -131,6 +134,7 @@ describe('errors', () => {
     expect(error).toMatchObject({
       message: 'Title is required.',
       status: 400,
+      code: 'VALIDATION_FAILED',
       requestId: 'req-42',
     });
   });
@@ -145,6 +149,7 @@ describe('errors', () => {
 
     expect(error.message).toBe('Request failed with status 502.');
     expect(error.requestId).toBe('edge-7');
+    expect(error.code).toBe(''); // A proxy error has no API code.
   });
 
   it('truncates very long error messages', async () => {

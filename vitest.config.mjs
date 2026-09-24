@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
-// Frontend unit and component tests. The API is tested separately with Jest, and
+// Frontend unit and component tests. The API is tested separately (vitest.server.config.mjs), and
 // the browser flows with Playwright.
 export default defineConfig({
   plugins: [react()],
