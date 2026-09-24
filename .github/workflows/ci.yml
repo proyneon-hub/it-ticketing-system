@@ -157,6 +157,18 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # A hosting platform can run an older Node 22 than CI does. A package that only ships ES
+      # modules cannot be require()d there, so the compiled app would fail to load and every
+      # route, even /api/health, would answer 500 (this took production down once). Loading the
+      # app on 22.11, before the ES-module require support that arrived in 22.12, catches it.
+      - name: Load the compiled app on an older Node 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.11.0
+
+      - name: Check that the serverless entry point loads
+        run: node -e "require('./api/[...path].js'); console.log('loaded on', process.version); process.exit(0)"
+
       # Catches a typo in either Compose file before a stage that needs Docker does.
       - name: Validate the Compose files
         run: |

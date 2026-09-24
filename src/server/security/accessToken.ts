@@ -1,4 +1,3 @@
-import { SignJWT, jwtVerify } from 'jose';
 import type { PublicUser, TokenPayload } from '../auth';
 import { roles } from '../../shared/ticket-constants';
 import { getAuthSecret } from './secret';
@@ -10,9 +9,17 @@ export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const ISSUER = 'it-ticketing-system';
 const AUDIENCE = 'it-ticketing-api';
 
+// jose is an ES module. The compiled server is CommonJS, and require() of an ES module only works
+// on Node 20.19+, 22.12+ and 24: on an older 22.x (a hosting platform's runtime can be one) the
+// require() at the top of the file fails, the whole app fails to load, and every route, even
+// /api/health, answers 500. A dynamic import() works on every version, so it is loaded that way.
+// Do not turn this back into a static import (accessToken.test.ts checks for it).
+const loadJose = () => import('jose');
+
 const signingKey = () => new TextEncoder().encode(getAuthSecret());
 
 export async function issueAccessToken(user: PublicUser): Promise<string> {
+  const { SignJWT } = await loadJose();
   return new SignJWT({ name: user.name, email: user.email, role: user.role })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.id)
@@ -29,6 +36,8 @@ export async function issueAccessToken(user: PublicUser): Promise<string> {
 export async function verifyAccessToken(token: string): Promise<TokenPayload | null> {
   if (!token) return null;
   const key = signingKey();
+  // Loaded outside the try below, so a failure to load jose is an error, not "an invalid token".
+  const { jwtVerify } = await loadJose();
 
   try {
     const { payload } = await jwtVerify(token, key, {
