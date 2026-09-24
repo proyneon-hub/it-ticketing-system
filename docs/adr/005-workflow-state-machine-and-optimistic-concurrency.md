@@ -14,6 +14,8 @@ Any status could jump to any other, so a ticket could go from `open` straight to
 
 **Machine writes take part too.** The SLA job bumps the version when it raises a priority, and a comment does not (it appends history only), so a comment never makes someone else's edit fail.
 
+**Two names for the precondition.** `If-Match` is the standard header, but Vercel's edge evaluates it against the response's `ETag`, so a successful edit (whose `ETag` is the new version) came back as `412 Precondition Failed` after it had been saved. The API therefore also accepts the same value as `X-Ticket-Version`, which the web app sends; `If-Match` still works anywhere the host leaves it alone (found by smoke-testing the deployed site, see the defect log).
+
 ## Consequences
 
 - A stale edit is refused with a message and nothing is written. In the UI a refused status or priority change rolls back the row and shows why.

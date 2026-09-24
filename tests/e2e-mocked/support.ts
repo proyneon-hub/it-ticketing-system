@@ -663,8 +663,9 @@ export async function installApiMocks(page: Page): Promise<void> {
       const nextPriority = priority && isTicketPriority(priority) ? priority : undefined;
       // Like the API: an edit made against an out-of-date version is refused.
       const current = tickets.find((ticket) => ticket._id === id);
-      const ifMatch = request.headers()['if-match'];
-      if (current && ifMatch !== undefined && ifMatch !== `"${current.__v}"`) {
+      // Like the API: X-Ticket-Version (what the web app sends) or If-Match, quoted or not.
+      const sent = request.headers()['x-ticket-version'] ?? request.headers()['if-match'];
+      if (current && sent !== undefined && sent.replace(/^W\/|"/g, '') !== String(current.__v)) {
         return route.fulfill({
           status: 409,
           json: {

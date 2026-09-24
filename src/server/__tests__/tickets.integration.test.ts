@@ -589,6 +589,54 @@ describe('ticket lifecycle', () => {
       await patchWith(ticket, { priority: 'medium' }, '*').expect(200);
     });
 
+    describe('X-Ticket-Version, the header the web app sends', () => {
+      // Some hosts answer If-Match themselves (Vercel compares it with the response's ETag and
+      // turns a successful edit into a 412 after it was saved), so the same precondition can
+      // also be sent under this name.
+      const patchVersion = (ticket: { id?: unknown }, body: object, version: string) =>
+        request(app)
+          .patch(`/api/tickets/${ticket.id}`)
+          .set(as('tech'))
+          .set('X-Ticket-Version', version)
+          .send(body);
+
+      test('applies an edit made against the current version, and returns the new one', async () => {
+        const ticket = await seedTicket();
+
+        const updated = await patchVersion(ticket, { priority: 'high' }, '0').expect(200);
+
+        expect(updated.body.ticket.__v).toBe(1);
+        expect(updated.headers.etag).toBe('"1"');
+      });
+
+      test('refuses a stale version with 409 and applies nothing', async () => {
+        const ticket = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
+        await patchVersion(ticket, { priority: 'high' }, '0').expect(200);
+
+        const stale = await patchVersion(ticket, { status: 'in-progress' }, '0').expect(409);
+
+        expect(stale.body.code).toBe('VERSION_CONFLICT');
+        expect((await storedTicket(ticket.id)).status).toBe('open');
+      });
+
+      test('accepts quoted and weak forms, and says which header was malformed', async () => {
+        const ticket = await seedTicket();
+
+        await patchVersion(ticket, { priority: 'high' }, '"0"').expect(200);
+        await patchVersion(ticket, { priority: 'low' }, 'W/"1"').expect(200);
+        const bad = await patchVersion(ticket, { priority: 'medium' }, 'nope').expect(400);
+        expect(bad.body.message).toBe('X-Ticket-Version must be a ticket version such as "3".');
+      });
+
+      test('wins when If-Match is sent too', async () => {
+        const ticket = await seedTicket();
+        await patchWith(ticket, { priority: 'high' }, '"0"').expect(200); // Now at version 1.
+
+        // If-Match is stale but X-Ticket-Version is current, so the edit is applied.
+        await patchVersion(ticket, { priority: 'low' }, '1').set('If-Match', '"0"').expect(200);
+      });
+    });
+
     test('two edits from the same version: exactly one wins, and the log has one entry', async () => {
       const ticket = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
 

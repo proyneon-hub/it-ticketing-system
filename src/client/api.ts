@@ -273,7 +273,7 @@ export function createTicket(ticket: TicketForm): Promise<{ ticket: Ticket }> {
   return request('/tickets', { method: 'POST', body: JSON.stringify(ticket) });
 }
 
-// `version` is the ticket's `__v` as last loaded. Sent as If-Match, it makes the
+// `version` is the ticket's `__v` as last loaded. Sent as X-Ticket-Version, it makes the
 // API refuse the edit (409) if someone else changed the ticket in the meantime.
 export function updateTicket(
   id: string,
@@ -283,7 +283,7 @@ export function updateTicket(
   return request(`/tickets/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(patch),
-    ...(Number.isInteger(version) ? { headers: { 'If-Match': `"${version}"` } } : {}),
+    ...(Number.isInteger(version) ? { headers: { 'X-Ticket-Version': String(version) } } : {}),
   });
 }
 

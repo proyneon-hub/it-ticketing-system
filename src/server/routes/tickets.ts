@@ -9,7 +9,7 @@ import * as tickets from '../services/ticketService';
 import {
   parseCreateTicket,
   parseExportQuery,
-  parseIfMatch,
+  parseExpectedVersion,
   parseListQuery,
   parsePatchTicket,
   parseTrendsQuery,
@@ -99,9 +99,9 @@ router.patch(
       actor(req),
       String(req.params.id),
       parsePatchTicket(req.body),
-      { expectedVersion: parseIfMatch(req.get('if-match')) }
+      { expectedVersion: parseExpectedVersion(req.get('if-match'), req.get('x-ticket-version')) }
     );
-    // The version to send back as If-Match on the next edit.
+    // The version to send back on the next edit (X-Ticket-Version, or If-Match).
     res.set('ETag', `"${ticket.__v}"`);
     res.json({ ticket });
   })
