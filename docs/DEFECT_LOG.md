@@ -4,27 +4,30 @@ Real defects found while reviewing and testing this project, with how each was f
 
 Severity follows impact: **High** breaks a security boundary or core workflow, **Medium** gives wrong results or a wrong status code, **Low** is cosmetic or narrow.
 
-| ID                                                                                                | Severity | Summary                                                                        | Origin                                          |
-| ------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ | ----------------------------------------------- |
-| [DEF-001](#def-001-a-requester-could-move-their-ticket-into-another-users-queue)                  | High     | Requester could reassign their own ticket to another requester                 | Original code                                   |
-| [DEF-002](#def-002-priority-sorting-was-alphabetical)                                             | Medium   | Sorting by priority was alphabetical                                           | Original code                                   |
-| [DEF-003](#def-003-the-sla-filter-overwrote-the-status-filter)                                    | Medium   | SLA filter overwrote the status filter                                         | Original code                                   |
-| [DEF-004](#def-004-an-over-long-title-returned-500)                                               | Medium   | Over-long title returned 500 instead of 400                                    | Original code                                   |
-| [DEF-005](#def-005-csv-export-allowed-spreadsheet-formula-injection)                              | Medium   | CSV export allowed spreadsheet formula injection                               | Original code                                   |
-| [DEF-006](#def-006-resolvedat-was-reset-and-never-cleared)                                        | Medium   | `resolvedAt` reset on every update and never cleared on reopen                 | Original code                                   |
-| [DEF-007](#def-007-the-sla-due-date-ignored-priority-changes)                                     | Medium   | SLA due date ignored priority changes                                          | Original code                                   |
-| [DEF-008](#def-008-page-order-was-not-deterministic)                                              | Low      | Page order not deterministic when tickets tie                                  | Original code                                   |
-| [DEF-009](#def-009-search-fired-a-request-per-keystroke-and-could-show-stale-results)             | Low      | Search request per keystroke; stale responses could win                        | Original code                                   |
-| [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)              | High     | Dashboard empty after sign-in against the real API                             | Introduced and caught during the refactor       |
-| [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                                     | Low      | 401/403 responses had no `requestId`                                           | Introduced and caught during the upgrade        |
-| [DEF-012](#def-012-input-validation-gaps)                                                         | Low      | Malformed email and query-string objects accepted                              | Original code                                   |
-| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                            | Medium   | Any status could jump to any other, including open to resolved                 | Original code                                   |
-| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)                | Medium   | Concurrent edits were lost; activity `from` could be stale                     | Original code                                   |
-| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)                     | High     | Serverless deployments signed tokens with a public secret                      | Original code                                   |
-| [DEF-016](#def-016-the-api-docs-link-returned-404-on-vercel)                                      | Medium   | The `/api/docs` link returned 404 on Vercel                                    | Introduced with the docs, found after deploy    |
-| [DEF-017](#def-017-a-session-that-ended-showed-the-wrong-message)                                 | Low      | An ended session showed "Authentication required."                             | Original code                                   |
-| [DEF-018](#def-018-the-signed-in-message-was-lost-when-sign-in-led-to-a-linked-page)              | Low      | "Signed in" message lost after signing in from a deep link                     | Introduced and caught during the client rewrite |
-| [DEF-019](#def-019-a-quick-second-edit-was-refused-as-a-conflict-with-the-persons-own-first-edit) | Low      | A quick second edit was refused as a conflict with the person's own first edit | Original code (found while scripting the demo)  |
+| ID                                                                                                | Severity | Summary                                                                        | Origin                                                   |
+| ------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| [DEF-001](#def-001-a-requester-could-move-their-ticket-into-another-users-queue)                  | High     | Requester could reassign their own ticket to another requester                 | Original code                                            |
+| [DEF-002](#def-002-priority-sorting-was-alphabetical)                                             | Medium   | Sorting by priority was alphabetical                                           | Original code                                            |
+| [DEF-003](#def-003-the-sla-filter-overwrote-the-status-filter)                                    | Medium   | SLA filter overwrote the status filter                                         | Original code                                            |
+| [DEF-004](#def-004-an-over-long-title-returned-500)                                               | Medium   | Over-long title returned 500 instead of 400                                    | Original code                                            |
+| [DEF-005](#def-005-csv-export-allowed-spreadsheet-formula-injection)                              | Medium   | CSV export allowed spreadsheet formula injection                               | Original code                                            |
+| [DEF-006](#def-006-resolvedat-was-reset-and-never-cleared)                                        | Medium   | `resolvedAt` reset on every update and never cleared on reopen                 | Original code                                            |
+| [DEF-007](#def-007-the-sla-due-date-ignored-priority-changes)                                     | Medium   | SLA due date ignored priority changes                                          | Original code                                            |
+| [DEF-008](#def-008-page-order-was-not-deterministic)                                              | Low      | Page order not deterministic when tickets tie                                  | Original code                                            |
+| [DEF-009](#def-009-search-fired-a-request-per-keystroke-and-could-show-stale-results)             | Low      | Search request per keystroke; stale responses could win                        | Original code                                            |
+| [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)              | High     | Dashboard empty after sign-in against the real API                             | Introduced and caught during the refactor                |
+| [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                                     | Low      | 401/403 responses had no `requestId`                                           | Introduced and caught during the upgrade                 |
+| [DEF-012](#def-012-input-validation-gaps)                                                         | Low      | Malformed email and query-string objects accepted                              | Original code                                            |
+| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                            | Medium   | Any status could jump to any other, including open to resolved                 | Original code                                            |
+| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)                | Medium   | Concurrent edits were lost; activity `from` could be stale                     | Original code                                            |
+| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)                     | High     | Serverless deployments signed tokens with a public secret                      | Original code                                            |
+| [DEF-016](#def-016-the-api-docs-link-returned-404-on-vercel)                                      | Medium   | The `/api/docs` link returned 404 on Vercel                                    | Introduced with the docs, found after deploy             |
+| [DEF-017](#def-017-a-session-that-ended-showed-the-wrong-message)                                 | Low      | An ended session showed "Authentication required."                             | Original code                                            |
+| [DEF-018](#def-018-the-signed-in-message-was-lost-when-sign-in-led-to-a-linked-page)              | Low      | "Signed in" message lost after signing in from a deep link                     | Introduced and caught during the client rewrite          |
+| [DEF-019](#def-019-a-quick-second-edit-was-refused-as-a-conflict-with-the-persons-own-first-edit) | Low      | A quick second edit was refused as a conflict with the person's own first edit | Original code (found while scripting the demo)           |
+| [DEF-020](#def-020-every-api-route-answered-500-on-vercel)                                        | High     | Every API route answered 500 on Vercel (an ES-module-only dependency)          | Introduced by the auth work, found after the release     |
+| [DEF-021](#def-021-most-api-routes-answered-a-platform-404-on-vercel)                             | High     | Most API routes answered a platform 404 on Vercel                              | Introduced with each new route, found after the release  |
+| [DEF-022](#def-022-vercel-answered-412-to-every-saved-edit)                                       | High     | Vercel answered 412 to every saved edit                                        | Introduced with versioned edits, found after the release |
 
 ---
 
@@ -232,3 +235,32 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Regression test:** `queries/tickets.test.tsx` ("takes the new version from the answer"), which fails without the fix. It was checked by removing the fix.
 - **Limit:** an edit started before the first one has been answered is still sent with the old version and refused. That is the correct answer to two overlapping edits, and the screen explains it.
 - **Why the tests missed it:** no test made a second edit before the reload after the first had finished, which a script (or an impatient person) does.
+
+## DEF-020: Every API route answered 500 on Vercel
+
+- **Severity:** High (the live demo's API was down, including `/api/health`)
+- **Found by:** probing the production site after merging Phase 7. `/api/health` answered `FUNCTION_INVOCATION_FAILED`.
+- **Root cause (reproduced, but not confirmed on Vercel):** `jose` 6 ships only ES modules and the compiled server is CommonJS, so it loads it with `require()`. That fails with `ERR_REQUIRE_ESM` on Node before 22.12. Running the traced serverless bundle on Node 22.11 gave exactly this failure and the same symptom (the whole app failing to load); on Node 22.12 and later it works. Vercel's runtime version was not visible to me, so this is the most likely cause rather than a confirmed one. The evidence that it was the cause: the site recovered as soon as the import was changed.
+- **Since when:** `jose` arrived with the authentication work. The deployment that broke it was not determined, so the outage may have lasted a while.
+- **Fix:** `jose` is loaded with a dynamic `import()`, which works on every Node version.
+- **Regression tests:** `esm-only.test.ts` fails on a static import of `jose`, and the CI build job loads the compiled serverless entry point on Node 22.11, which catches any other ES-module-only dependency. The same load reproduced the failure on the old build.
+- **Why the tests missed it:** CI runs on Node 24, where `require()` of an ES module works, and the deployed site had never been smoke-tested automatically.
+
+## DEF-021: Most API routes answered a platform 404 on Vercel
+
+- **Severity:** High (sessions could not be refreshed, and comments, trends, the jobs and the API docs were unreachable in production)
+- **Found by:** running the live smoke suite against production for the first time, once DEF-020 was fixed. Eight of sixteen tests failed with a `404 NOT_FOUND` from Vercel itself (not the app's own JSON 404).
+- **Root cause:** only routes that had their own file in `api/` were reachable. The catch-all `api/[...path].js` did not route the others, so every route added after the first version (`/auth/refresh`, `/tickets/:id/comments`, `/tickets/stats/trends`, `/jobs/*`, `/docs`) existed locally, in Docker and in every test, but not on Vercel.
+- **Fix:** `vercel.json` rewrites `/api/(.*)` to the one function that serves the Express app. Routes with their own file still win.
+- **Regression tests:** `deployment.test.ts` checks the rewrite exists, comes first, and that the single-page-app fallback never captures `/api`; the live smoke suite exercises the previously unreachable routes (15 of 16 pass on production, the sixteenth needs `CRON_SECRET`). Vercel's routing itself cannot be run locally, so the real proof is the live suite.
+- **Why the tests missed it:** everything local uses Express directly; only the deployed site has Vercel's routing.
+
+## DEF-022: Vercel answered 412 to every saved edit
+
+- **Severity:** High (in the live app every status, priority or assignee change looked like a conflict, although it had been saved)
+- **Found by:** the same first live smoke run (`LIVE-WORKFLOW-001` received 412 where the API returns 200), then confirmed with curl: the ticket had been updated and the response was 412.
+- **Root cause:** Vercel evaluates `If-Match` itself, comparing it with the `ETag` of the response. An edit made against version 3 returns `ETag: "4"`, so the platform replaced the successful response with `412 Precondition Failed`. It only happens for a request with a valid version, which is the normal case.
+- **Since when:** versioned edits (`If-Match`) were added in Phase 1 and the client sent it from then on.
+- **Fix:** the API also accepts the version as `X-Ticket-Version`, which the web app now sends; `If-Match` still works wherever the host leaves it alone. If both are sent, `X-Ticket-Version` wins. See [ADR 005](adr/005-workflow-state-machine-and-optimistic-concurrency.md).
+- **Regression tests:** integration tests for the new header (current, stale, malformed, and winning over `If-Match`), a client test that it is sent (and `If-Match` is not), and `LIVE-WORKFLOW-001` now uses it against the deployed site.
+- **Why the tests missed it:** the API and mock tests never go through Vercel's edge, and no smoke test had been run against production.
