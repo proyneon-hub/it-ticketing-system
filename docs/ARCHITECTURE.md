@@ -30,18 +30,18 @@ flowchart LR
 
 The API is TypeScript (`strict`). `tsc` compiles it to `dist-server/`, which is what `npm start`, the Docker image and the Vercel functions run; `tsx` runs the same sources in development. `src/server` is layered so each part has one job, and dependencies point one way, down the table:
 
-| Layer              | Files                                 | Responsibility                                                                                                        |
-| ------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| App and middleware | `app.ts`, `logger.ts`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling                                                |
-| Routes             | `routes/auth.ts`, `routes/tickets.ts` | Translate HTTP: parse input, call a service, shape the response (and stream the CSV)                                  |
-| Validation         | `validation/tickets.ts`               | Turns untrusted input into a typed value, or a 400 naming the field                                                   |
-| Services           | `services/ticketService.ts`           | One function per use case: check the caller, apply domain rules, persist through the repository                       |
-| Domain             | `domain/`                             | Pure rules with no framework or database: workflow, SLA and timestamps, activity, permissions, CSV                    |
-| Repositories       | `repositories/ticketRepository.ts`    | The only code that queries Mongoose. Takes criteria and change objects, so nothing above knows Mongo                  |
-| Models             | `models/`                             | Mongoose schemas, defaults, indexes: tickets (with the text index behind search), users, refresh tokens, audit events |
-| Auth and security  | `auth.ts`, `security/`                | `requireAuth` and role middleware; access tokens (`jose`), argon2id passwords, the refresh cookie                     |
-| Shared             | `src/shared/`                         | `ticket-constants.ts` (statuses, transitions, SLA windows), `schemas.ts` (Zod), `ticket-types.ts`                     |
-| API contract       | `openapi.json`, `docs.ts`             | OpenAPI 3.1 document and the Swagger UI that serves it                                                                |
+| Layer              | Files                                 | Responsibility                                                                                                                 |
+| ------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| App and middleware | `app.ts`, `logger.ts`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling                                                         |
+| Routes             | `routes/auth.ts`, `routes/tickets.ts` | Translate HTTP: parse input, call a service, shape the response (and stream the CSV)                                           |
+| Validation         | `validation/tickets.ts`               | Turns untrusted input into a typed value, or a 400 naming the field                                                            |
+| Services           | `services/ticketService.ts`           | One function per use case: check the caller, apply domain rules, persist through the repository                                |
+| Domain             | `domain/`                             | Pure rules with no framework or database: workflow, SLA and timestamps, activity, permissions, CSV, comment visibility, trends |
+| Repositories       | `repositories/ticketRepository.ts`    | The only code that queries Mongoose. Takes criteria and change objects, so nothing above knows Mongo                           |
+| Models             | `models/`                             | Mongoose schemas, defaults, indexes: tickets (with the text index behind search), users, refresh tokens, audit events          |
+| Auth and security  | `auth.ts`, `security/`                | `requireAuth` and role middleware; access tokens (`jose`), argon2id passwords, the refresh cookie                              |
+| Shared             | `src/shared/`                         | `ticket-constants.ts` (statuses, transitions, SLA windows), `schemas.ts` (Zod), `ticket-types.ts`                              |
+| API contract       | `openapi.json`, `docs.ts`             | OpenAPI 3.1 document and the Swagger UI that serves it                                                                         |
 
 `architecture.test.ts` enforces the boundaries against the real import statements: routes cannot reach the database, services cannot import Mongoose, and the domain cannot import a framework. The domain layer also has an ESLint import restriction, so a violation shows in the editor before the test runs. (TypeScript is pinned to 6.x because `typescript-eslint`, which lints all the TypeScript, does not support 7 yet.)
 
@@ -51,7 +51,7 @@ Errors the API raises on purpose are `AppError` subclasses with an HTTP status a
 
 `src/client` is strict TypeScript. Server data lives in TanStack Query, the address holds the view, and small components render it:
 
-- `routes.tsx`: React Router routes `/login`, `/tickets`, `/tickets/:id`, `/admin/users` and `/admin/audit`. `RequireAuth` and `RequireRole` (`auth/guards.tsx`) decide who sees a page; a signed-out visitor is sent to `/login` and back to the page they asked for. On Vercel a rewrite in `vercel.json` serves the app for any non-API path so these addresses survive a reload.
+- `routes.tsx`: React Router routes `/login`, `/tickets`, `/tickets/:id` (with its comment thread), `/trends` (staff), `/admin/users` and `/admin/audit`. `RequireAuth` and `RequireRole` (`auth/guards.tsx`) decide who sees a page; a signed-out visitor is sent to `/login` and back to the page they asked for. On Vercel a rewrite in `vercel.json` serves the app for any non-API path so these addresses survive a reload.
 - `auth/AuthContext.tsx`: who is signed in. The access token is kept in memory only; after a reload the refresh cookie is traded for a new one (only tried when this browser signed in before). When a session ends unasked, the user sees why.
 - `queries/`: ticket, stats and user queries, keyed by their filters, so a slow response for an old search cannot replace a newer one. The status and priority changes are optimistic: the row updates at once and rolls back if the server refuses, for example on a version conflict, and the server's answer is refetched either way.
 - `hooks/useTicketFilters`: filters, sort and page live in the URL search params, so a filtered view can be linked and survives a reload.

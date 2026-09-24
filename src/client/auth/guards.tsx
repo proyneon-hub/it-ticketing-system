@@ -20,16 +20,22 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-// Everything under this route needs a specific role. The API enforces the same rule; this
+// Everything under this route needs one of the given roles. The API enforces the same rule; this
 // keeps people from landing on a page that could only show them errors.
-export function RequireRole({ role }: { role: Role }) {
+const plural: Record<Role, string> = {
+  admin: 'administrators',
+  technician: 'technicians',
+  user: 'requesters',
+};
+
+export function RequireRole({ roles }: { roles: Role[] }) {
   const { user } = useAuth();
 
-  if (user?.role !== role) {
+  if (!user || !roles.includes(user.role)) {
     return (
       <section className="empty-panel" role="alert">
         <h2>You do not have access to this page.</h2>
-        <p>This area is only available to {role === 'admin' ? 'administrators' : `${role}s`}.</p>
+        <p>This area is only available to {roles.map((role) => plural[role]).join(' and ')}.</p>
       </section>
     );
   }

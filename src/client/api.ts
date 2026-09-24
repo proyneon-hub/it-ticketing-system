@@ -1,6 +1,8 @@
 import type {
   AuditPage,
   AuditQuery,
+  Comment,
+  CommentVisibility,
   Credentials,
   DemoUser,
   LoginResponse,
@@ -11,6 +13,7 @@ import type {
   TicketFilters,
   TicketForm,
   TicketPage,
+  Trends,
   User,
   UserSummary,
 } from './types';
@@ -236,6 +239,30 @@ export async function exportTickets(filters: Partial<TicketFilters> = {}): Promi
 
 export function fetchStats({ signal }: Cancellable = {}): Promise<Stats> {
   return request('/tickets/stats', { signal });
+}
+
+export function fetchTrends(
+  { days, tz }: { days: number; tz: string },
+  { signal }: Cancellable = {}
+): Promise<Trends> {
+  return request(`/tickets/stats/trends${toQueryString({ days, tz })}`, { signal });
+}
+
+export function fetchComments(
+  ticketId: string,
+  { signal }: Cancellable = {}
+): Promise<{ comments: Comment[] }> {
+  return request(`/tickets/${ticketId}/comments`, { signal });
+}
+
+export function addComment(
+  ticketId: string,
+  comment: { body: string; visibility: CommentVisibility }
+): Promise<{ comment: Comment }> {
+  return request(`/tickets/${ticketId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(comment),
+  });
 }
 
 export function fetchTicket(id: string, { signal }: Cancellable = {}): Promise<{ ticket: Ticket }> {

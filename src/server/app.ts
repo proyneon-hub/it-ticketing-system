@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { corsPolicy, securityHeaders } from './middleware/security';
 import auditRoutes from './routes/audit';
 import authRoutes, { demoAccountsRouter } from './routes/auth';
+import commentRoutes from './routes/comments';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
 
@@ -79,6 +80,7 @@ app.use('/api', userRoutes);
 app.use('/api', auditRoutes);
 // Mount the ticket routes under /api, producing URLs like /api/tickets.
 app.use('/api', ticketRoutes);
+app.use('/api', commentRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   // The built React app. Relative to the working directory rather than this file,

@@ -132,6 +132,9 @@ const ticketSchema = new mongoose.Schema<TicketAttrs>(
           trim: true,
           maxlength: 240,
         },
+        internal: {
+          type: Boolean,
+        },
         createdAt: {
           type: Date,
           default: Date.now,

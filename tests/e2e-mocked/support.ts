@@ -20,6 +20,15 @@ export type {
 
 type JsonRecord = Record<string, unknown>;
 
+interface MockComment {
+  _id: string;
+  ticketId: string;
+  body: string;
+  visibility: 'public' | 'internal';
+  author: { id: string; name: string; email: string; role: UserRole };
+  createdAt: string;
+}
+
 const ticketStatuses: TicketStatus[] = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
 const ticketPriorities: TicketPriority[] = ['low', 'medium', 'high', 'urgent'];
 
@@ -204,6 +213,64 @@ export async function installApiMocks(page: Page): Promise<void> {
     createdAt: '2026-06-01T12:00:00.000Z',
   }));
 
+  // Comments per ticket. As in the real API the server, not the page, decides what a
+  // requester receives: an internal note is never sent to one.
+  let comments: MockComment[] = [
+    {
+      _id: 'cmt-1',
+      ticketId: '665f0f40d5d4f541f8ef1001',
+      body: 'Checked the access point logs; it is rebooting.',
+      visibility: 'public',
+      author: {
+        id: 'usr_tech',
+        name: testUsers.technician.name,
+        email: testUsers.technician.email,
+        role: 'technician',
+      },
+      createdAt: '2026-06-02T09:00:00.000Z',
+    },
+    {
+      _id: 'cmt-2',
+      ticketId: '665f0f40d5d4f541f8ef1001',
+      body: 'Firmware 4.2 is suspect; do not tell the user yet.',
+      visibility: 'internal',
+      author: {
+        id: 'usr_tech',
+        name: testUsers.technician.name,
+        email: testUsers.technician.email,
+        role: 'technician',
+      },
+      createdAt: '2026-06-02T09:05:00.000Z',
+    },
+    {
+      _id: 'cmt-3',
+      ticketId: '665f0f40d5d4f541f8ef1002',
+      body: 'Your account is unlocked; please try again.',
+      visibility: 'public',
+      author: {
+        id: 'usr_tech',
+        name: testUsers.technician.name,
+        email: testUsers.technician.email,
+        role: 'technician',
+      },
+      createdAt: '2026-06-02T10:00:00.000Z',
+    },
+    {
+      _id: 'cmt-4',
+      ticketId: '665f0f40d5d4f541f8ef1002',
+      body: 'Locked out by a stale VPN session; check the SSO logs.',
+      visibility: 'internal',
+      author: {
+        id: 'usr_tech',
+        name: testUsers.technician.name,
+        email: testUsers.technician.email,
+        role: 'technician',
+      },
+      createdAt: '2026-06-02T10:05:00.000Z',
+    },
+  ];
+  let commentSequence = 4;
+
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -356,6 +423,102 @@ export async function installApiMocks(page: Page): Promise<void> {
           pagination: { page: 1, limit: 25, total: shown.length, totalPages: 1 },
         },
       });
+    }
+
+    // --- trends (staff and requesters; a requester's would cover only their tickets)
+    if (path === '/api/tickets/stats/trends' && method === 'GET') {
+      if (!currentUser) {
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
+      }
+      const days = Number(url.searchParams.get('days') ?? 30);
+      const today = Date.now();
+      const series = Array.from({ length: days }, (_, index) => {
+        const date = new Date(today - (days - 1 - index) * 24 * 60 * 60 * 1000);
+        return {
+          date: date.toISOString().slice(0, 10),
+          opened: (index % 5) + 1,
+          resolved: index % 3,
+        };
+      });
+      const resolved = series.reduce((total, day) => total + day.resolved, 0);
+      return route.fulfill({
+        json: {
+          days,
+          timeZone: url.searchParams.get('tz') ?? 'UTC',
+          series,
+          resolution: { resolved, meanHours: 18.5 },
+          sla: { resolved, met: Math.round(resolved / 2), compliancePercent: 50 },
+        },
+      });
+    }
+
+    // --- comments on a ticket
+    const commentsMatch = /^\/api\/tickets\/([a-f\d]{24})\/comments$/.exec(path);
+    if (commentsMatch) {
+      if (!currentUser) {
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
+      }
+      const ticketId = commentsMatch[1];
+      const ticket = visibleTicketsFor(currentUser, tickets).find((t) => t._id === ticketId);
+      if (!ticket) {
+        return route.fulfill({
+          status: 404,
+          json: { message: 'Ticket not found.', code: 'NOT_FOUND' },
+        });
+      }
+
+      if (method === 'GET') {
+        const thread = comments.filter(
+          (comment) =>
+            comment.ticketId === ticketId &&
+            (currentUser?.role !== 'user' || comment.visibility === 'public')
+        );
+        return route.fulfill({ json: { comments: thread } });
+      }
+
+      if (method === 'POST') {
+        const payload = request.postDataJSON() as JsonRecord;
+        const body = stringFromPayload(payload, 'body')?.trim();
+        const visibility = stringFromPayload(payload, 'visibility') ?? 'public';
+        if (!body) {
+          return route.fulfill({
+            status: 400,
+            json: {
+              message: 'Comment is required.',
+              code: 'VALIDATION_FAILED',
+              errors: [{ field: 'body', message: 'Comment is required.' }],
+            },
+          });
+        }
+        if (visibility === 'internal' && currentUser.role === 'user') {
+          return route.fulfill({
+            status: 403,
+            json: { message: 'Only staff can add internal notes.', code: 'FORBIDDEN' },
+          });
+        }
+        commentSequence += 1;
+        const comment: MockComment = {
+          _id: `cmt-${commentSequence}`,
+          ticketId: ticketId as string,
+          body,
+          visibility: visibility === 'internal' ? 'internal' : 'public',
+          author: {
+            id: currentUser.sub,
+            name: currentUser.name,
+            email: currentUser.email,
+            role: currentUser.role,
+          },
+          createdAt: new Date().toISOString(),
+        };
+        comments = [...comments, comment];
+        return route.fulfill({ status: 201, json: { comment } });
+      }
     }
 
     // --- one ticket (the detail page)

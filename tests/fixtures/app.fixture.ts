@@ -5,6 +5,7 @@ import { LoginPage } from '../pages/LoginPage';
 import { TicketDetailPage } from '../pages/TicketDetailPage';
 import { TicketDashboardPage } from '../pages/TicketDashboardPage';
 import { TicketFormPage } from '../pages/TicketFormPage';
+import { TrendsPage } from '../pages/TrendsPage';
 
 type AppFixtures = {
   mockedApi: void;
@@ -13,6 +14,7 @@ type AppFixtures = {
   ticketFormPage: TicketFormPage;
   detailPage: TicketDetailPage;
   adminPage: AdminPage;
+  trendsPage: TrendsPage;
 };
 
 export const test = base.extend<AppFixtures>({
@@ -37,6 +39,9 @@ export const test = base.extend<AppFixtures>({
   },
   adminPage: async ({ page }, use) => {
     await use(new AdminPage(page));
+  },
+  trendsPage: async ({ page }, use) => {
+    await use(new TrendsPage(page));
   },
 });
 

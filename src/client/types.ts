@@ -6,9 +6,21 @@ import type {
   Status,
   AuditType,
 } from '../shared/ticket-constants';
-import type { Ticket } from '../shared/ticket-types';
+import type { Comment, Ticket, Trends } from '../shared/ticket-types';
+import type { CommentVisibility } from '../shared/ticket-constants';
 
-export type { AuditType, Priority, Role, SlaFilter, SortField, Status, Ticket };
+export type {
+  AuditType,
+  Comment,
+  CommentVisibility,
+  Priority,
+  Role,
+  SlaFilter,
+  SortField,
+  Status,
+  Ticket,
+  Trends,
+};
 
 // The signed-in user, as the client uses it.
 export interface User {

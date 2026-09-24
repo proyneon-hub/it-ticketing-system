@@ -1,4 +1,4 @@
-import type { Priority, Role, Status } from './ticket-constants';
+import type { CommentVisibility, Priority, Role, Status } from './ticket-constants';
 
 // One entry in a ticket's history. Written by the service on every change.
 export interface ActivityEntry {
@@ -9,6 +9,8 @@ export interface ActivityEntry {
   from?: string | undefined;
   to?: string | undefined;
   detail?: string | undefined;
+  // True for entries about an internal note: staff see them, requesters do not.
+  internal?: boolean | undefined;
   createdAt?: Date | undefined;
 }
 
@@ -46,4 +48,32 @@ export interface Ticket extends Omit<
   createdAt: string;
   updatedAt: string;
   activity: (Omit<ActivityEntry, 'createdAt'> & { createdAt?: string })[];
+}
+
+// A comment on a ticket, as the API sends it.
+export interface Comment {
+  _id: string;
+  ticketId: string;
+  body: string;
+  visibility: CommentVisibility;
+  author: { id: string; name: string; email: string; role: Role };
+  createdAt: string;
+}
+
+// What the trends endpoint returns: the numbers behind the trends chart.
+export interface Trends {
+  days: number;
+  timeZone: string;
+  series: { date: string; opened: number; resolved: number }[];
+  resolution: {
+    resolved: number;
+    // Mean time to resolve, in hours to one decimal place. Null when nothing was resolved.
+    meanHours: number | null;
+  };
+  sla: {
+    resolved: number;
+    met: number;
+    // Share of resolved tickets that met their deadline, one decimal place. Null when nothing was resolved.
+    compliancePercent: number | null;
+  };
 }

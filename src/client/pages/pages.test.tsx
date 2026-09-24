@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../api';
-import { deferred, makeTicket, users } from '../test/fixtures';
+import { deferred, makeTicket, makeTrends, users } from '../test/fixtures';
 import { installDefaultApi, renderSignedInAs } from '../test/renderApp';
 import type { AuditEvent, UserSummary } from '../types';
 
@@ -262,5 +262,93 @@ describe('admin: audit log', () => {
     renderSignedInAs('admin', '/admin/audit');
 
     expect(await screen.findByText('Audit unavailable.')).toBeVisible();
+  });
+});
+
+describe('trends', () => {
+  it('shows the headline numbers and the chart for the last 30 days by default', async () => {
+    renderSignedInAs('admin', '/trends');
+
+    const stats = await screen.findByTestId('trend-stats');
+    expect(within(stats).getByText('8')).toBeInTheDocument(); // opened: 2 + 5 + 1
+    expect(within(stats).getByText('12.5 h')).toBeInTheDocument();
+    expect(within(stats).getByText('50%')).toBeInTheDocument();
+    expect(within(stats).getByText('1 of 2 resolved on time')).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: /Tickets opened and resolved per day/ })
+    ).toBeVisible();
+    expect(api.fetchTrends).toHaveBeenCalledWith(
+      { days: 30, tz: expect.any(String) },
+      expect.anything()
+    );
+  });
+
+  it('opens for technicians too', async () => {
+    renderSignedInAs('technician', '/trends');
+    expect(await screen.findByTestId('trend-stats')).toBeInTheDocument();
+  });
+
+  it('is not for requesters, who also get no link to it', async () => {
+    renderSignedInAs('user', '/trends');
+
+    expect(await screen.findByText('You do not have access to this page.')).toBeInTheDocument();
+    expect(
+      screen.getByText(/only available to administrators and technicians/)
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Trends' })).not.toBeInTheDocument();
+    expect(api.fetchTrends).not.toHaveBeenCalled();
+  });
+
+  it('is in the navigation for staff', async () => {
+    renderSignedInAs('technician', '/tickets');
+    expect(await screen.findByRole('link', { name: 'Trends' })).toHaveAttribute('href', '/trends');
+  });
+
+  it('switches range and asks for that many days', async () => {
+    renderSignedInAs('admin', '/trends');
+    const user = userEvent.setup();
+    await screen.findByTestId('trend-stats');
+
+    await user.click(screen.getByRole('button', { name: 'Last 90 days' }));
+
+    await waitFor(() =>
+      expect(api.fetchTrends).toHaveBeenLastCalledWith(
+        { days: 90, tz: expect.any(String) },
+        expect.anything()
+      )
+    );
+    expect(screen.getByRole('button', { name: 'Last 90 days' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(screen.getByRole('button', { name: 'Last 30 days' })).toHaveAttribute(
+      'aria-pressed',
+      'false'
+    );
+  });
+
+  it('shows a dash rather than zero when nothing was resolved', async () => {
+    vi.mocked(api.fetchTrends).mockResolvedValue(
+      makeTrends({
+        resolution: { resolved: 0, meanHours: null },
+        sla: { resolved: 0, met: 0, compliancePercent: null },
+      })
+    );
+    renderSignedInAs('admin', '/trends');
+
+    const stats = await screen.findByTestId('trend-stats');
+    expect(within(stats).getAllByText('–')).toHaveLength(2);
+    expect(within(stats).getByText('nothing resolved yet')).toBeInTheDocument();
+  });
+
+  it('shows a loading state and a load failure with its reference', async () => {
+    const pending = deferred();
+    vi.mocked(api.fetchTrends).mockReturnValue(pending.promise as never);
+    renderSignedInAs('admin', '/trends');
+    expect(await screen.findByText('Loading trends...')).toBeInTheDocument();
+
+    pending.reject(Object.assign(new Error('Trends are unavailable.'), { requestId: 'req-9' }));
+    expect(await screen.findByText('Trends are unavailable.')).toBeInTheDocument();
+    expect(screen.getByText(/req-9/)).toBeInTheDocument();
   });
 });

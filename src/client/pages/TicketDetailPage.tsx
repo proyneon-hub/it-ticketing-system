@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import ActivityTimeline from '../components/ActivityTimeline';
 import Alert from '../components/Alert';
+import CommentThread from '../components/CommentThread';
 import { AssigneeInput, PrioritySelect, StatusSelect } from '../components/TicketControls';
 import { formatDate, getSlaState, label } from '../lib/format';
 import { useTicket } from '../queries/tickets';
@@ -115,6 +116,8 @@ export default function TicketDetailPage() {
           </button>
         ) : null}
       </div>
+
+      <CommentThread ticketId={ticket._id} role={user.role} />
 
       <ActivityTimeline ticket={ticket} />
     </section>

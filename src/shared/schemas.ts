@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   auditTypes,
+  commentVisibilities,
   priorities,
   roles,
   slaFilters,
@@ -105,6 +106,31 @@ export type ListQuery = z.output<typeof listQuerySchema>;
 export type ExportQuery = z.output<typeof exportQuerySchema>;
 export type CreateTicketInput = z.output<typeof createTicketSchema>;
 export type PatchTicketInput = z.output<typeof patchTicketSchema>;
+
+// The trends chart: how many days to look back and which time zone decides where a day ends.
+export const trendsQuerySchema = z.object({
+  days: integerParam('days', { defaultValue: 30, min: 1, max: 90 }),
+  // An IANA name such as America/Toronto. The server checks the name; blank means UTC.
+  tz: optionalFilter(
+    z.string({ error: 'Invalid time zone.' }).max(64, { error: 'Invalid time zone.' })
+  ),
+});
+export type TrendsQuery = z.output<typeof trendsQuerySchema>;
+
+// --- Comments -------------------------------------------------------------------
+
+export const createCommentSchema = z.object({
+  body: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined ? 'Comment is required.' : 'Comment must be text.',
+    })
+    .trim()
+    .min(1, { error: 'Comment is required.' })
+    .max(2000, { error: 'Comment must be 2000 characters or fewer.' }),
+  visibility: z.enum(commentVisibilities, { error: 'Invalid visibility.' }).default('public'),
+});
+export type CreateCommentInput = z.output<typeof createCommentSchema>;
 
 // --- Administration -------------------------------------------------------------
 

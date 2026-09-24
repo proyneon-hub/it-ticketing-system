@@ -1,13 +1,17 @@
 import { ValidationError } from '../errors';
 import {
+  createCommentSchema,
   createTicketSchema,
   exportQuerySchema,
   listQuerySchema,
   patchTicketSchema,
+  trendsQuerySchema,
+  type CreateCommentInput,
   type CreateTicketInput,
   type ExportQuery,
   type ListQuery,
   type PatchTicketInput,
+  type TrendsQuery,
 } from '../../shared/schemas';
 import type { z } from 'zod';
 
@@ -37,6 +41,10 @@ export const parseExportQuery = (query: unknown): ExportQuery =>
   parseOrThrow(exportQuerySchema, query);
 export const parseCreateTicket = (body: unknown): CreateTicketInput =>
   parseOrThrow(createTicketSchema, body);
+export const parseTrendsQuery = (query: unknown): TrendsQuery =>
+  parseOrThrow(trendsQuerySchema, query);
+export const parseCreateComment = (body: unknown): CreateCommentInput =>
+  parseOrThrow(createCommentSchema, body);
 export const parsePatchTicket = (body: unknown): PatchTicketInput =>
   parseOrThrow(patchTicketSchema, body);
 

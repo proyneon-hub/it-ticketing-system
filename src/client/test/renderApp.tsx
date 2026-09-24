@@ -4,13 +4,15 @@ import { vi } from 'vitest';
 import * as api from '../api';
 import App from '../App';
 import { routes } from '../routes';
-import { demoUsers, emptyStats, makeTicket, ticketPage, users } from './fixtures';
+import { demoUsers, emptyStats, makeTicket, makeTrends, ticketPage, users } from './fixtures';
 
 // Sensible answers for every call, so a test overrides only what it is about. Call it
 // from beforeEach (after vi.clearAllMocks()).
 export function installDefaultApi() {
   vi.mocked(api.sessionMayExist).mockReturnValue(false);
   vi.mocked(api.logout).mockResolvedValue(null);
+  vi.mocked(api.fetchComments).mockResolvedValue({ comments: [] });
+  vi.mocked(api.fetchTrends).mockResolvedValue(makeTrends());
   vi.mocked(api.fetchDemoUsers).mockResolvedValue({ users: demoUsers });
   vi.mocked(api.fetchTickets).mockResolvedValue(ticketPage([makeTicket()]));
   vi.mocked(api.fetchStats).mockResolvedValue({ ...emptyStats, total: 1, byStatus: { open: 1 } });

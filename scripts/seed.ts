@@ -133,11 +133,20 @@ const tickets: Partial<TicketAttrs>[] = [
   },
 ];
 
-// `--count 10000` pads the demo set with generated tickets, for load tests.
-function requestedCount(): number {
+// Without --count the demo set is padded with about two months of generated history, so the
+// trends chart has some shape. `--count 10000` pads it to that many tickets instead, for load
+// tests (spread over 90 days, as the load-test numbers in docs/PERFORMANCE.md were taken).
+const DEMO_TICKETS = 200;
+const DEMO_HISTORY_DAYS = 60;
+
+function requestedCount(): { total: number; days: number } {
   const index = process.argv.indexOf('--count');
-  const value = index === -1 ? 0 : Number(process.argv[index + 1]);
-  return Number.isInteger(value) && value > tickets.length ? value : tickets.length;
+  if (index === -1) return { total: DEMO_TICKETS, days: DEMO_HISTORY_DAYS };
+  const value = Number(process.argv[index + 1]);
+  return {
+    total: Number.isInteger(value) && value > tickets.length ? value : tickets.length,
+    days: 90,
+  };
 }
 
 async function seed(): Promise<void> {
@@ -147,10 +156,10 @@ async function seed(): Promise<void> {
 
   // This is intentionally destructive: it clears existing tickets so the sample
   // data is predictable every time the script runs.
-  const total = requestedCount();
+  const { total, days } = requestedCount();
   const all = [
     ...tickets,
-    ...generateTickets(total - tickets.length, { firstNumber: tickets.length + 1 }),
+    ...generateTickets(total - tickets.length, { firstNumber: tickets.length + 1, days }),
   ];
 
   await Ticket.deleteMany({});

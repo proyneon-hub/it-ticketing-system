@@ -12,6 +12,7 @@ import {
   parseIfMatch,
   parseListQuery,
   parsePatchTicket,
+  parseTrendsQuery,
 } from '../validation/tickets';
 
 // Routes only translate HTTP to service calls: validate input, call the
@@ -66,6 +67,13 @@ router.get(
   '/tickets/stats',
   asyncHandler(async (req, res) => {
     res.json(await tickets.getStats(actor(req)));
+  })
+);
+
+router.get(
+  '/tickets/stats/trends',
+  asyncHandler(async (req, res) => {
+    res.json(await tickets.getTrends(actor(req), parseTrendsQuery(req.query)));
   })
 );
 

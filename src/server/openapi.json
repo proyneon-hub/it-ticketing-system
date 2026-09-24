@@ -696,6 +696,142 @@
           }
         }
       }
+    },
+    "/tickets/{id}/comments": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/TicketId"
+        }
+      ],
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "List a ticket's comments",
+        "description": "Oldest first. A requester receives only public comments; internal notes are never sent to them.",
+        "operationId": "listComments",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The comments the caller may read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Tickets"],
+        "summary": "Add a comment or internal note",
+        "description": "Visibility defaults to public. Only staff may post an internal note; a requester who tries receives 403. Adding a comment does not change the ticket's version.",
+        "operationId": "addComment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new comment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tickets/stats/trends": {
+      "get": {
+        "tags": ["Tickets"],
+        "summary": "Trends over the last N days",
+        "description": "Tickets opened and resolved per day, mean time to resolve and SLA compliance, for the tickets the caller may see. A day ends at midnight in the requested time zone.",
+        "operationId": "getTicketTrends",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "description": "An IANA time zone name such as America/Toronto. Defaults to UTC.",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The trends.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trends"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1112,6 +1248,10 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "internal": {
+            "type": "boolean",
+            "description": "True for an entry about an internal note. Only staff receive these entries."
           }
         }
       },
@@ -1518,6 +1658,151 @@
           },
           "pagination": {
             "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "CommentVisibility": {
+        "type": "string",
+        "enum": ["public", "internal"],
+        "description": "Who may read a comment. Internal notes are for staff; a requester never receives one."
+      },
+      "Comment": {
+        "type": "object",
+        "required": ["_id", "ticketId", "body", "visibility", "author", "createdAt"],
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "ticketId": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/CommentVisibility"
+          },
+          "author": {
+            "type": "object",
+            "required": ["id", "name", "email", "role"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "role": {
+                "$ref": "#/components/schemas/Role"
+              }
+            }
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CommentCreate": {
+        "type": "object",
+        "required": ["body"],
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/CommentVisibility"
+          }
+        }
+      },
+      "CommentList": {
+        "type": "object",
+        "required": ["comments"],
+        "properties": {
+          "comments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Comment"
+            }
+          }
+        }
+      },
+      "CommentEnvelope": {
+        "type": "object",
+        "required": ["comment"],
+        "properties": {
+          "comment": {
+            "$ref": "#/components/schemas/Comment"
+          }
+        }
+      },
+      "Trends": {
+        "type": "object",
+        "required": ["days", "timeZone", "series", "resolution", "sla"],
+        "properties": {
+          "days": {
+            "type": "integer"
+          },
+          "timeZone": {
+            "type": "string"
+          },
+          "series": {
+            "type": "array",
+            "description": "One entry per calendar day, oldest first. Days with nothing in them are zeros.",
+            "items": {
+              "type": "object",
+              "required": ["date", "opened", "resolved"],
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "description": "YYYY-MM-DD in the requested time zone."
+                },
+                "opened": {
+                  "type": "integer",
+                  "description": "Tickets created that day."
+                },
+                "resolved": {
+                  "type": "integer",
+                  "description": "Tickets resolved or closed that day."
+                }
+              }
+            }
+          },
+          "resolution": {
+            "type": "object",
+            "required": ["resolved", "meanHours"],
+            "properties": {
+              "resolved": {
+                "type": "integer",
+                "description": "Tickets resolved in the window."
+              },
+              "meanHours": {
+                "type": ["number", "null"],
+                "description": "Mean time from creation to resolution, in hours to one decimal place. Null when nothing was resolved."
+              }
+            }
+          },
+          "sla": {
+            "type": "object",
+            "required": ["resolved", "met", "compliancePercent"],
+            "properties": {
+              "resolved": {
+                "type": "integer"
+              },
+              "met": {
+                "type": "integer",
+                "description": "Resolved on or before the SLA deadline."
+              },
+              "compliancePercent": {
+                "type": ["number", "null"],
+                "description": "Share of resolved tickets that met their deadline, to one decimal place. Null when nothing was resolved."
+              }
+            }
           }
         }
       }

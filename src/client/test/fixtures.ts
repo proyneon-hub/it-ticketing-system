@@ -1,4 +1,13 @@
-import type { DemoUser, Pagination, Stats, Ticket, TicketPage, User } from '../types';
+import type {
+  Comment,
+  DemoUser,
+  Pagination,
+  Stats,
+  Ticket,
+  TicketPage,
+  Trends,
+  User,
+} from '../types';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -48,6 +57,39 @@ export function makeTicket(overrides: Partial<Ticket> = {}): Ticket {
     createdByRole: 'user',
     activity: [],
     __v: 2,
+    ...overrides,
+  };
+}
+
+export function makeComment(overrides: Partial<Comment> = {}): Comment {
+  return {
+    _id: '665f0f40d5d4f541f8ef2001',
+    ticketId: '665f0f40d5d4f541f8ef1001',
+    body: 'Looking into it.',
+    visibility: 'public',
+    author: {
+      id: 'usr_tech',
+      name: 'Theo Technician',
+      email: 'tech@demo.local',
+      role: 'technician',
+    },
+    createdAt: '2026-06-02T09:00:00.000Z',
+    ...overrides,
+  };
+}
+
+// Three days, with one resolved-in-time ticket and one late: 50% on time, 12.5 h on average.
+export function makeTrends(overrides: Partial<Trends> = {}): Trends {
+  return {
+    days: 3,
+    timeZone: 'America/Toronto',
+    series: [
+      { date: '2026-06-13', opened: 2, resolved: 0 },
+      { date: '2026-06-14', opened: 5, resolved: 1 },
+      { date: '2026-06-15', opened: 1, resolved: 1 },
+    ],
+    resolution: { resolved: 2, meanHours: 12.5 },
+    sla: { resolved: 2, met: 1, compliancePercent: 50 },
     ...overrides,
   };
 }

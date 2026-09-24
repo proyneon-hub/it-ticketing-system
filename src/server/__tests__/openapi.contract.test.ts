@@ -142,6 +142,22 @@ describe('responses match their documented schemas', () => {
     conforms('TicketEnvelope', fetched.body);
     used('getTicket');
 
+    const comment = await request(app)
+      .post(`/api/tickets/${id}/comments`)
+      .set(as('tech'))
+      .send({ body: 'Checking the switch.', visibility: 'internal' })
+      .expect(201);
+    conforms('CommentEnvelope', comment.body);
+    used('addComment');
+
+    const thread = await request(app)
+      .get(`/api/tickets/${id}/comments`)
+      .set(as('admin'))
+      .expect(200);
+    conforms('CommentList', thread.body);
+    expect(thread.body.comments).toHaveLength(1);
+    used('listComments');
+
     const updated = await request(app)
       .patch(`/api/tickets/${id}`)
       .set(as('tech'))
@@ -162,6 +178,14 @@ describe('responses match their documented schemas', () => {
     const stats = await request(app).get('/api/tickets/stats').set(as('admin')).expect(200);
     conforms('Stats', stats.body);
     used('getTicketStats');
+
+    const trends = await request(app)
+      .get('/api/tickets/stats/trends?days=7&tz=America/Toronto')
+      .set(as('admin'))
+      .expect(200);
+    conforms('Trends', trends.body);
+    expect(trends.body.series).toHaveLength(7);
+    used('getTicketTrends');
 
     const csv = await request(app).get('/api/tickets/export').set(as('admin')).expect(200);
     expect(csv.headers['content-type']).toContain('text/csv');
