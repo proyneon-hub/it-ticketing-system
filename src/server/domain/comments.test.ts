@@ -9,6 +9,7 @@ import {
 
 const user = (role: TokenPayload['role']): TokenPayload => ({
   sub: 'u1',
+  exp: 0,
   name: 'Someone',
   email: 'someone@demo.local',
   role,
