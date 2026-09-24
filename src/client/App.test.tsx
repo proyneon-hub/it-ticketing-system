@@ -223,7 +223,8 @@ describe('the queue', () => {
     await user.type(screen.getByLabelText('Search tickets'), 'vpn');
 
     await waitFor(() => expect(router.state.location.search).toBe('?search=vpn'));
-    expect(api.fetchTickets).toHaveBeenCalledTimes(1);
+    // The request follows the address change by a render, so wait for it rather than assume.
+    await waitFor(() => expect(api.fetchTickets).toHaveBeenCalledTimes(1));
     expect(api.fetchTickets).toHaveBeenCalledWith(
       expect.objectContaining({ search: 'vpn' }),
       expect.anything()
