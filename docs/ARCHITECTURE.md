@@ -30,18 +30,18 @@ flowchart LR
 
 The API is TypeScript (`strict`). `tsc` compiles it to `dist-server/`, which is what `npm start`, the Docker image and the Vercel functions run; `tsx` runs the same sources in development. `src/server` is layered so each part has one job, and dependencies point one way, down the table:
 
-| Layer              | Files                                 | Responsibility                                                                                       |
-| ------------------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| App and middleware | `app.ts`, `logger.ts`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling                               |
-| Routes             | `routes/auth.ts`, `routes/tickets.ts` | Translate HTTP: parse input, call a service, shape the response (and stream the CSV)                 |
-| Validation         | `validation/tickets.ts`               | Turns untrusted input into a typed value, or a 400 naming the field                                  |
-| Services           | `services/ticketService.ts`           | One function per use case: check the caller, apply domain rules, persist through the repository      |
-| Domain             | `domain/`                             | Pure rules with no framework or database: workflow, SLA and timestamps, activity, permissions, CSV   |
-| Repositories       | `repositories/ticketRepository.ts`    | The only code that queries Mongoose. Takes criteria and change objects, so nothing above knows Mongo |
-| Models             | `models/`                             | Mongoose schemas, defaults, indexes (including the text index behind search)                         |
-| Auth               | `auth.ts`                             | Signed tokens and role middleware                                                                    |
-| Shared             | `src/shared/`                         | `ticket-constants.ts` (statuses, transitions, SLA windows), `schemas.ts` (Zod), `ticket-types.ts`    |
-| API contract       | `openapi.json`, `docs.ts`             | OpenAPI 3.1 document and the Swagger UI that serves it                                               |
+| Layer              | Files                                 | Responsibility                                                                                                        |
+| ------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| App and middleware | `app.ts`, `logger.ts`, `middleware/`  | Request id and structured logs, security headers, CORS, error handling                                                |
+| Routes             | `routes/auth.ts`, `routes/tickets.ts` | Translate HTTP: parse input, call a service, shape the response (and stream the CSV)                                  |
+| Validation         | `validation/tickets.ts`               | Turns untrusted input into a typed value, or a 400 naming the field                                                   |
+| Services           | `services/ticketService.ts`           | One function per use case: check the caller, apply domain rules, persist through the repository                       |
+| Domain             | `domain/`                             | Pure rules with no framework or database: workflow, SLA and timestamps, activity, permissions, CSV                    |
+| Repositories       | `repositories/ticketRepository.ts`    | The only code that queries Mongoose. Takes criteria and change objects, so nothing above knows Mongo                  |
+| Models             | `models/`                             | Mongoose schemas, defaults, indexes: tickets (with the text index behind search), users, refresh tokens, audit events |
+| Auth and security  | `auth.ts`, `security/`                | `requireAuth` and role middleware; access tokens (`jose`), argon2id passwords, the refresh cookie                     |
+| Shared             | `src/shared/`                         | `ticket-constants.ts` (statuses, transitions, SLA windows), `schemas.ts` (Zod), `ticket-types.ts`                     |
+| API contract       | `openapi.json`, `docs.ts`             | OpenAPI 3.1 document and the Swagger UI that serves it                                                                |
 
 `architecture.test.ts` enforces the boundaries against the real import statements: routes cannot reach the database, services cannot import Mongoose, and the domain cannot import a framework. (`typescript-eslint` does not run on TypeScript 7 yet, so a test does the job of an import-restriction lint rule.)
 
@@ -62,14 +62,34 @@ Errors the API raises on purpose are `AppError` subclasses with an HTTP status a
 1. The user signs in with `POST /api/auth/login` and receives a signed token and the public user.
 2. The client sends `Authorization: Bearer <token>` on later requests.
 3. The request gets an id, is logged, and passes the security headers.
-4. `requireAuth` verifies the token and attaches `req.user`.
+4. `requireAuth` verifies the access token (signature, algorithm, issuer, audience, expiry) and attaches `req.user`.
 5. The route validates the input with Zod.
 6. The ticket service applies the role scope and the domain rules, the repository runs the query or the versioned change, and activity is recorded with it.
 7. The response, or the error with its request id, goes back to the client.
 
 ## Authentication
 
-Demo credentials are checked against in-code demo users. A successful sign-in returns an HMAC-signed token containing the user id, name, email, role and an 8 hour expiry. Protected routes reject missing, expired, malformed or tampered tokens. See [SECURITY_NOTES.md](SECURITY_NOTES.md) for the limits of this model.
+Users are stored in MongoDB with argon2id password hashes. Signing in returns a 15-minute JWT (kept in memory by the client) and sets a single-use refresh token in an `HttpOnly`, `SameSite=Strict` cookie. When the access token expires, or the page reloads, the client trades the cookie for a new pair; presenting a token that was already used ends the whole session. Admins manage roles under `/api/users`, and security events are recorded in an audit log readable at `/api/audit`.
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant A as API
+    participant D as MongoDB
+    B->>A: POST /auth/login (email, password)
+    A->>D: find user, verify argon2id, store hash of refresh token
+    A-->>B: access token (15 min) + Set-Cookie rt (HttpOnly)
+    B->>A: GET /tickets (Bearer access token)
+    Note over B,A: 15 minutes later, or after a reload
+    B->>A: POST /auth/refresh (cookie rt)
+    A->>D: mark rt used, issue the next in the same family
+    A-->>B: new access token + new cookie
+    B->>A: POST /auth/refresh (the OLD cookie again)
+    A->>D: token already used, so end the whole family
+    A-->>B: 401
+```
+
+See [SECURITY_NOTES.md](SECURITY_NOTES.md) for the threat model and the limits of this design.
 
 ## Ticket workflow
 

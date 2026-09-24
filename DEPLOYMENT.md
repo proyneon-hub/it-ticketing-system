@@ -16,6 +16,8 @@ The same Express app runs three ways: locally, in Docker, and as Vercel serverle
 | `AUTH_SECRET`  | Yes in production | A random value of 32+ characters (`openssl rand -base64 48`). In production `server.ts` refuses to start without it, and on Vercel sign-in returns 503 until it is set. `/api/ready` shows `authConfigured` |
 | `CORS_ORIGINS` | No                | Only needed if another origin calls the API from a browser                                                                                                                                                  |
 
+MongoDB must be a **replica set** (Atlas clusters are), because the API uses transactions. The demo accounts are created on first sign-in, so there is no seeding step for authentication.
+
 The full list is in the [runbook](docs/RUNBOOK.md#environment-variables). Never commit real values; `.env.example` shows the names.
 
 ## Docker Compose

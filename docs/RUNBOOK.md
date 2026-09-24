@@ -74,6 +74,10 @@ Without Docker:
 | ------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MONGODB_URI`                         | Yes               | MongoDB connection string                                                                                                                                                                                  |
 | `AUTH_SECRET`                         | Yes in production | Signs bearer tokens; 32+ characters. In production `server.ts` refuses to start without it, and serverless functions answer 503 on sign-in and authenticated routes. `/api/ready` reports `authConfigured` |
+| `COOKIE_SECURE`                       | No                | Whether the refresh cookie is `Secure` (https only). Default: on in production. Set `false` for plain-http local runs; Compose does                                                                        |
+| `REFRESH_TOKEN_TTL_DAYS`              | No                | How long a session lasts without use, default 7                                                                                                                                                            |
+| `AUDIT_RETENTION_DAYS`                | No                | Delete audit events older than this. Unset keeps them forever. Changing it later needs `npm run db:sync-indexes`                                                                                           |
+| `DEMO_USERS`                          | No                | `off` stops the three demo accounts being created on first sign-in                                                                                                                                         |
 | `PORT`                                | Local and Docker  | Express port (default 5000)                                                                                                                                                                                |
 | `CORS_ORIGINS`                        | No                | Comma-separated origins allowed to call the API from a browser. Unset means same-origin only                                                                                                               |
 | `LOG_LEVEL`                           | No                | pino level, default `info`                                                                                                                                                                                 |
@@ -97,7 +101,9 @@ Without Docker:
 
 - Use one of the demo accounts from the [README](../README.md).
 - `429 Too many failed sign-in attempts`: the limit is 10 failures per 15 minutes per client address. Wait, or restart a single-container deployment to reset it. Successful sign-ins are not counted.
-- "Your session expired": the token lasts 8 hours, or `AUTH_SECRET` changed. Sign in again.
+- "Your session expired": the access token lasts 15 minutes and is renewed silently, so this means the session itself ended: it was signed out, an admin changed the user's role (which ends their sessions), the refresh token expired (7 days), a used refresh token was replayed, or `AUTH_SECRET` changed. Sign in again.
+- `Cross-origin request refused` on refresh or sign-out from your own site: the server compares the browser's `Origin` with the address it sees. Behind a reverse proxy that terminates https, set `TRUST_PROXY` (Vercel sets it for you) so the server knows the request was https.
+- Signed out on every page load: the refresh cookie is not coming back. Over plain `http` (Docker, localhost) set `COOKIE_SECURE=false`; a `Secure` cookie is only sent over https.
 - Behind a proxy, every user appearing to share one address means `TRUST_PROXY` is not set for that proxy.
 
 ## API 500 troubleshooting
@@ -110,6 +116,7 @@ Without Docker:
 
 - `docker compose up --wait` times out: run `docker compose ps` and `docker compose logs app`. The app is unhealthy while it cannot reach MongoDB.
 - The container is marked `unhealthy` but keeps running: Docker does not restart unhealthy containers by itself. Restart it, or run it under an orchestrator that does.
+- `Transaction numbers are only allowed on a replica set member or mongos`: MongoDB must be a replica set (Atlas is). Locally use `npm run dev:db` or `docker compose up`, which start one; a bare `mongod` needs `--replSet`.
 - `AUTH_SECRET must be set` or `must be at least 32 characters` when `NODE_ENV=production`: set a longer `AUTH_SECRET` (Compose supplies a demo default).
 - Port already in use: change the published port in `docker-compose.yml`, or `npm run free:api-port` on Windows for the local API.
 

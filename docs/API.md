@@ -10,7 +10,15 @@ Base URL: `/api`
 
 ## Authentication
 
-Sign in with `POST /auth/login` to receive a signed bearer token valid for 8 hours.
+Sign in with `POST /auth/login` to receive a **15-minute access token** and the user. Send the token on every request:
+
+```http
+Authorization: Bearer <token>
+```
+
+The response also sets a `rt` **refresh cookie** (`HttpOnly`, `SameSite=Strict`, `Secure` over https, scoped to `/api/auth`). When the access token expires, `POST /auth/refresh` trades the cookie for a new token and a new cookie. A refresh token works **once**: presenting one that was already used means a copy exists, so the whole session is ended. `POST /auth/logout` ends it on purpose. Browsers do this automatically; a script using the API just signs in again when its token expires. Both cookie endpoints refuse a request that names a different `Origin`.
+
+The demo users below are created the first time anyone signs in (their passwords are stored as argon2id hashes like any other user's):
 
 | Role       | Email              | Password        |
 | ---------- | ------------------ | --------------- |
@@ -18,28 +26,39 @@ Sign in with `POST /auth/login` to receive a signed bearer token valid for 8 hou
 | Technician | `tech@demo.local`  | `TechPass123!`  |
 | User       | `user@demo.local`  | `UserPass123!`  |
 
-```http
-Authorization: Bearer <token>
-```
-
 Failed sign-ins are rate limited per client address (10 per 15 minutes by default). Successful sign-ins are never counted, so switching between demo accounts is always safe.
 
 ## Endpoints
 
-| Method | Endpoint           | Auth         | Purpose                                             |
-| ------ | ------------------ | ------------ | --------------------------------------------------- |
-| GET    | `/health`          | Public       | Liveness: the process is up (no database)           |
-| GET    | `/ready`           | Public       | Readiness: the database answers; version and commit |
-| POST   | `/auth/login`      | Public       | Sign in with demo credentials                       |
-| GET    | `/auth/me`         | Bearer token | Return the current session                          |
-| GET    | `/auth/demo-users` | Public       | List seeded demo accounts                           |
-| GET    | `/tickets`         | Bearer token | List tickets with filters, sorting and pagination   |
-| GET    | `/tickets/export`  | Bearer token | Export visible tickets as CSV                       |
-| GET    | `/tickets/stats`   | Bearer token | Dashboard, priority and SLA stats                   |
-| GET    | `/tickets/:id`     | Bearer token | Fetch one visible ticket                            |
-| POST   | `/tickets`         | Bearer token | Create a ticket                                     |
-| PATCH  | `/tickets/:id`     | Bearer token | Update ticket fields                                |
-| DELETE | `/tickets/:id`     | Admin only   | Delete a ticket                                     |
+| Method | Endpoint           | Auth         | Purpose                                                   |
+| ------ | ------------------ | ------------ | --------------------------------------------------------- |
+| GET    | `/health`          | Public       | Liveness: the process is up (no database)                 |
+| GET    | `/ready`           | Public       | Readiness: the database answers; version and commit       |
+| POST   | `/auth/login`      | Public       | Sign in; returns an access token and sets the `rt` cookie |
+| POST   | `/auth/refresh`    | Cookie       | Trade the refresh cookie for a new access token           |
+| POST   | `/auth/logout`     | Cookie       | End the session and clear the cookie                      |
+| GET    | `/auth/me`         | Bearer token | Return the current session                                |
+| GET    | `/auth/demo-users` | Public       | List seeded demo accounts                                 |
+| GET    | `/tickets`         | Bearer token | List tickets with filters, sorting and pagination         |
+| GET    | `/tickets/export`  | Bearer token | Export visible tickets as CSV                             |
+| GET    | `/tickets/stats`   | Bearer token | Dashboard, priority and SLA stats                         |
+| GET    | `/tickets/:id`     | Bearer token | Fetch one visible ticket                                  |
+| POST   | `/tickets`         | Bearer token | Create a ticket                                           |
+| PATCH  | `/tickets/:id`     | Bearer token | Update ticket fields                                      |
+| DELETE | `/tickets/:id`     | Admin only   | Delete a ticket                                           |
+| GET    | `/users`           | Admin only   | List users (never their password hashes)                  |
+| PATCH  | `/users/:id`       | Admin only   | Change a user's role                                      |
+| GET    | `/audit`           | Admin only   | Read the security audit log                               |
+
+## Administration
+
+`GET /users` lists every user (`id`, `name`, `email`, `role`, `createdAt`). `PATCH /users/:id` with `{ "role": "admin" | "technician" | "user" }` changes a role.
+
+- **There must always be at least one admin.** Demoting the last one is a `409` with code `LAST_ADMIN`, even when two admins demote each other at the same moment (it runs in a transaction that makes concurrent demotions conflict).
+- A role change **ends the user's sessions**, so it applies at their next refresh. An access token already issued keeps its old role until it expires, at most 15 minutes.
+- Technicians and requesters get `403`, and the denial is recorded.
+
+`GET /audit` returns security events newest first, with `type` (one of `login_success`, `login_failure`, `logout`, `refresh_reuse`, `role_changed`, `ticket_deleted`, `permission_denied`), `page` and `limit`. Each event carries the actor, address, user agent, outcome, and the `requestId` that matches the server log. It is read-only: no endpoint writes or deletes events.
 
 ## Errors and request ids
 
@@ -64,6 +83,7 @@ Every response carries an `x-request-id` header. Send your own (letters, digits,
 | 404    | `NOT_FOUND`               | No such ticket (or one a requester may not see), or no such route                               |
 | 409    | `INVALID_TRANSITION`      | The status move is not allowed from the ticket's current status                                 |
 | 409    | `VERSION_CONFLICT`        | The `If-Match` version is no longer current: someone else changed the ticket                    |
+| 409    | `LAST_ADMIN`              | The change would leave no admin                                                                 |
 | 409    | `DUPLICATE`               | A unique value already exists                                                                   |
 | 429    | `RATE_LIMITED`            | Too many failed sign-in attempts                                                                |
 | 503    | `AUTH_NOT_CONFIGURED`     | In production `AUTH_SECRET` is missing or shorter than 32 characters                            |
