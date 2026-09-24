@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fproyneon-hub.github.io%2Fit-ticketing-system%2Fcoverage.json)](https://proyneon-hub.github.io/it-ticketing-system/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 593 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 689 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
 
 **[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
 
@@ -15,7 +15,7 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 
 | Building software                                                                                          | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
 | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 593 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 689 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
 | Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 18 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
 | OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
 | Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
@@ -60,6 +60,7 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 - **Measured, not claimed.** Replacing a regex search with a text index cut search from 68 ms to 9 ms (p50) and 113 ms to 14 ms (p95) on 10,000 tickets, and the method, the raw k6 runs and the trade-off (whole words, not fragments) are in [PERFORMANCE.md](docs/PERFORMANCE.md).
 - **Layers that are enforced.** Routes, services, a pure domain layer and a repository each have one job, and a test fails the build if a route touches the database or the domain imports a framework ([Architecture](docs/ARCHITECTURE.md#backend)).
 - **Sessions that survive theft attempts.** Refresh tokens are single use and rotate, so replaying a used one ends the whole session and is audited; two admins demoting each other at the same instant cannot leave the system with none (a test reproduces the failure when the guard is removed). The [threat model](docs/SECURITY_NOTES.md#threat-model) lists what is and is not covered.
+- **Notifications that cannot get out of step with the data.** A ticket change and the event announcing it are written in one MongoDB transaction and sent later by a worker that claims events atomically, retries with backoff and marks an event dead after six attempts; tests force each failure, including two workers racing and a rolled-back change ([Architecture](docs/ARCHITECTURE.md#backend), [Security notes](docs/SECURITY_NOTES.md#scheduled-jobs-and-notifications)).
 - **Docs that cannot drift.** A contract test validates every real API response against the OpenAPI schemas and fails if an operation is added without being exercised; another compares the documented request bodies with the Zod schemas the API enforces.
 - **Support-friendly by design.** A user sees `Reference: <id>`; `grep <id>` finds the request and, for a failure, its stack ([ADR 003](docs/adr/003-operability-and-request-tracing.md), [runbook](docs/RUNBOOK.md#tracing-a-user-reported-error)).
 - **Security that fits a demo honestly.** Helmet and a strict CSP, failed-login rate limiting that never locks out demo visitors, CSV formula neutralisation, and a plain list of what is not production-grade ([Security notes](docs/SECURITY_NOTES.md)).
@@ -82,12 +83,12 @@ Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](d
 
 | Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
 | --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
-| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 328                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
+| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 422                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
 | Frontend unit and component | Vitest, Testing Library                  | 192                | Route guards, session restore, optimistic edits and rollback, components, `App` | `npm run test:unit`                  |
 | Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
 | Mocked browser regression   | Playwright, page objects, typed fixtures | 42 (126 runs)      | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
 | Accessibility               | Playwright and Axe                       | 8 (24 runs)        | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
-| Real-stack smoke            | Playwright against Docker Compose        | 14                 | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
+| Real-stack smoke            | Playwright against Docker Compose        | 16                 | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
 | Support monitoring          | pytest                                   | 9                  | The Python health, sign-in and report tooling                                   | `pytest` in `Support-Ops-Automation` |
 
 `npm test` runs the API and frontend suites; `npm run test:coverage` adds coverage thresholds. The strategy, and why each layer exists, is in [ADR 002](docs/adr/002-layered-test-strategy.md); the map from requirement to test is in the [Test plan](docs/TEST_PLAN.md).
@@ -144,7 +145,6 @@ Users are stored with argon2id password hashes, sessions use 15-minute access to
 ## Roadmap
 
 - An OIDC provider and MFA in place of the demo accounts
-- Notifications for assignment and SLA risk
 - Saved filters and reporting views
 - A shared rate-limit store for multi-instance deployments
 

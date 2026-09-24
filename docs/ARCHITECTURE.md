@@ -45,6 +45,8 @@ The API is TypeScript (`strict`). `tsc` compiles it to `dist-server/`, which is 
 
 `architecture.test.ts` enforces the boundaries against the real import statements: routes cannot reach the database, services cannot import Mongoose, and the domain cannot import a framework. The domain layer also has an ESLint import restriction, so a violation shows in the editor before the test runs. (TypeScript is pinned to 6.x because `typescript-eslint`, which lints all the TypeScript, does not support 7 yet.)
 
+**Transactions and the outbox.** A ticket create or edit, a comment, and the notification event that describes them are written in one MongoDB transaction (`repositories/transaction.ts`; MongoDB must be a replica set, as Atlas is), so an event exists if and only if its change committed. A separate delivery step (`services/outboxService.ts`) sends events to the webhook afterwards, claiming each one atomically so several workers never send the same event twice, retrying with exponential backoff and jitter, and marking an event dead after six attempts. **Scheduled jobs** (`routes/jobs.ts`, behind the `CRON_SECRET` bearer token) run SLA escalation (`services/slaService.ts`, rules in `domain/slaEscalation.ts`, idempotent through markers on the ticket) and delivery; GitHub Actions calls them every 30 minutes, or the Compose `worker` runs them on a timer.
+
 Errors the API raises on purpose are `AppError` subclasses with an HTTP status and a stable `code` (see [API.md](API.md#errors-and-request-ids)); anything else is logged and returned as a generic 500. Both leave through one handler, so every failure has the same JSON shape and a request id.
 
 ## Frontend
