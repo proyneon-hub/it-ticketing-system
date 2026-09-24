@@ -12,10 +12,11 @@ test(
       if (/content security policy/i.test(message.text())) cspViolations.push(message.text());
     });
 
-    // Visiting without the trailing slash also exercises the redirect.
+    // Without a trailing slash: that is the URL the README links to, and on Vercel
+    // the only form that reaches the function.
     await page.goto('/api/docs');
 
-    await expect(page).toHaveURL(/\/api\/docs\/$/);
+    await expect(page).toHaveURL(/\/api\/docs$/);
     await expect(page.getByRole('heading', { name: /IT Ticketing System API/ })).toBeVisible();
     await expect(page.getByText('List tickets', { exact: true })).toBeVisible();
     expect(cspViolations).toEqual([]);

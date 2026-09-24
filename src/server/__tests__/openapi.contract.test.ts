@@ -290,9 +290,13 @@ describe('interactive documentation', () => {
     expect(response.body.info.title).toBe('IT Ticketing System API');
   });
 
-  test('redirects /api/docs to the trailing-slash URL its assets need', async () => {
-    const response = await request(app).get('/api/docs').expect(301);
-    expect(response.headers.location).toBe('/api/docs/');
+  // Vercel never routes a trailing-slash URL (/api/docs/) to the function, so the
+  // page has to work at /api/docs itself, with no redirect to the slash form.
+  test('serves the page at /api/docs directly and points its assets at /api/docs/', async () => {
+    const page = await request(app).get('/api/docs').expect(200);
+    expect(page.headers['content-type']).toContain('text/html');
+    expect(page.text).toContain('IT Ticketing System API');
+    expect(page.text).toContain('<base href="/api/docs/">');
   });
 
   test('serves Swagger UI and its assets without a database or sign-in', async () => {
@@ -302,5 +306,6 @@ describe('interactive documentation', () => {
 
     await request(app).get('/api/docs/swagger-ui-bundle.js').expect(200);
     await request(app).get('/api/docs/swagger-ui.css').expect(200);
+    await request(app).get('/api/docs/swagger-ui-init.js').expect(200);
   });
 });
