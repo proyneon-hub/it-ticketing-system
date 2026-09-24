@@ -9,8 +9,6 @@ const request = require('supertest');
 const constants = require('../../shared/ticket-constants.json');
 const spec = require('../openapi.json');
 
-jest.setTimeout(60000);
-
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 addFormats(ajv);
 ajv.addSchema(spec, 'api');

@@ -78,7 +78,7 @@ Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](d
 
 | Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
 | --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
-| API unit and integration    | Jest, Supertest, in-memory MongoDB       | 160                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
+| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 160                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
 | Frontend unit and component | Vitest, Testing Library                  | 104                | Hooks (debounce, stale responses, session), components and the whole `App`      | `npm run test:unit`                  |
 | Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
 | Mocked browser regression   | Playwright, page objects, typed fixtures | 22 (66 runs)       | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
@@ -102,15 +102,15 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 
 ## Tech stack
 
-| Layer             | Tooling                                                                        |
-| ----------------- | ------------------------------------------------------------------------------ |
-| Frontend          | React 18, Vite                                                                 |
-| Backend           | Node.js, Express, Mongoose, Zod, helmet, pino                                  |
-| Database          | MongoDB                                                                        |
-| Contract and docs | OpenAPI 3.1, Swagger UI, Ajv                                                   |
-| Tests             | Jest, Supertest, Vitest, Testing Library, Playwright (TypeScript), Axe, pytest |
-| Delivery          | GitHub Actions, Docker, GHCR, Vercel                                           |
-| Quality           | ESLint, Prettier, Dependabot                                                   |
+| Layer             | Tooling                                                                  |
+| ----------------- | ------------------------------------------------------------------------ |
+| Frontend          | React 18, Vite                                                           |
+| Backend           | Node.js, Express, Mongoose, Zod, helmet, pino                            |
+| Database          | MongoDB                                                                  |
+| Contract and docs | OpenAPI 3.1, Swagger UI, Ajv                                             |
+| Tests             | Vitest, Supertest, Testing Library, Playwright (TypeScript), Axe, pytest |
+| Delivery          | GitHub Actions, Docker, GHCR, Vercel                                     |
+| Quality           | ESLint, Prettier, Dependabot                                             |
 
 ## Project structure
 

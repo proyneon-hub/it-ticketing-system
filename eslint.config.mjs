@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 // Three runtimes live in this repo, so each gets its own globals and module
 // system: the CommonJS API/scripts (Node), the ESM React client (browser), and
-// the test files (Jest or Vitest).
+// the test files (Vitest).
 export default [
   {
     ignores: [
@@ -42,7 +42,7 @@ export default [
   },
   {
     files: ['src/server/**/*.test.js'],
-    languageOptions: { globals: { ...globals.node, ...globals.jest } },
+    languageOptions: { globals: { ...globals.node, ...globals.vitest } },
   },
   {
     files: ['src/client/**/*.{js,jsx}', 'vite.config.mjs', 'vitest.config.mjs'],

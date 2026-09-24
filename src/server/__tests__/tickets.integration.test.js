@@ -5,8 +5,6 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
 
-jest.setTimeout(60000);
-
 const HOUR = 60 * 60 * 1000;
 const credentials = {
   admin: ['admin@demo.local', 'AdminPass123!'],
@@ -239,6 +237,18 @@ describe('SLA and status filters', () => {
       .expect(200);
     expect(response.body.data).toEqual([]);
     expect(response.body.pagination.total).toBe(0);
+  });
+
+  test('stats only count what the requester may see', async () => {
+    await seedTicket({ requesterEmail: 'user@demo.local', status: 'open', priority: 'urgent' });
+
+    const response = await request(app).get('/api/tickets/stats').set(as('user')).expect(200);
+
+    expect(response.body).toMatchObject({
+      total: 1,
+      byStatus: { open: 1 },
+      byPriority: { urgent: 1 },
+    });
   });
 
   test('stats agree with the filters', async () => {

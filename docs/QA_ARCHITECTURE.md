@@ -7,7 +7,7 @@ flowchart TD
     Dev[Push or pull request] --> CI[GitHub Actions]
 
     CI --> Static[Format, lint, type-check]
-    CI --> Unit[Unit and component tests<br/>Jest, Vitest, Testing Library]
+    CI --> Unit[Unit and component tests<br/>Vitest, Testing Library]
     CI --> Integration[API integration and contract tests<br/>Supertest, in-memory MongoDB, Ajv]
     CI --> Browser[Browser regression and Axe<br/>Playwright: Chromium, Firefox, WebKit]
     CI --> Stack[Real-stack smoke<br/>Playwright against Docker Compose]
@@ -41,7 +41,7 @@ flowchart TD
 
 | Suite                     | Tests | Executions          |
 | ------------------------- | ----- | ------------------- |
-| API (Jest)                | 84    | 84                  |
+| API (Vitest)              | 84    | 84                  |
 | Frontend (Vitest)         | 94    | 94                  |
 | Mocked browser regression | 19    | 57 (three browsers) |
 | Accessibility (Axe)       | 3     | 9 (three browsers)  |

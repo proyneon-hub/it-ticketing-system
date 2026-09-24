@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const reports = [
-  ['API (Jest)', 'coverage/server/coverage-summary.json'],
+  ['API (Vitest)', 'coverage/server/coverage-summary.json'],
   ['Frontend (Vitest)', 'coverage/client/coverage-summary.json'],
 ];
 

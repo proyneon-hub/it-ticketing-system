@@ -23,8 +23,8 @@
     "start": "node server.js",
     "build": "vite build",
     "test": "npm run test:api && npm run test:unit",
-    "test:api": "jest --runInBand",
-    "test:api:coverage": "jest --runInBand --coverage",
+    "test:api": "vitest run -c vitest.server.config.mjs",
+    "test:api:coverage": "vitest run -c vitest.server.config.mjs --coverage",
     "test:unit": "vitest run",
     "test:unit:coverage": "vitest run --coverage",
     "test:coverage": "npm run test:api:coverage && npm run test:unit:coverage",
@@ -44,7 +44,9 @@
     "format:check": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.js\" \"src/**/*.{js,jsx,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --check",
     "preview": "vite preview --host 0.0.0.0",
     "free:api-port": "powershell -ExecutionPolicy Bypass -File scripts/free-api-port.ps1",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "test:api:unit": "vitest run -c vitest.server.config.mjs --project unit",
+    "test:integration": "vitest run -c vitest.server.config.mjs --project integration"
   },
   "keywords": [
     "it-ticketing",
@@ -91,7 +93,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.12.0",
-    "jest": "^29.7.0",
     "jsdom": "^30.1.1",
     "mongodb-memory-server": "^11.3.0",
     "nodemon": "^3.1.9",
@@ -100,32 +101,6 @@
     "typescript": "^7.0.2",
     "vite": "^6.0.7",
     "vitest": "^5.0.1"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "testMatch": [
-      "**/src/server/**/*.test.js"
-    ],
-    "clearMocks": true,
-    "collectCoverageFrom": [
-      "src/server/**/*.js",
-      "!src/server/__tests__/**",
-      "!src/server/**/*.test.js"
-    ],
-    "coverageDirectory": "coverage/server",
-    "coverageReporters": [
-      "text",
-      "json-summary",
-      "lcov"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "statements": 88,
-        "branches": 78,
-        "functions": 88,
-        "lines": 88
-      }
-    }
   },
   "engines": {
     "node": ">=22 <27"
