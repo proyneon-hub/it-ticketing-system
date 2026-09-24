@@ -1,44 +1,74 @@
 # Security Notes
 
-This is a portfolio demo, not a production identity system. This page states what is implemented, what is deliberately not, and what a production version would add.
+What is implemented, why, and what is deliberately not. This is a portfolio demo, so its three demo accounts have **public** passwords (the sign-in page has one-click buttons). Everything else is built the way a real service would do it, and the limits are stated below rather than hidden.
 
-## Authentication model
+## Authentication
 
-Demo users are defined in code and receive HMAC-SHA256 signed bearer tokens that expire after 8 hours. Their passwords are shown in the app on purpose, so reviewers can inspect role behaviour without creating accounts. That makes them public, not secret, and nothing here should be reused for real credentials.
+- **Users** live in a `users` collection: unique email, name, role, and an **argon2id** password hash. The hash is never selected by a normal query and never returned by any endpoint. argon2id runs as WebAssembly (`hash-wasm`), so it behaves the same on Windows, Alpine and Vercel with no native build step. It uses OWASP's minimum recommended settings (19 MiB, 2 passes), about 40 ms per hash.
+- **Access token.** A JWT (`jose`), HS256 only, valid for **15 minutes**, with issuer, audience, expiry and claim-shape checks. Unsigned tokens, other algorithms, and tokens for another audience are rejected. The client keeps it **in memory only**: not in `localStorage`, where an injected script could read it.
+- **Refresh token.** 32 random bytes in a cookie named `rt` that is `HttpOnly` (scripts cannot read it), `SameSite=Strict` (other sites cannot make the browser send it), `Secure` over https, and scoped to `/api/auth` so it is sent on no other request. The database stores only its **sha256**, so a database leak hands out no sessions.
+- **Rotation and reuse detection.** A refresh token works once. Each exchange retires it and issues the next in the same "family". If a token that was already used is presented again, someone holds a copy, so **the whole family is ended** and the event is audited. The claim is a single atomic update, so of two simultaneous requests with one token exactly one wins.
+- **Refresh and logout also refuse a request that names another `Origin`**, independent of `SameSite`. Clients that send no `Origin` (curl, monitoring) are not browsers and pass.
+- **Unknown emails cost the same time as wrong passwords**, so a sign-in's duration does not reveal which accounts exist. Passwords over 200 characters are refused without hashing.
+- **Fails closed.** In production a missing or sub-32-character `AUTH_SECRET` makes sign-in and every authenticated route answer `503`, before any database work. `/api/ready` reports `authConfigured`.
 
-## Implemented controls
+## Authorization
+
+| Area                 | Control                                                                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Roles                | Enforced in the API for every protected route. UI controls mirror them but are never the only check                                                                                                           |
+| Data scoping         | Requester visibility is applied in the database query, on lists, single reads, exports, stats and search. A requester asking for someone else's ticket gets `404`                                             |
+| Privilege boundaries | Requesters edit only `title`, `description`, `priority` and `category`; identity, status, assignee and SLA fields stay with staff. Reopening a closed ticket is admin only                                    |
+| Administration       | Only admins can list users, change roles and read the audit log. There must always be one admin: demoting the last one is refused, in a transaction that also holds when two admins demote each other at once |
+| Role changes         | End the user's sessions, so the change applies at their next refresh                                                                                                                                          |
+
+## Audit log
+
+Security events go to an `auditevents` collection: sign-in success and failure, sign-out, **refresh-token reuse**, role changes, ticket deletions and permission denials. Each records the actor, address, user agent, outcome and the request id (which matches the logs), and admins read it at `GET /api/audit`. The API has no endpoint that writes, edits or deletes events. A failure to write an event is logged and never fails the request it describes. `AUDIT_RETENTION_DAYS` optionally deletes old events.
+
+## Other controls
 
 | Area                 | Control                                                                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authorization        | Roles are enforced in the API for every protected route. UI controls mirror them but are never the only check                                                                                                                           |
-| Data scoping         | Requester visibility is applied in the database query, on lists, single reads, exports, stats and search. A requester asking for someone else's ticket gets `404`                                                                       |
-| Privilege boundaries | Requesters can edit only `title`, `description`, `priority` and `category`; identity, status, assignee and SLA fields stay with staff                                                                                                   |
-| Tokens               | Signature compared in constant time; expiry checked; tampered or malformed tokens rejected                                                                                                                                              |
 | Input validation     | Zod schemas whitelist fields, cap lengths, and reject non-text values such as `search[$ne]=x`; unknown fields are dropped                                                                                                               |
 | Injection            | Search text is passed to MongoDB as plain words (text-search operators are stripped) and ticket-number prefixes are regex-escaped; ids are validated before any query; CSV cells that could run as spreadsheet formulas are neutralised |
 | Brute force          | Failed sign-ins are rate limited per client address; successful sign-ins are not counted                                                                                                                                                |
 | Browser hardening    | `helmet` security headers and a Content-Security-Policy that allows only same-origin scripts; CORS disabled unless `CORS_ORIGINS` lists an origin                                                                                       |
-| Information exposure | Unexpected errors return a generic 500; stacks stay in the server log; headers and tokens are never logged                                                                                                                              |
+| Information exposure | Unexpected errors return a generic message; stacks stay in the server log; headers, cookies and tokens are never logged                                                                                                                 |
+| Concurrency          | Ticket edits are atomic and versioned, so a stale edit cannot overwrite a newer one (`If-Match`)                                                                                                                                        |
 | Request size         | JSON bodies are capped at 1 MB                                                                                                                                                                                                          |
-| Traceability         | Every request has an id that appears in the response, the logs and any error                                                                                                                                                            |
-| Configuration        | Production refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters: `server.ts` fails to start, and serverless functions answer 503                                                                             |
 | Container            | The image runs as the unprivileged `node` user, contains production dependencies only, and MongoDB is published to localhost only in Compose                                                                                            |
 | Supply chain         | `npm audit` gates CI (high or critical production findings fail the build), and Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker                                                                              |
 
+## Threat model
+
+| Asset                     | Threat                                              | Mitigation                                                                                                      | Residual risk                                                                                                                                     |
+| ------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Password hashes           | Database leak                                       | argon2id with a per-password salt; the hash is never selected or returned                                       | The three demo passwords are public by design                                                                                                     |
+| Access token              | Stolen through script injection (XSS)               | Memory only, never in storage; 15-minute lifetime; a strict Content-Security-Policy                             | A script that runs in the page can still call the API while it is open. The CSP is the defence, so it must not be loosened                        |
+| Refresh token             | Stolen from the browser or the database             | `HttpOnly` cookie, so scripts cannot read it; only its hash is stored; single use, with reuse ending the family | Malware or someone with the user's device can still use it until it expires (7 days) or is rotated                                                |
+| Refresh and sign-out      | Cross-site request forgery                          | `SameSite=Strict`, path scoping, and an `Origin` check                                                          | None known for browsers                                                                                                                           |
+| Session integrity         | Forged or altered tokens                            | HS256 only, issuer and audience checks, a 32+ character secret required in production                           | One shared secret signs every token, so rotating it signs everyone out; a leaked secret allows forgery until rotated                              |
+| Accounts                  | Password guessing                                   | Failed sign-ins rate limited per address; argon2id cost; identical timing for unknown emails                    | The limit is per server instance, so distributed guessing across addresses or serverless instances is not throttled globally. There is no lockout |
+| Privileges                | A requester or technician acting as an admin        | Server-side role checks; field whitelists; admin-only routes; last-admin guard                                  | An access token keeps its old role until it expires, up to 15 minutes after a role change (the refresh tokens are revoked at once)                |
+| Availability of the admin | Every admin demoted, deliberately or by a race      | A transaction that holds a shared guard document, so concurrent demotions cannot both succeed                   | An admin can still demote themselves when another admin exists                                                                                    |
+| Audit trail               | Tampering, or events silently missing               | No write, edit or delete endpoint; events carry the request id                                                  | Anyone with database access can alter it. Writes are best effort, so an outage can drop an event. The log is not signed or exported               |
+| Availability              | Oversized bodies, expensive hashing                 | 1 MB body cap; 200-character password cap; failed-sign-in rate limit                                            | argon2id costs CPU per sign-in; a flood from many addresses is not absorbed by the API itself                                                     |
+| Ticket data               | One requester reading or changing another's tickets | Scoping applied in the query, with `404` rather than `403`                                                      | Staff see every ticket                                                                                                                            |
+
 ## Known limitations
 
-- **Demo accounts and plaintext demo passwords in code.** There is no user database, no password hashing and no account management.
-- **Token stored in `localStorage`.** Script injection could read it. The Content-Security-Policy limits that risk; httpOnly cookies with CSRF protection would remove it.
-- **No token refresh or revocation.** A token stays valid until it expires or `AUTH_SECRET` changes.
+- **The demo accounts' passwords are public.** There is no registration, password change, password reset, email verification or MFA. Those need an identity provider (OIDC) rather than more code here.
+- **Two tabs refreshing at the same instant** can look like token reuse and sign the user out. The web app shares one refresh between requests in a tab, but separate tabs are separate.
 - **Rate limit store is per instance.** It is exact on a single container and best effort across serverless instances.
-- **No audit trail beyond ticket activity.** Sign-ins and permission failures appear in the request log but are not recorded as security events.
+- **The refresh cookie is `Secure` in production.** The Docker demo runs on plain `http://localhost`, so Compose sets `COOKIE_SECURE=false`; do the same only for local http.
 
 ## What a production version would add
 
-- Persisted users with Argon2 or bcrypt password hashing, and an identity provider (OIDC) instead of demo accounts.
-- Short-lived access tokens with refresh and revocation, delivered in httpOnly cookies.
+- An identity provider (OIDC) with MFA, replacing local passwords; password reset and account recovery if local passwords stay.
 - A shared rate-limit store such as Redis, and account lockout or step-up checks.
-- A security event log for sign-ins, permission failures and administrative actions.
+- Asymmetric signing keys with rotation (or a role check against the database on each request, removing the 15-minute role lag).
+- A session list with per-device revocation, and audit events exported to append-only storage.
 - Managed secret storage and rotation through the deployment platform.
 
 ## Data protection notes
@@ -46,4 +76,4 @@ Demo users are defined in code and receive HMAC-SHA256 signed bearer tokens that
 - Do not commit `.env` files or real credentials.
 - Avoid putting sensitive ticket content in logs; request logs record method, path, status and timing only.
 - Restrict database network access to known application environments and use least-privilege database users.
-- Rotate `AUTH_SECRET` if it is exposed; this also signs everyone out.
+- Rotate `AUTH_SECRET` if it is exposed; this signs everyone out.

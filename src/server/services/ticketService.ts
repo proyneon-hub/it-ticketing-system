@@ -165,9 +165,12 @@ export async function updateTicket(
   }
 }
 
-export async function deleteTicket(id: string): Promise<void> {
+// Deletes a ticket and returns its number, for the audit record.
+export async function deleteTicket(id: string): Promise<string> {
   assertValidObjectId(id);
-  if (!(await repository.deleteById(id))) throw notFound();
+  const ticketNumber = await repository.deleteById(id);
+  if (!ticketNumber) throw notFound();
+  return ticketNumber;
 }
 
 // The CSV for every ticket the caller may see that matches `query`, as chunks of

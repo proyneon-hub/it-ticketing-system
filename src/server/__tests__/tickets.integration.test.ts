@@ -1,7 +1,6 @@
 // Integration tests: the real Express app, real Mongoose models and a real
 // (in-memory) MongoDB. Nothing here is mocked, so these
 // cover query building, role scoping, SLA logic and persistence end to end.
-import type { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import app from '../app';
@@ -10,11 +9,18 @@ import type { Priority } from '../../shared/ticket-constants';
 import Ticket, { type TicketAttrs } from '../models/Ticket';
 import { generateTickets } from '../../../scripts/sampleData';
 import { toFilter } from '../repositories/ticketRepository';
-import { bearer, signInAll, startTestDatabase, type Account, type Tokens } from './helpers';
+import {
+  bearer,
+  signInAll,
+  startTestDatabase,
+  type Account,
+  type TestDatabase,
+  type Tokens,
+} from './helpers';
 
 const HOUR = 60 * 60 * 1000;
 
-let mongod: MongoMemoryServer;
+let mongod: TestDatabase;
 let tokens: Tokens;
 let sequence = 0;
 

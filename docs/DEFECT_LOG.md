@@ -22,6 +22,7 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 | [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)    | Medium   | Concurrent edits were lost; activity `from` could be stale     | Original code                                |
 | [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)         | High     | Serverless deployments signed tokens with a public secret      | Original code                                |
 | [DEF-016](#def-016-the-api-docs-link-returned-404-on-vercel)                          | Medium   | The `/api/docs` link returned 404 on Vercel                    | Introduced with the docs, found after deploy |
+| [DEF-017](#def-017-a-session-that-ended-showed-the-wrong-message)                     | Low      | An ended session showed "Authentication required."             | Original code                                |
 
 ---
 
@@ -193,3 +194,15 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Fix:** the page is served at `/api/docs` itself, with a `<base href="/api/docs/">` tag so its assets load from `/api/docs/...` (paths that do route). No redirect.
 - **Regression tests:** the contract test asserts `/api/docs` returns 200 with the base tag and that the init script is served; the live smoke test opens `/api/docs` in a browser and checks the URL is unchanged and that no Content-Security-Policy violation occurs.
 - **Why the tests missed it:** the difference is a hosting-platform routing rule that no local server reproduces. It is now covered by the post-deploy smoke run; a live-site check remains the only real proof.
+
+## DEF-017: A session that ended showed the wrong message
+
+- **Severity:** Low
+- **Found by:** a new browser test (AUTH-010) for a session that cannot be renewed. The bug had been there since the first version.
+- **Reproduce:** sign in, then make the API reject the session (sign out elsewhere, or expire it) and click Refresh.
+- **Expected:** "Your session expired. Sign in again."
+- **Actual:** "Authentication required.", the raw error of the request that happened to discover the problem.
+- **Root cause:** the API layer announced the ended session and then threw the request's own 401. The list request's error handler ran after the announcement and replaced it.
+- **Fix:** an error that ended the session is flagged (`sessionEnded`) and the notice layer does not show it, so the explanation stays.
+- **Regression tests:** `api.test.js` (the flag), `useNotices.test.js` (a flagged error does not overwrite the notice) and the browser test.
+- **Note:** a first version of the unit test passed for the wrong reason (nothing triggered the failing request), so it was replaced by one that calls the notice layer directly.

@@ -10,6 +10,7 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'INVALID_TRANSITION'
   | 'VERSION_CONFLICT'
+  | 'LAST_ADMIN'
   | 'DUPLICATE'
   | 'RATE_LIMITED'
   | 'DATABASE_NOT_CONFIGURED'
@@ -64,7 +65,10 @@ export class NotFoundError extends AppError {
 
 // The request is fine, but the resource's current state does not allow it.
 export class ConflictError extends AppError {
-  constructor(code: 'INVALID_TRANSITION' | 'VERSION_CONFLICT' | 'DUPLICATE', message: string) {
+  constructor(
+    code: 'INVALID_TRANSITION' | 'VERSION_CONFLICT' | 'LAST_ADMIN' | 'DUPLICATE',
+    message: string
+  ) {
     super(409, code, message);
   }
 }

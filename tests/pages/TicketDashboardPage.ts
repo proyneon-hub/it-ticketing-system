@@ -67,6 +67,12 @@ export class TicketDashboardPage {
     await expect(this.page.getByText('Loading tickets...', { exact: true })).toBeVisible();
   }
 
+  async refresh(): Promise<void> {
+    // The button can disappear as a result of the click (a session that ends), so do not
+    // wait for the page to settle afterwards.
+    await this.page.getByTestId('refresh-button').click({ noWaitAfter: true });
+  }
+
   async expectError(message: string): Promise<void> {
     await expect(this.page.getByText(message, { exact: true })).toBeVisible();
   }

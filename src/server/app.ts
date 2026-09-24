@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import path from 'path';
 import { version } from '../../package.json';
@@ -7,8 +8,10 @@ import { connectToDatabase, pingDatabase } from './db';
 import { requestLogger } from './logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { corsPolicy, securityHeaders } from './middleware/security';
-import authRoutes from './routes/auth';
+import auditRoutes from './routes/audit';
+import authRoutes, { demoAccountsRouter } from './routes/auth';
 import ticketRoutes from './routes/tickets';
+import userRoutes from './routes/users';
 
 const app = express();
 
@@ -21,6 +24,8 @@ app.use(corsPolicy());
 // All API endpoints accept JSON bodies. The 1mb limit is plenty for ticket text
 // and prevents accidentally accepting very large payloads.
 app.use(express.json({ limit: '1mb' }));
+// The refresh token arrives in a cookie.
+app.use(cookieParser());
 
 // Liveness: the process is up. Deliberately does not touch the database, so an
 // orchestrator restarting on failure is not triggered by a database blip.
@@ -54,9 +59,9 @@ if (process.env.API_DOCS !== 'off') {
   app.use('/api', docsRouter);
 }
 
-// Demo authentication routes are intentionally available before the database
-// middleware so reviewers can sign in even while configuring MongoDB.
-app.use('/api', authRoutes);
+// The demo accounts' public credentials need no database, so the sign-in page can show
+// its buttons even while MongoDB is being configured. Sign-in itself needs the database.
+app.use('/api', demoAccountsRouter);
 
 // Every /api route after health needs the database. The connection helper caches
 // successful connections, which is important for both local dev and Vercel.
@@ -69,6 +74,9 @@ app.use('/api', async (_req, _res, next) => {
   }
 });
 
+app.use('/api', authRoutes);
+app.use('/api', userRoutes);
+app.use('/api', auditRoutes);
 // Mount the ticket routes under /api, producing URLs like /api/tickets.
 app.use('/api', ticketRoutes);
 

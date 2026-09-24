@@ -37,6 +37,18 @@ export const slaHoursByPriority = {
   urgent: 4,
 } as const satisfies Record<Priority, number>;
 
+// What the security audit log records.
+export const auditTypes = [
+  'login_success',
+  'login_failure',
+  'logout',
+  'refresh_reuse',
+  'role_changed',
+  'ticket_deleted',
+  'permission_denied',
+] as const;
+export type AuditType = (typeof auditTypes)[number];
+
 export const slaFilters = ['breached', 'due-soon'] as const;
 export type SlaFilter = (typeof slaFilters)[number];
 

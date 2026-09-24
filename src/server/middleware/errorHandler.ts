@@ -1,7 +1,9 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { isDatabaseConnectivityError } from '../db';
-import { AppError, type ErrorCode, type FieldError } from '../errors';
+import { AppError, ForbiddenError, type ErrorCode, type FieldError } from '../errors';
+import { auditContext } from '../http';
 import { logger } from '../logger';
+import { recordAudit } from '../services/auditService';
 
 interface DescribedError {
   status: number;
@@ -102,9 +104,22 @@ export function describeError(thrown: unknown): DescribedError {
 }
 
 // Express identifies error handlers by their four arguments, so `_next` must stay.
-export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
+export const errorHandler: ErrorRequestHandler = async (error, req, res, _next) => {
   const { status, code, message, errors } = describeError(error);
   const log = req.log || logger;
+
+  // A signed-in user trying something they may not do is worth a security record.
+  if (error instanceof ForbiddenError && req.user) {
+    await recordAudit(
+      {
+        type: 'permission_denied',
+        outcome: 'denied',
+        actor: req.user,
+        detail: `${req.method} ${req.originalUrl.split('?')[0]}: ${message}`,
+      },
+      auditContext(req)
+    );
+  }
 
   // 5xx means something is broken on our side, so keep the stack. Client
   // errors are already summarised by the request log line.

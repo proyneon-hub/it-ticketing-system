@@ -169,8 +169,10 @@ export const exists = async (id: string): Promise<boolean> =>
 
 export const create = (data: Partial<TicketAttrs>): Promise<TicketDocument> => Ticket.create(data);
 
-export async function deleteById(id: string): Promise<boolean> {
-  return Boolean(await Ticket.findByIdAndDelete(id));
+// Deletes the ticket and returns its number, or null if there was no such ticket.
+export async function deleteById(id: string): Promise<string | null> {
+  const deleted = await Ticket.findByIdAndDelete(id).lean<TicketRecord>();
+  return deleted ? (deleted.ticketNumber ?? id) : null;
 }
 
 // A change to a ticket, described without any database syntax.

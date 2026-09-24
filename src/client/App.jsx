@@ -39,8 +39,8 @@ export default function App() {
     if (signedInUser) showSuccess(`Signed in as ${signedInUser.name}.`);
   }
 
-  function handleLogout() {
-    auth.logout();
+  async function handleLogout() {
+    await auth.logout();
     showSuccess('');
   }
 
@@ -64,7 +64,11 @@ export default function App() {
       {error ? <Alert type="error" message={error.message} requestId={error.requestId} /> : null}
       {success ? <Alert type="success" message={success} /> : null}
 
-      {!user ? (
+      {!user && auth.restoring ? (
+        <section className="empty-panel" role="status">
+          <h2>Restoring your session…</h2>
+        </section>
+      ) : !user ? (
         <section className="empty-panel">
           <h2>Sign in to open the service desk.</h2>
           <p>

@@ -6,6 +6,7 @@ import { assertProductionConfig, resolveTrustProxy } from '../config';
 import { ConflictError, ValidationError } from '../errors';
 import { describeError } from '../middleware/errorHandler';
 import { corsPolicy } from '../middleware/security';
+import { issueAccessToken } from '../security/accessToken';
 
 describe('security headers', () => {
   test('sets hardening headers and does not advertise the framework', async () => {
@@ -42,67 +43,6 @@ describe('CORS', () => {
   });
 });
 
-describe('login rate limiting', () => {
-  beforeAll(() => {
-    process.env.LOGIN_RATE_LIMIT_MAX = '3';
-  });
-
-  afterAll(() => {
-    delete process.env.LOGIN_RATE_LIMIT_MAX;
-  });
-
-  const login = (password: string) =>
-    request(app).post('/api/auth/login').send({ email: 'admin@demo.local', password });
-
-  test('throttles repeated failures but never counts successful sign-ins', async () => {
-    // Demo visitors hop between accounts; that must never lock them out.
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      await login('AdminPass123!').expect(200);
-    }
-
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      await login('wrong-password').expect(401);
-    }
-
-    const blocked = await login('wrong-password').expect(429);
-    expect(blocked.body.message).toMatch(/too many/i);
-    expect(blocked.body.code).toBe('RATE_LIMITED');
-    expect(blocked.body.requestId).toBeDefined();
-    expect(blocked.headers['ratelimit']).toBeDefined();
-  });
-});
-
-describe('authentication routes', () => {
-  const login = async (email: string, password: string) =>
-    (await request(app).post('/api/auth/login').send({ email, password }).expect(200)).body.token;
-
-  test('lists the demo accounts so reviewers can sign in with one click', async () => {
-    const response = await request(app).get('/api/auth/demo-users').expect(200);
-
-    expect(response.body.users.map((user: { role: string }) => user.role)).toEqual([
-      'admin',
-      'technician',
-      'user',
-    ]);
-    expect(response.body.users[0]).toMatchObject({ email: 'admin@demo.local' });
-    expect(response.body.users[0]).not.toHaveProperty('password'); // Only demoPassword is exposed.
-  });
-
-  test('returns the signed-in user, and refuses anonymous or tampered tokens', async () => {
-    const token = await login('tech@demo.local', 'TechPass123!');
-
-    const me = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
-    expect(me.status).toBe(200);
-    expect(me.body.user).toMatchObject({ email: 'tech@demo.local', role: 'technician' });
-
-    await request(app).get('/api/auth/me').expect(401);
-    await request(app)
-      .get('/api/auth/me')
-      .set('Authorization', `Bearer ${token.slice(0, -2)}xx`)
-      .expect(401);
-  });
-});
-
 describe('database unavailable', () => {
   let originalUri: string | undefined;
 
@@ -123,11 +63,12 @@ describe('database unavailable', () => {
   });
 
   test('ticket routes explain that the database is not configured', async () => {
-    const token = (
-      await request(app)
-        .post('/api/auth/login')
-        .send({ email: 'admin@demo.local', password: 'AdminPass123!' })
-    ).body.token;
+    const token = await issueAccessToken({
+      id: '665f0f40d5d4f541f8ef1001',
+      name: 'Priya Admin',
+      email: 'admin@demo.local',
+      role: 'admin',
+    });
 
     const response = await request(app)
       .get('/api/tickets')

@@ -219,6 +219,26 @@ export async function installApiMocks(page: Page): Promise<void> {
       return route.fulfill({ json: { user: currentUser } });
     }
 
+    // The refresh cookie is httpOnly, so the page cannot see it; the mock keeps the session
+    // here instead, which (like the cookie) survives a page reload.
+    if (path === '/api/auth/refresh' && method === 'POST') {
+      if (!currentUser) {
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Not signed in.', code: 'UNAUTHORIZED' },
+        });
+      }
+      const { sub, name, email, role } = currentUser;
+      return route.fulfill({
+        json: { token: `token-${role}`, user: { id: sub, name, email, role } },
+      });
+    }
+
+    if (path === '/api/auth/logout' && method === 'POST') {
+      currentUser = null;
+      return route.fulfill({ status: 204, body: '' });
+    }
+
     if (path === '/api/auth/login' && method === 'POST') {
       const email = stringFromPayload(request.postDataJSON() as unknown, 'email');
       const password = stringFromPayload(request.postDataJSON() as unknown, 'password');
