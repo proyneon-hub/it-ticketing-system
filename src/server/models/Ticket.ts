@@ -5,42 +5,10 @@ import {
   slaHoursByPriority,
   statuses,
   terminalStatuses,
-  type Priority,
-  type Role,
-  type Status,
 } from '../../shared/ticket-constants';
+import type { TicketAttrs } from '../../shared/ticket-types';
 
-// One entry in a ticket's history. Written by the service on every change.
-export interface ActivityEntry {
-  action: string;
-  actorName?: string | undefined;
-  actorRole?: Role | undefined;
-  actorEmail?: string | undefined;
-  from?: string | undefined;
-  to?: string | undefined;
-  detail?: string | undefined;
-  createdAt?: Date | undefined;
-}
-
-// The fields stored for a ticket.
-export interface TicketAttrs {
-  ticketNumber?: string;
-  title: string;
-  description: string;
-  requesterName: string;
-  requesterEmail: string;
-  requesterUserId: string;
-  status: Status;
-  priority: Priority;
-  assignee: string;
-  category: string;
-  dueAt?: Date;
-  resolvedAt?: Date;
-  activity: ActivityEntry[];
-  createdByRole: Role;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+export type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
 
 // A ticket as read back with .lean(): plain data, with the id and the version
 // (`__v`) Mongoose adds.
