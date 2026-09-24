@@ -107,6 +107,16 @@ export type ExportQuery = z.output<typeof exportQuerySchema>;
 export type CreateTicketInput = z.output<typeof createTicketSchema>;
 export type PatchTicketInput = z.output<typeof patchTicketSchema>;
 
+// The trends chart: how many days to look back and which time zone decides where a day ends.
+export const trendsQuerySchema = z.object({
+  days: integerParam('days', { defaultValue: 30, min: 1, max: 90 }),
+  // An IANA name such as America/Toronto. The server checks the name; blank means UTC.
+  tz: optionalFilter(
+    z.string({ error: 'Invalid time zone.' }).max(64, { error: 'Invalid time zone.' })
+  ),
+});
+export type TrendsQuery = z.output<typeof trendsQuerySchema>;
+
 // --- Comments -------------------------------------------------------------------
 
 export const createCommentSchema = z.object({

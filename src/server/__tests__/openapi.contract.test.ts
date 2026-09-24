@@ -179,6 +179,14 @@ describe('responses match their documented schemas', () => {
     conforms('Stats', stats.body);
     used('getTicketStats');
 
+    const trends = await request(app)
+      .get('/api/tickets/stats/trends?days=7&tz=America/Toronto')
+      .set(as('admin'))
+      .expect(200);
+    conforms('Trends', trends.body);
+    expect(trends.body.series).toHaveLength(7);
+    used('getTicketTrends');
+
     const csv = await request(app).get('/api/tickets/export').set(as('admin')).expect(200);
     expect(csv.headers['content-type']).toContain('text/csv');
     expect(csv.text.split('\n')[0]).toBe(

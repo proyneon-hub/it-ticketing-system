@@ -6,6 +6,13 @@ import { visibleActivity } from '../domain/comments';
 import { csvHeaderLine, ticketToCsvLine } from '../domain/csv';
 import { assertCanMutateTicket, requesterOverrides, requesterScope } from '../domain/permissions';
 import { deriveTimestampChanges } from '../domain/sla';
+import {
+  buildTrends,
+  DEFAULT_TIME_ZONE,
+  isValidTimeZone,
+  lookbackStart,
+  windowDays,
+} from '../domain/trends';
 import type { TicketCriteria } from '../domain/ticketCriteria';
 import { assertTransition } from '../domain/ticketWorkflow';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
@@ -17,6 +24,7 @@ import type {
   ExportQuery,
   ListQuery,
   PatchTicketInput,
+  TrendsQuery,
 } from '../../shared/schemas';
 
 // Orchestrates one use case per function: check the caller may do it, apply the
@@ -99,6 +107,29 @@ export async function getStats(user: TokenPayload) {
   for (const row of byPriority) priorityTotals[row._id] = row.count;
 
   return { total, byStatus: statusTotals, byPriority: priorityTotals, sla: { breached, dueSoon } };
+}
+
+// Tickets opened and resolved per day, mean time to resolve and SLA compliance over the
+// last `days` days, for the tickets the caller may see. `now` is a parameter so the
+// numbers can be checked against a fixed date.
+export async function getTrends(
+  user: TokenPayload,
+  { days, tz }: TrendsQuery,
+  now: Date = new Date()
+) {
+  const timeZone = tz ?? DEFAULT_TIME_ZONE;
+  if (!isValidTimeZone(timeZone)) {
+    throw new ValidationError('Unknown time zone.', [
+      { field: 'tz', message: 'Unknown time zone.' },
+    ]);
+  }
+
+  const { opened, resolved } = await repository.trendBuckets(
+    requesterScope(user),
+    lookbackStart(now, days),
+    timeZone
+  );
+  return buildTrends(windowDays(now, days, timeZone), opened, resolved, timeZone);
 }
 
 export async function createTicket(

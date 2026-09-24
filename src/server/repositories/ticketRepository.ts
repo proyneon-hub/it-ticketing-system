@@ -2,6 +2,7 @@ import type { FilterQuery, PipelineStage, SortOrder } from 'mongoose';
 import { priorities, terminalStatuses, type SortField } from '../../shared/ticket-constants';
 import type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
 import { DUE_SOON_WINDOW_MS } from '../domain/sla';
+import type { OpenedRow, ResolvedRow } from '../domain/trends';
 import type { TicketCriteria } from '../domain/ticketCriteria';
 import Counter from '../models/Counter';
 import Ticket, { type TicketDocument, type TicketRecord } from '../models/Ticket';
@@ -221,6 +222,40 @@ export async function nextTicketNumber(): Promise<string> {
     { new: true, upsert: true, setDefaultsOnInsert: true }
   );
   return `TKT-${String(counter.seq).padStart(4, '0')}`;
+}
+
+// Daily counts for the trends chart. Tickets are grouped by the calendar day (in
+// `timeZone`) they were opened or resolved on; only tickets since `since` are read.
+// `met` counts tickets resolved on or before their SLA deadline.
+export async function trendBuckets(
+  requesterEmail: string | undefined,
+  since: Date,
+  timeZone: string
+): Promise<{ opened: OpenedRow[]; resolved: ResolvedRow[] }> {
+  const scope: TicketFilter = requesterEmail ? { requesterEmail } : {};
+  const day = (field: string) => ({
+    $dateToString: { format: '%Y-%m-%d', date: field, timezone: timeZone },
+  });
+
+  const [opened, resolved] = await Promise.all([
+    Ticket.aggregate<OpenedRow>([
+      { $match: { ...scope, createdAt: { $gte: since } } },
+      { $group: { _id: day('$createdAt'), count: { $sum: 1 } } },
+    ]),
+    Ticket.aggregate<ResolvedRow>([
+      { $match: { ...scope, resolvedAt: { $gte: since } } },
+      {
+        $group: {
+          _id: day('$resolvedAt'),
+          count: { $sum: 1 },
+          totalMs: { $sum: { $subtract: ['$resolvedAt', '$createdAt'] } },
+          met: { $sum: { $cond: [{ $lte: ['$resolvedAt', '$dueAt'] }, 1, 0] } },
+        },
+      },
+    ]),
+  ]);
+
+  return { opened, resolved };
 }
 
 interface GroupCount {
