@@ -32,6 +32,7 @@ Security events go to an `auditevents` collection: sign-in success and failure, 
 - **Notifications carry no free text.** An event holds the ticket number, title, status, priority, assignee and who acted, and for a comment only whether it was internal, never its text or the ticket description. The webhook usually points at a chat channel, so an internal note cannot be read there by people who may not read it in the app.
 - **A title cannot ping a channel.** Requesters type ticket titles, so the message tells Discord not to notify any mention (`allowed_mentions`) and escapes `<`, `>` and `&` for Slack, which reads `<!channel>` as a command.
 - **The webhook address is a credential** (Discord and Slack URLs carry their own token). It is read from the environment, never stored in the database or logged, and removed from any error text that is kept. Sending refuses redirects, so a receiver cannot bounce the request elsewhere. Only `http` and `https` addresses are accepted.
+- **Metrics are off by default.** `GET /api/metrics` does not exist (the same 404 as any unknown route) unless `METRICS_TOKEN` is set to 32+ characters, and then needs it as a bearer token. Route labels are path templates, never raw URLs, so a scanner cannot inflate the metrics or read ticket ids from them.
 - **The outbox cannot leak a change or lose one.** The event is written in the same transaction as the ticket change, so it exists if and only if the change was committed.
 
 ## Other controls

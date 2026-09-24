@@ -83,6 +83,7 @@ Without Docker:
 | `WEBHOOK_FORMAT`                      | No                | `discord`, `slack` or `json`; chosen from the address when unset                                                                                                                                                                            |
 | `WORKER_INTERVAL_MS`                  | No                | How often the worker (`npm run worker`, or the Compose `worker` service) runs both jobs, default 30000                                                                                                                                      |
 | `OUTBOX_RETENTION_DAYS`               | No                | How long delivered events are kept, default 14. Changing it later needs `npm run db:sync-indexes`                                                                                                                                           |
+| `METRICS_TOKEN`                       | No                | Turns on `GET /api/metrics` (Prometheus) and is the bearer token it requires; 32+ characters. Unset, the endpoint does not exist                                                                                                            |
 | `PORT`                                | Local and Docker  | Express port (default 5000)                                                                                                                                                                                                                 |
 | `CORS_ORIGINS`                        | No                | Comma-separated origins allowed to call the API from a browser. Unset means same-origin only                                                                                                                                                |
 | `LOG_LEVEL`                           | No                | pino level, default `info`                                                                                                                                                                                                                  |
@@ -105,6 +106,20 @@ To turn the scheduled workflow on, add the `BASE_URL` and `CRON_SECRET` reposito
 **Dead events** (a webhook that was down for hours, or a wrong URL): as an admin, `GET /api/outbox?status=dead` lists them with the last error (the webhook address is never included), and `POST /api/outbox/:id/retry` puts one back in the queue. Fix the cause first, or it will fail again.
 
 If a call answers `503 JOBS_NOT_CONFIGURED`, `CRON_SECRET` is missing or shorter than 32 characters. If it answers `401`, the caller's token is not the secret.
+
+## Metrics and dashboards
+
+`GET /api/metrics` serves Prometheus metrics: request rate and latency by route template (`/api/tickets/:id`, never a raw URL, so the number of series stays bounded), status codes, tickets created, SLA steps, webhook delivery results, the outbox backlog by status, and the Node.js process metrics. It does not exist unless `METRICS_TOKEN` is set (32+ characters), and then needs `Authorization: Bearer <token>`. It is served even when the database is down.
+
+To look at them locally: `docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build --detach --wait`, then open Grafana at http://localhost:3000 (admin / admin, local use only) and the **IT Ticketing System** dashboard. Prometheus is at http://localhost:9090.
+
+**Per instance.** The numbers describe one process. In a container deployment that is the whole app; on Vercel each warm function is its own short-lived process, so the metrics are not meaningful there and the endpoint should stay off.
+
+What to watch: the **Server errors** panel (5xx share), **Latency percentiles** (p95 above about 500 ms is worth a look), **Dead outbox events** (above zero needs an admin, see the section above) and **Event loop lag** (a busy process, for example under a burst of sign-ins, which hash passwords on the main thread; see [PERFORMANCE.md](PERFORMANCE.md)).
+
+## Incident issues
+
+The hourly `Support Ops Scheduled Health Check` workflow checks health, database readiness, sign-in and the ticket API on the live site. When one fails it opens an issue labelled `incident`, titled with the failing checks and severity (health or readiness down is Critical, sign-in or ticket API is High), containing the communication template and the failing checks from the [incident guide](../Support-Ops-Automation/docs/INCIDENT_RESPONSE.md). While the failure continues each run adds a comment to that same issue. The first run in which everything passes comments "Recovered" and closes it. Add the root cause to the issue before or after it closes, for the post-incident review. It needs the `BASE_URL` secret (and the account secrets) to run.
 
 ## MongoDB connection troubleshooting
 

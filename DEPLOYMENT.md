@@ -80,9 +80,9 @@ Environment variable changes only take effect after a redeploy.
 1. `GET /api/health` returns `{"ok":true,"service":"it-ticketing-system"}`.
 2. `GET /api/ready` returns `200` with `"database":"up"` and the deployed `commit`. This is the check that proves the app can reach MongoDB.
 3. Open `/api/docs`, or the app itself, and sign in with each demo role.
-4. On an environment that is safe to write to, run the [smoke suite](docs/LIVE_SMOKE_TESTING.md) or the manual `Live Smoke` workflow.
+4. On an environment that is safe to write to, run the [smoke suite](docs/LIVE_SMOKE_TESTING.md) or the `live-smoke` job of the `CI` workflow (it runs after every push to `main`).
 
-The scheduled `Support Ops Scheduled Health Check` workflow runs the Python health and readiness checks daily once the `BASE_URL` secret is set (see [Support-Ops-Automation](Support-Ops-Automation/README.md)).
+The scheduled `Support Ops Scheduled Health Check` workflow runs the Python health, readiness, sign-in and ticket API checks every hour once the `BASE_URL` secret is set, and opens an `incident` issue when one fails (see [Support-Ops-Automation](Support-Ops-Automation/README.md)).
 
 ## GitHub setup
 

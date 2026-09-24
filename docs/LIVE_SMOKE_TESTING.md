@@ -6,8 +6,9 @@ The smoke suite checks the real frontend, API, authentication and database worki
 
 It runs in two places:
 
-- **On every pull request**, against the Docker Compose stack (the production image and a real MongoDB). This is the `real-stack` job in `.github/workflows/e2e.yml`.
-- **On demand**, against a deployed environment, through the manual `Live Smoke` workflow or locally.
+- **On every pull request**, against the Docker Compose stack (the production image and a real MongoDB). This is the `real-stack` job in `.github/workflows/ci.yml`.
+- **After every push to `main`**, against the deployed site: the `live-smoke` job in the same workflow. It first waits until `/api/ready` reports the pushed commit (so it never tests the previous deployment), and it runs in the `production-smoke` environment, where you can require a reviewer's approval. It skips itself until the secrets in [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md) exist.
+- **On demand**, locally, or by running the `CI` workflow manually.
 
 ## Safety controls
 
@@ -15,7 +16,7 @@ It runs in two places:
 - Tests that sign in also skip unless their `E2E_*` credentials are configured.
 - The ticket test creates one uniquely named `PW-LIVE-<timestamp>` record and deletes only that record in a `finally` block.
 - Every other test is read-only.
-- Run it only against a resettable demo or non-production environment. Never enable live writes against production data.
+- Run it only against a resettable demo or non-production environment. The deployed site this project points at is a public demo with no real data; do not point the `live-smoke` job at a system that holds real tickets, because the ticket tests create and delete records.
 
 ## Environment
 
@@ -64,4 +65,4 @@ Two of these tests exist because of a real miss: a dashboard that never loaded o
 
 All seven tests passed on 2026-09-23 against the production build served by Express (the same process the Docker image runs), a real MongoDB and Chromium. The Docker image itself and the Compose job are defined in the repository but are exercised by CI, which needs the branch to be pushed.
 
-The manual `Live Smoke` workflow stays inert until its repository secrets exist. See [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md).
+The `live-smoke` job stays inert until its repository secrets exist. See [GITHUB_SECRETS_SETUP.md](GITHUB_SECRETS_SETUP.md).
