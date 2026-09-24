@@ -1023,6 +1023,44 @@
           }
         }
       }
+    },
+    "/metrics": {
+      "get": {
+        "tags": ["Operations"],
+        "summary": "Prometheus metrics",
+        "description": "Request rate, latency by route template, tickets created, outbox backlog and process metrics, in the Prometheus text format. The endpoint does not exist (404) unless `METRICS_TOKEN` is set on the server. The numbers are per instance, so they are meaningful for a container deployment, not for serverless.",
+        "operationId": "getMetrics",
+        "security": [
+          {
+            "metricsAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics in the Prometheus text exposition format.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "description": "`METRICS_TOKEN` is not set (or is shorter than 32 characters), so the endpoint is off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1036,6 +1074,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "The `CRON_SECRET` shared with the scheduler. Not a user token."
+      },
+      "metricsAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The `METRICS_TOKEN` shared with the Prometheus scraper. Not a user token."
       }
     },
     "parameters": {

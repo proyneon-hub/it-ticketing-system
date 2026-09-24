@@ -8,6 +8,7 @@ import {
 } from '../domain/outbox';
 import { NotFoundError, ValidationError } from '../errors';
 import { logger } from '../logger';
+import { outboxDeliveries } from '../metrics';
 import * as repository from '../repositories/outboxRepository';
 import type { OutboxEventRecord, OutboxStatus } from '../repositories/outboxRepository';
 import type { Tx } from '../repositories/transaction';
@@ -104,11 +105,13 @@ export async function deliverPending(options: DeliveryOptions = {}): Promise<Del
       await send(event, config, { timeoutMs, fetchImpl });
       await repository.markDelivered(event._id, new Date());
       result.delivered += 1;
+      outboxDeliveries.inc({ result: 'delivered' });
     } catch (error) {
       const reason = describeFailure(error, config.url);
       if (event.attempts >= MAX_ATTEMPTS) {
         await repository.markDead(event._id, reason);
         result.dead += 1;
+        outboxDeliveries.inc({ result: 'dead' });
         logger.error(
           { eventId: String(event._id), type: event.type, reason },
           'Outbox event gave up'
@@ -120,6 +123,7 @@ export async function deliverPending(options: DeliveryOptions = {}): Promise<Del
           reason
         );
         result.retried += 1;
+        outboxDeliveries.inc({ result: 'retried' });
         logger.warn(
           { eventId: String(event._id), attempts: event.attempts, reason },
           'Outbox delivery failed'

@@ -6,12 +6,14 @@ import { docsRouter } from './docs';
 import { hasStrongAuthSecret, resolveTrustProxy } from './config';
 import { connectToDatabase, pingDatabase } from './db';
 import { requestLogger } from './logger';
+import { metricsMiddleware } from './metrics';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { corsPolicy, securityHeaders } from './middleware/security';
 import auditRoutes from './routes/audit';
 import authRoutes, { demoAccountsRouter } from './routes/auth';
 import commentRoutes from './routes/comments';
 import jobRoutes from './routes/jobs';
+import metricsRoutes from './routes/metrics';
 import outboxRoutes from './routes/outbox';
 import ticketRoutes from './routes/tickets';
 import userRoutes from './routes/users';
@@ -22,6 +24,7 @@ app.set('trust proxy', resolveTrustProxy());
 
 // The request id is created first so every later log line and error response can carry it.
 app.use(requestLogger);
+app.use(metricsMiddleware);
 app.use(securityHeaders());
 app.use(corsPolicy());
 // All API endpoints accept JSON bodies. The 1mb limit is plenty for ticket text
@@ -56,6 +59,10 @@ app.get('/api/ready', async (req, res) => {
     res.status(503).json({ ok: false, database: 'down', ...details });
   }
 });
+
+// Prometheus metrics: off unless METRICS_TOKEN is set. Before the database middleware, so an
+// outage does not blank the monitoring.
+app.use('/api', metricsRoutes);
 
 // Interactive API documentation. Public and database-free; set API_DOCS=off to hide it.
 if (process.env.API_DOCS !== 'off') {
