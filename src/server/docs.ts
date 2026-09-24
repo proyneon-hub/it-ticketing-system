@@ -5,22 +5,23 @@ import spec from './openapi.json';
 // Swagger UI ships about 12 MB of static assets, so it is loaded on the first
 // visit to /api/docs instead of at startup. That keeps cold starts on serverless
 // hosts as fast as before for everyone who never opens the docs.
-let uiRouter: Router | undefined;
+interface SwaggerUi {
+  generateHTML: (typeof import('swagger-ui-express'))['generateHTML'];
+  serveFiles: (typeof import('swagger-ui-express'))['serveFiles'];
+}
 
-function buildUiRouter(): Router {
-  const swaggerUi = require('swagger-ui-express') as typeof import('swagger-ui-express');
-  const router = express.Router();
+const uiOptions = {
+  customSiteTitle: 'IT Ticketing System API',
+  swaggerOptions: { persistAuthorization: true, tryItOutEnabled: true },
+};
 
-  router.use(swaggerUi.serve);
-  router.get(
-    '/',
-    swaggerUi.setup(spec as unknown as JsonObject, {
-      customSiteTitle: 'IT Ticketing System API',
-      swaggerOptions: { persistAuthorization: true, tryItOutEnabled: true },
-    })
-  );
+let ui: { html: string; files: Router } | undefined;
 
-  return router;
+function loadUi(): { html: string; files: Router } {
+  const swaggerUi = require('swagger-ui-express') as SwaggerUi;
+  const files = express.Router();
+  files.use(swaggerUi.serveFiles(spec as unknown as JsonObject, uiOptions));
+  return { html: swaggerUi.generateHTML(spec as unknown as JsonObject, uiOptions), files };
 }
 
 export const docsRouter = express.Router();
@@ -30,16 +31,20 @@ docsRouter.get('/openapi.json', (_req, res) => {
   res.json(spec);
 });
 
-// Relative asset URLs on the docs page only resolve under a trailing slash.
-docsRouter.get('/docs', (req, res, next) => {
-  if (req.originalUrl.split('?')[0]?.endsWith('/')) return next();
-  return res.redirect(301, `${req.baseUrl}/docs/`);
+// The page itself. It is served at /docs (no trailing slash) and points its relative
+// asset URLs at /docs/ with a <base> tag. Vercel never routes a trailing-slash URL to
+// the function, so /docs/ cannot be the address the page depends on.
+docsRouter.get(['/docs', '/docs/'], (req, res) => {
+  ui = ui || loadUi();
+  const page = ui.html.replace('<head>', `<head><base href="${req.baseUrl}/docs/">`);
+  res.type('html').send(page);
 });
 
-const serveDocs: RequestHandler = (req, res, next) => {
-  uiRouter = uiRouter || buildUiRouter();
-  uiRouter(req, res, next);
+// Swagger UI's scripts, styles and init file, under /docs/.
+const serveAssets: RequestHandler = (req, res, next) => {
+  ui = ui || loadUi();
+  ui.files(req, res, next);
 };
-docsRouter.use('/docs', serveDocs);
+docsRouter.use('/docs', serveAssets);
 
 export { spec };
