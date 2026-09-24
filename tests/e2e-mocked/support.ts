@@ -195,6 +195,14 @@ function csvFor(tickets: readonly MockTicket[]): string {
 export async function installApiMocks(page: Page): Promise<void> {
   let currentUser: MockUser | null = null;
   let tickets = baseTickets.map(cloneTicket);
+  // The people the admin page lists. Roles can be changed there, as in the real API.
+  let people = Object.values(demoUsers).map((user) => ({
+    id: user.sub,
+    name: user.name,
+    email: user.email,
+    role: user.role as UserRole,
+    createdAt: '2026-06-01T12:00:00.000Z',
+  }));
 
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -264,6 +272,113 @@ export async function installApiMocks(page: Page): Promise<void> {
           user: { id: sub, name, email: userEmail, role },
         },
       });
+    }
+
+    // --- admin: users and the audit log (admins only, like the real API)
+    if (path === '/api/users' || path.startsWith('/api/users/')) {
+      if (!currentUser) {
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
+      }
+      if (currentUser.role !== 'admin') {
+        return route.fulfill({
+          status: 403,
+          json: {
+            message: 'You do not have permission to perform this action.',
+            code: 'FORBIDDEN',
+          },
+        });
+      }
+
+      if (path === '/api/users' && method === 'GET') {
+        return route.fulfill({ json: { users: people } });
+      }
+
+      if (method === 'PATCH') {
+        const id = path.split('/').pop();
+        const role = stringFromPayload(request.postDataJSON() as unknown, 'role') as UserRole;
+        const target = people.find((person) => person.id === id);
+        if (!target) {
+          return route.fulfill({
+            status: 404,
+            json: { message: 'User not found.', code: 'NOT_FOUND' },
+          });
+        }
+        // There must always be one admin.
+        const otherAdmins = people.filter((p) => p.role === 'admin' && p.id !== id).length;
+        if (target.role === 'admin' && role !== 'admin' && otherAdmins === 0) {
+          return route.fulfill({
+            status: 409,
+            json: { message: 'There must always be at least one admin.', code: 'LAST_ADMIN' },
+          });
+        }
+        people = people.map((person) => (person.id === id ? { ...person, role } : person));
+        const { id: userId, name, email } = target;
+        return route.fulfill({ json: { user: { id: userId, name, email, role } } });
+      }
+    }
+
+    if (path === '/api/audit' && method === 'GET') {
+      if (currentUser?.role !== 'admin') {
+        return route.fulfill({
+          status: currentUser ? 403 : 401,
+          json: { message: 'Not permitted.', code: currentUser ? 'FORBIDDEN' : 'UNAUTHORIZED' },
+        });
+      }
+      const events = [
+        {
+          _id: 'evt-2',
+          type: 'role_changed',
+          outcome: 'success',
+          actor: { email: 'admin@demo.local', role: 'admin' },
+          target: { type: 'user', label: 'tech@demo.local' },
+          detail: 'Role changed from technician to admin.',
+          ip: '203.0.113.7',
+          at: '2026-06-02T09:30:00.000Z',
+        },
+        {
+          _id: 'evt-1',
+          type: 'login_success',
+          outcome: 'success',
+          actor: { email: 'tech@demo.local', role: 'technician' },
+          ip: '203.0.113.9',
+          at: '2026-06-02T09:00:00.000Z',
+        },
+      ];
+      const type = url.searchParams.get('type');
+      const shown = type ? events.filter((event) => event.type === type) : events;
+      return route.fulfill({
+        json: {
+          events: shown,
+          data: shown,
+          pagination: { page: 1, limit: 25, total: shown.length, totalPages: 1 },
+        },
+      });
+    }
+
+    // --- one ticket (the detail page)
+    if (
+      path.startsWith('/api/tickets/') &&
+      method === 'GET' &&
+      path !== '/api/tickets/stats' &&
+      path !== '/api/tickets/export'
+    ) {
+      if (!currentUser) {
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
+      }
+      const id = path.split('/').pop();
+      const found = visibleTicketsFor(currentUser, tickets).find((ticket) => ticket._id === id);
+      return found
+        ? route.fulfill({ json: { ticket: found } })
+        : route.fulfill({
+            status: 404,
+            json: { message: 'Ticket not found.', code: 'NOT_FOUND' },
+          });
     }
 
     if (path === '/api/tickets/stats') {

@@ -1,6 +1,8 @@
 import { expect, test as base } from '@playwright/test';
 import { installApiMocks } from '../e2e-mocked/support';
+import { AdminPage } from '../pages/AdminPage';
 import { LoginPage } from '../pages/LoginPage';
+import { TicketDetailPage } from '../pages/TicketDetailPage';
 import { TicketDashboardPage } from '../pages/TicketDashboardPage';
 import { TicketFormPage } from '../pages/TicketFormPage';
 
@@ -9,6 +11,8 @@ type AppFixtures = {
   loginPage: LoginPage;
   dashboardPage: TicketDashboardPage;
   ticketFormPage: TicketFormPage;
+  detailPage: TicketDetailPage;
+  adminPage: AdminPage;
 };
 
 export const test = base.extend<AppFixtures>({
@@ -27,6 +31,12 @@ export const test = base.extend<AppFixtures>({
   },
   ticketFormPage: async ({ page }, use) => {
     await use(new TicketFormPage(page));
+  },
+  detailPage: async ({ page }, use) => {
+    await use(new TicketDetailPage(page));
+  },
+  adminPage: async ({ page }, use) => {
+    await use(new AdminPage(page));
   },
 });
 
