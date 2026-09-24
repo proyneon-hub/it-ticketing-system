@@ -1,24 +1,43 @@
 // Contract tests: the OpenAPI document is the published promise, so every real
 // response is validated against its schema. If the API and the docs disagree,
 // this suite fails, which keeps the documentation honest.
-const Ajv2020 = require('ajv/dist/2020');
-const addFormats = require('ajv-formats');
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
-const request = require('supertest');
-const constants = require('../../shared/ticket-constants.json');
-const spec = require('../openapi.json');
+import Ajv2020 from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
+import type { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+import request from 'supertest';
+import { priorities, roles, slaFilters, sortFields, statuses } from '../../shared/ticket-constants';
+import app from '../app';
+import { connectToDatabase } from '../db';
+import Ticket from '../models/Ticket';
+import spec from '../openapi.json';
+import { bearer, signInAll, startTestDatabase, type Account, type Tokens } from './helpers';
+
+// A loose view of the document: enough structure to walk it, without modelling OpenAPI.
+interface Operation {
+  operationId?: string;
+  responses: Record<string, unknown>;
+}
+interface OpenApiDocument {
+  paths: Record<string, Record<string, Operation>>;
+  components: {
+    schemas: Record<string, { enum?: string[] }>;
+    parameters: Record<string, { schema: { enum: string[] } }>;
+  };
+}
+const doc = spec as unknown as OpenApiDocument;
 
 const ajv = new Ajv2020({ strict: false, allErrors: true });
 addFormats(ajv);
 ajv.addSchema(spec, 'api');
 
-const validators = new Map();
-function conforms(schemaName, body) {
-  if (!validators.has(schemaName)) {
-    validators.set(schemaName, ajv.compile({ $ref: `api#/components/schemas/${schemaName}` }));
+const validators = new Map<string, ReturnType<typeof ajv.compile>>();
+function conforms(schemaName: string, body: unknown): void {
+  let validate = validators.get(schemaName);
+  if (!validate) {
+    validate = ajv.compile({ $ref: `api#/components/schemas/${schemaName}` });
+    validators.set(schemaName, validate);
   }
-  const validate = validators.get(schemaName);
   const valid = validate(body);
   expect({ valid, errors: valid ? [] : validate.errors, body: valid ? undefined : body }).toEqual({
     valid: true,
@@ -27,36 +46,22 @@ function conforms(schemaName, body) {
   });
 }
 
-const documentedOperations = Object.values(spec.paths)
+const documentedOperations = Object.values(doc.paths)
   .flatMap((pathItem) => Object.values(pathItem))
   .filter((operation) => operation && operation.operationId)
-  .map((operation) => operation.operationId);
-const exercised = new Set();
-const used = (operationId) => exercised.add(operationId);
+  .map((operation) => operation.operationId as string);
+const exercised = new Set<string>();
+const used = (operationId: string) => exercised.add(operationId);
 
-let mongod;
-let app;
-let tokens;
-const as = (role) => ({ Authorization: `Bearer ${tokens[role]}` });
+let mongod: MongoMemoryServer;
+let tokens: Tokens;
+const as = (role: Account) => bearer(tokens, role);
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  process.env.MONGODB_URI = mongod.getUri();
-  app = require('../app');
-  await require('../db').connectToDatabase();
-  await require('../models/Ticket').init();
-
-  tokens = {};
-  const accounts = {
-    admin: ['admin@demo.local', 'AdminPass123!'],
-    tech: ['tech@demo.local', 'TechPass123!'],
-    user: ['user@demo.local', 'UserPass123!'],
-  };
-  for (const [role, [email, password]] of Object.entries(accounts)) {
-    tokens[role] = (
-      await request(app).post('/api/auth/login').send({ email, password })
-    ).body.token;
-  }
+  mongod = await startTestDatabase();
+  await connectToDatabase();
+  await Ticket.init();
+  tokens = await signInAll(app);
 }, 300000);
 
 afterAll(async () => {
@@ -66,17 +71,17 @@ afterAll(async () => {
 
 describe('the document stays in step with the code', () => {
   test('enums match the constants the API validates against', () => {
-    const { schemas, parameters } = spec.components;
-    expect(schemas.Status.enum).toEqual(constants.statuses);
-    expect(schemas.Priority.enum).toEqual(constants.priorities);
-    expect(schemas.Role.enum).toEqual(constants.roles);
-    expect(parameters.SortBy.schema.enum).toEqual(constants.sortFields);
-    expect(parameters.SlaFilter.schema.enum).toEqual(constants.slaFilters);
+    const { schemas, parameters } = doc.components;
+    expect(schemas.Status.enum).toEqual([...statuses]);
+    expect(schemas.Priority.enum).toEqual([...priorities]);
+    expect(schemas.Role.enum).toEqual([...roles]);
+    expect(parameters.SortBy.schema.enum).toEqual([...sortFields]);
+    expect(parameters.SlaFilter.schema.enum).toEqual([...slaFilters]);
   });
 
   test('every operation has a unique id and at least one documented response', () => {
     expect(new Set(documentedOperations).size).toBe(documentedOperations.length);
-    for (const pathItem of Object.values(spec.paths)) {
+    for (const pathItem of Object.values(doc.paths)) {
       for (const operation of Object.values(pathItem).filter((item) => item.operationId)) {
         expect(Object.keys(operation.responses).length).toBeGreaterThan(0);
       }
@@ -84,7 +89,7 @@ describe('the document stays in step with the code', () => {
   });
 
   test('every schema and reference in the document compiles', () => {
-    for (const name of Object.keys(spec.components.schemas)) {
+    for (const name of Object.keys(doc.components.schemas)) {
       expect(() => ajv.compile({ $ref: `api#/components/schemas/${name}` })).not.toThrow();
     }
   });
@@ -112,7 +117,7 @@ describe('responses match their documented schemas', () => {
     used('getSession');
 
     const demoUsers = await request(app).get('/api/auth/demo-users').expect(200);
-    demoUsers.body.users.forEach((user) => conforms('DemoUser', user));
+    demoUsers.body.users.forEach((user: unknown) => conforms('DemoUser', user));
     used('listDemoUsers');
   });
 

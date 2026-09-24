@@ -1,10 +1,10 @@
-require('dotenv').config();
-
-const { connectToDatabase } = require('../src/server/db');
-const Ticket = require('../src/server/models/Ticket');
+import 'dotenv/config';
+import { connectToDatabase } from '../src/server/db';
+import Counter from '../src/server/models/Counter';
+import Ticket, { type TicketAttrs } from '../src/server/models/Ticket';
 
 // Small set of sample tickets for local demos and portfolio screenshots.
-const tickets = [
+const tickets: Partial<TicketAttrs>[] = [
   {
     ticketNumber: 'TKT-0001',
     title: 'Laptop cannot connect to Wi-Fi',
@@ -131,7 +131,7 @@ const tickets = [
   },
 ];
 
-async function seed() {
+async function seed(): Promise<void> {
   // Reuse the same database helper as the API so seeding respects MONGODB_URI,
   // DNS settings, and connection timeout behavior.
   await connectToDatabase();
@@ -140,9 +140,7 @@ async function seed() {
   // data is predictable every time the script runs.
   await Ticket.deleteMany({});
   await Ticket.insertMany(tickets);
-  await Ticket.db
-    .collection('counters')
-    .updateOne({ _id: 'ticket' }, { $set: { seq: tickets.length } }, { upsert: true });
+  await Counter.updateOne({ _id: 'ticket' }, { $set: { seq: tickets.length } }, { upsert: true });
 
   console.log(`Seeded ${tickets.length} tickets.`);
   process.exit(0);

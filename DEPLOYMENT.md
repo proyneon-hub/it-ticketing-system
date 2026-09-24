@@ -10,11 +10,11 @@ The same Express app runs three ways: locally, in Docker, and as Vercel serverle
 
 ## Configuration
 
-| Variable       | Required          | Notes                                                                                                                                                                         |
-| -------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MONGODB_URI`  | Yes               | Connection string, for example `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/it_ticketing?retryWrites=true&w=majority`                                              |
-| `AUTH_SECRET`  | Yes in production | A long random value. `server.js` refuses to start in production without it. On Vercel a missing value logs a warning and falls back to a public development secret, so set it |
-| `CORS_ORIGINS` | No                | Only needed if another origin calls the API from a browser                                                                                                                    |
+| Variable       | Required          | Notes                                                                                                                                                                                                       |
+| -------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`  | Yes               | Connection string, for example `mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/it_ticketing?retryWrites=true&w=majority`                                                                            |
+| `AUTH_SECRET`  | Yes in production | A random value of 32+ characters (`openssl rand -base64 48`). In production `server.ts` refuses to start without it, and on Vercel sign-in returns 503 until it is set. `/api/ready` shows `authConfigured` |
+| `CORS_ORIGINS` | No                | Only needed if another origin calls the API from a browser                                                                                                                                                  |
 
 The full list is in the [runbook](docs/RUNBOOK.md#environment-variables). Never commit real values; `.env.example` shows the names.
 
@@ -46,7 +46,7 @@ Tags: `latest` and `sha-<commit>`. Running an older tag is the fastest rollback.
 
 ## Vercel
 
-The frontend is built by Vite and served statically; `api/` contains thin adapters that run the same Express app as serverless functions (`api/[...path].js` is the catch-all). `vercel.json` holds the build settings.
+The frontend is built by Vite and served statically; `api/` contains thin adapters that run the same Express app as serverless functions (`api/[...path].js` is the catch-all). The API is TypeScript: `npm run build` compiles it to `dist-server/` and the adapters load that output, exactly as the Docker image does. `vercel.json` holds the build settings.
 
 1. Create a MongoDB Atlas cluster and a database user. In Network Access, allow the deployment. For a demo, "allow from anywhere" is common; restrict it for anything real.
 2. In Vercel choose **Add New Project**, import the GitHub repository, and use these settings:

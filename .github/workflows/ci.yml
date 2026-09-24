@@ -37,6 +37,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Type-check (API and Playwright)
+        run: npm run typecheck
+
       # Database-free API tests first, so a logic failure shows up in seconds.
       - name: API unit tests
         run: npm run test:api:unit

@@ -1,24 +1,24 @@
-const dns = require('dns');
-const mongoose = require('mongoose');
+import dns from 'dns';
+import mongoose from 'mongoose';
 
 // Cached state prevents repeated MongoDB handshakes. This is especially helpful
 // in serverless environments where several requests can reuse a warm function.
-let cachedConnection = null;
-let connectingPromise = null;
+let cachedConnection: typeof mongoose | null = null;
+let connectingPromise: Promise<typeof mongoose> | null = null;
 let dnsConfigured = false;
 
-function getConnectionTimeoutMs() {
+function getConnectionTimeoutMs(): number {
   // Keep the API from hanging indefinitely when MongoDB or DNS is unreachable.
   return Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 5000;
 }
 
-function withConnectionTimeout(promise, timeoutMs) {
-  let timeoutId;
+function withConnectionTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutId: NodeJS.Timeout | undefined;
 
-  const timeout = new Promise((_, reject) => {
+  const timeout = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {
       const error = new Error(`MongoDB connection timed out after ${timeoutMs}ms.`);
-      error.code = 'ETIMEOUT';
+      (error as NodeJS.ErrnoException).code = 'ETIMEOUT';
       reject(error);
     }, timeoutMs);
   });
@@ -26,7 +26,7 @@ function withConnectionTimeout(promise, timeoutMs) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
 }
 
-function configureDnsServers(uri) {
+function configureDnsServers(uri: string): void {
   if (dnsConfigured || !uri.startsWith('mongodb+srv://')) {
     return;
   }
@@ -47,7 +47,7 @@ function configureDnsServers(uri) {
   dnsConfigured = true;
 }
 
-async function connectToDatabase() {
+export async function connectToDatabase(): Promise<typeof mongoose> {
   // Mongoose readyState 1 means the existing connection is open and reusable.
   if (cachedConnection && mongoose.connection.readyState === 1) {
     return cachedConnection;
@@ -93,19 +93,18 @@ async function connectToDatabase() {
 
 // Readiness probe: proves the database answers, not merely that a connection
 // object exists.
-async function pingDatabase() {
+export async function pingDatabase(): Promise<void> {
   await connectToDatabase();
-  await mongoose.connection.db.admin().ping();
+  await mongoose.connection.db?.admin().ping();
 }
 
-function isDatabaseConnectivityError(error) {
+export function isDatabaseConnectivityError(error: unknown): boolean {
   // The Express error handler uses this to return a 503 with deployment guidance
   // for known network/connectivity failures.
+  const { name, code } = error as { name?: string; code?: string };
   return (
     ['MongoNetworkError', 'MongoNetworkTimeoutError', 'MongooseServerSelectionError'].includes(
-      error.name
-    ) || ['ETIMEOUT', 'ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET'].includes(error.code)
+      name ?? ''
+    ) || ['ETIMEOUT', 'ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET'].includes(code ?? '')
   );
 }
-
-module.exports = { connectToDatabase, isDatabaseConnectivityError, pingDatabase };

@@ -1,8 +1,9 @@
-const { randomUUID } = require('crypto');
-const pino = require('pino');
-const pinoHttp = require('pino-http');
+import { randomUUID } from 'crypto';
+import type { IncomingMessage, ServerResponse } from 'http';
+import pino from 'pino';
+import pinoHttp from 'pino-http';
 
-const logger = pino({
+export const logger = pino({
   // Tests stay quiet unless LOG_LEVEL is set explicitly.
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'silent' : 'info'),
   base: { service: 'it-ticketing-system' },
@@ -12,7 +13,7 @@ const logger = pino({
 // supply x-request-id. Only well-formed values are trusted, which stops log injection.
 const SAFE_REQUEST_ID = /^[\w.-]{1,64}$/;
 
-function resolveRequestId(req, res) {
+function resolveRequestId(req: IncomingMessage, res: ServerResponse): string {
   const supplied = req.headers['x-request-id'];
   const id =
     typeof supplied === 'string' && SAFE_REQUEST_ID.test(supplied) ? supplied : randomUUID();
@@ -22,7 +23,7 @@ function resolveRequestId(req, res) {
 
 // One structured log line per request, tagged with the request id that is also
 // returned to the client. That id is what links a user's error report to the logs.
-const requestLogger = pinoHttp({
+export const requestLogger = pinoHttp({
   logger,
   genReqId: resolveRequestId,
   autoLogging: { ignore: (req) => req.url === '/api/health' },
@@ -34,9 +35,11 @@ const requestLogger = pinoHttp({
   // Log only what is needed to trace a request. Headers, which carry bearer
   // tokens, are never serialized.
   serializers: {
-    req: (req) => ({ id: req.id, method: req.method, url: req.url }),
-    res: (res) => ({ statusCode: res.statusCode }),
+    req: (req: { id: unknown; method: string; url: string }) => ({
+      id: req.id,
+      method: req.method,
+      url: req.url,
+    }),
+    res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
   },
 });
-
-module.exports = { logger, requestLogger };

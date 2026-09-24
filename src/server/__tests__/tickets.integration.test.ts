@@ -1,27 +1,42 @@
 // Integration tests: the real Express app, real Mongoose models and a real
-// (in-memory) MongoDB. Unlike app.test.js nothing here is mocked, so these
+// (in-memory) MongoDB. Nothing here is mocked, so these
 // cover query building, role scoping, SLA logic and persistence end to end.
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
-const request = require('supertest');
+import type { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
+import request from 'supertest';
+import app from '../app';
+import { connectToDatabase } from '../db';
+import type { Priority } from '../../shared/ticket-constants';
+import Ticket, { type TicketAttrs } from '../models/Ticket';
+import { bearer, signInAll, startTestDatabase, type Account, type Tokens } from './helpers';
 
 const HOUR = 60 * 60 * 1000;
-const credentials = {
-  admin: ['admin@demo.local', 'AdminPass123!'],
-  tech: ['tech@demo.local', 'TechPass123!'],
-  user: ['user@demo.local', 'UserPass123!'],
-};
 
-let mongod;
-let app;
-let Ticket;
-let tokens;
+let mongod: MongoMemoryServer;
+let tokens: Tokens;
 let sequence = 0;
 
-const as = (role) => ({ Authorization: `Bearer ${tokens[role]}` });
+const as = (role: Account) => bearer(tokens, role);
+
+// Reads a ticket straight from the database; the test fails here if it is missing.
+async function storedTicket(id: string) {
+  const ticket = await Ticket.findById(id);
+  if (!ticket) throw new Error(`Ticket ${id} is not in the database.`);
+  return ticket;
+}
+
+// A row from a list response; only the fields these tests read.
+interface Row {
+  _id: string;
+  title: string;
+  priority: Priority;
+}
+interface Activity {
+  action: string;
+}
 
 // Inserts directly through the model so each test controls the exact state it needs.
-function seedTicket(overrides = {}) {
+function seedTicket(overrides: Partial<TicketAttrs> = {}) {
   sequence += 1;
   return Ticket.create({
     ticketNumber: `TKT-${String(sequence).padStart(4, '0')}`,
@@ -32,18 +47,10 @@ function seedTicket(overrides = {}) {
 }
 
 beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  process.env.MONGODB_URI = mongod.getUri();
-  app = require('../app');
-  Ticket = require('../models/Ticket');
-
-  tokens = {};
-  for (const [role, [email, password]] of Object.entries(credentials)) {
-    const response = await request(app).post('/api/auth/login').send({ email, password });
-    tokens[role] = response.body.token;
-  }
-  await require('../db').connectToDatabase();
+  mongod = await startTestDatabase();
+  await connectToDatabase();
   await Ticket.init();
+  tokens = await signInAll(app);
 }, 300000);
 
 afterAll(async () => {
@@ -63,7 +70,7 @@ describe('role scoping', () => {
     const theirs = await seedTicket({ requesterEmail: 'other@example.com', title: 'Theirs' });
 
     const list = await request(app).get('/api/tickets').set(as('user')).expect(200);
-    expect(list.body.data.map((ticket) => ticket.title)).toEqual(['Mine']);
+    expect(list.body.data.map((ticket: Row) => ticket.title)).toEqual(['Mine']);
     expect(list.body.pagination.total).toBe(1);
 
     await request(app).get(`/api/tickets/${mine.id}`).set(as('user')).expect(200);
@@ -93,7 +100,7 @@ describe('role scoping', () => {
       .expect(403);
 
     expect(response.body.message).toMatch(/requester/i);
-    expect((await Ticket.findById(mine.id)).requesterEmail).toBe('user@demo.local');
+    expect((await storedTicket(mine.id)).requesterEmail).toBe('user@demo.local');
   });
 
   test('requesters cannot change workflow fields but can edit descriptive ones', async () => {
@@ -122,7 +129,7 @@ describe('role scoping', () => {
 
 describe('sorting and pagination', () => {
   test('sorts by priority severity, not alphabetically', async () => {
-    for (const priority of ['low', 'urgent', 'medium', 'high']) {
+    for (const priority of ['low', 'urgent', 'medium', 'high'] as const) {
       await seedTicket({ priority, title: priority });
     }
 
@@ -130,7 +137,7 @@ describe('sorting and pagination', () => {
       .get('/api/tickets?sortBy=priority&sortOrder=desc')
       .set(as('admin'))
       .expect(200);
-    expect(descending.body.data.map((ticket) => ticket.priority)).toEqual([
+    expect(descending.body.data.map((ticket: Row) => ticket.priority)).toEqual([
       'urgent',
       'high',
       'medium',
@@ -141,7 +148,7 @@ describe('sorting and pagination', () => {
       .get('/api/tickets?sortBy=priority&sortOrder=asc')
       .set(as('admin'))
       .expect(200);
-    expect(ascending.body.data.map((ticket) => ticket.priority)).toEqual([
+    expect(ascending.body.data.map((ticket: Row) => ticket.priority)).toEqual([
       'low',
       'medium',
       'high',
@@ -153,7 +160,7 @@ describe('sorting and pagination', () => {
   test('pages through tickets that tie on the sort key in a stable order', async () => {
     // Mixed priorities make the index order differ from _id order, so the test
     // only passes when _id is applied as an explicit tie-breaker.
-    const priorities = ['urgent', 'low', 'high', 'medium', 'low'];
+    const priorities: Priority[] = ['urgent', 'low', 'high', 'medium', 'low'];
     for (let index = 0; index < 25; index += 1) {
       await seedTicket({ status: 'open', priority: priorities[index % priorities.length] });
     }
@@ -165,7 +172,7 @@ describe('sorting and pagination', () => {
         .set(as('admin'))
         .expect(200);
       expect(response.body.pagination).toMatchObject({ page, limit: 10, total: 25, totalPages: 3 });
-      seen.push(...response.body.data.map((ticket) => ticket._id));
+      seen.push(...response.body.data.map((ticket: Row) => ticket._id));
     }
 
     expect(new Set(seen).size).toBe(25);
@@ -173,7 +180,7 @@ describe('sorting and pagination', () => {
   });
 
   test('paginates priority-sorted results too', async () => {
-    for (const priority of ['low', 'low', 'high', 'urgent', 'medium']) {
+    for (const priority of ['low', 'low', 'high', 'urgent', 'medium'] as const) {
       await seedTicket({ priority });
     }
 
@@ -182,7 +189,7 @@ describe('sorting and pagination', () => {
       .set(as('admin'))
       .expect(200);
 
-    expect(page.body.data.map((ticket) => ticket.priority)).toEqual(['medium', 'low']);
+    expect(page.body.data.map((ticket: Row) => ticket.priority)).toEqual(['medium', 'low']);
   });
 });
 
@@ -204,7 +211,8 @@ describe('SLA and status filters', () => {
     });
   });
 
-  const titles = (response) => response.body.data.map((ticket) => ticket.title).sort();
+  const titles = (response: { body: { data: Row[] } }) =>
+    response.body.data.map((ticket: Row) => ticket.title).sort();
 
   test('breached excludes resolved tickets', async () => {
     const response = await request(app)
@@ -267,13 +275,13 @@ describe('search', () => {
     await seedTicket({ title: 'Printer jam', requesterName: 'Jamie' });
 
     const byTitle = await request(app).get('/api/tickets?search=vpn').set(as('admin')).expect(200);
-    expect(byTitle.body.data.map((ticket) => ticket.title)).toEqual(['VPN client fails']);
+    expect(byTitle.body.data.map((ticket: Row) => ticket.title)).toEqual(['VPN client fails']);
 
     const byNumber = await request(app)
       .get('/api/tickets?search=tkt-0002')
       .set(as('admin'))
       .expect(200);
-    expect(byNumber.body.data.map((ticket) => ticket.title)).toEqual(['Printer jam']);
+    expect(byNumber.body.data.map((ticket: Row) => ticket.title)).toEqual(['Printer jam']);
   });
 
   test('treats regex metacharacters as literal text', async () => {
@@ -340,7 +348,7 @@ describe('ticket lifecycle', () => {
       .expect(201);
 
     const { createdAt, dueAt } = response.body.ticket;
-    expect(new Date(dueAt) - new Date(createdAt)).toBe(4 * HOUR);
+    expect(new Date(dueAt).getTime() - new Date(createdAt).getTime()).toBe(4 * HOUR);
   });
 
   test('records who changed what in the activity log', async () => {
@@ -380,7 +388,7 @@ describe('ticket lifecycle', () => {
 
   test('sets resolvedAt on resolution, keeps it on close, and clears it on reopen', async () => {
     const ticket = await seedTicket({ status: 'in-progress' });
-    const patch = (role, body) =>
+    const patch = (role: Account, body: Record<string, unknown>) =>
       request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body).expect(200);
 
     const resolved = (await patch('tech', { status: 'resolved' })).body.ticket;
@@ -395,7 +403,7 @@ describe('ticket lifecycle', () => {
   });
 
   describe('workflow', () => {
-    const patchAs = (role, ticket, body) =>
+    const patchAs = (role: Account, ticket: { id?: unknown }, body: Record<string, unknown>) =>
       request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body);
 
     test('rejects a transition the workflow does not allow with 409 and changes nothing', async () => {
@@ -404,7 +412,7 @@ describe('ticket lifecycle', () => {
       const response = await patchAs('tech', ticket, { status: 'resolved' }).expect(409);
 
       expect(response.body.message).toBe('Cannot move a ticket from open to resolved.');
-      const stored = await Ticket.findById(ticket.id);
+      const stored = await storedTicket(ticket.id);
       expect(stored.status).toBe('open');
       expect(stored.activity).toHaveLength(0);
     });
@@ -414,7 +422,7 @@ describe('ticket lifecycle', () => {
 
       const denied = await patchAs('tech', ticket, { status: 'in-progress' }).expect(403);
       expect(denied.body.message).toMatch(/admin/i);
-      expect((await Ticket.findById(ticket.id)).status).toBe('closed');
+      expect((await storedTicket(ticket.id)).status).toBe('closed');
 
       await patchAs('admin', ticket, { status: 'in-progress' }).expect(200);
     });
@@ -426,7 +434,7 @@ describe('ticket lifecycle', () => {
       const response = await patchAs('tech', ticket, { status: 'in-progress' }).expect(200);
 
       expect(response.body.ticket.resolvedAt).toBeUndefined();
-      const actions = response.body.ticket.activity.map((entry) => entry.action);
+      const actions = response.body.ticket.activity.map((entry: Activity) => entry.action);
       expect(actions).toEqual([
         'status_changed',
         'ticket_resolved',
@@ -442,14 +450,19 @@ describe('ticket lifecycle', () => {
       const response = await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
 
       const resolutions = response.body.ticket.activity.filter(
-        (entry) => entry.action === 'ticket_resolved'
+        (entry: Activity) => entry.action === 'ticket_resolved'
       );
       expect(resolutions).toHaveLength(1);
     });
   });
 
   describe('concurrent edits', () => {
-    const patchWith = (ticket, body, ifMatch, role = 'tech') => {
+    const patchWith = (
+      ticket: { id?: unknown },
+      body: Record<string, unknown>,
+      ifMatch?: string,
+      role: Account = 'tech'
+    ) => {
       const req = request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body);
       return ifMatch === undefined ? req : req.set('If-Match', ifMatch);
     };
@@ -475,9 +488,9 @@ describe('ticket lifecycle', () => {
       const stale = await patchWith(ticket, { status: 'in-progress' }, '"0"').expect(409);
 
       expect(stale.body.message).toMatch(/changed since you loaded/i);
-      const stored = await Ticket.findById(ticket.id);
+      const stored = await storedTicket(ticket.id);
       expect(stored.status).toBe('open');
-      expect(stored.activity.map((entry) => entry.action)).toEqual(['priority_changed']);
+      expect(stored.activity.map((entry: Activity) => entry.action)).toEqual(['priority_changed']);
     });
 
     test('accepts strong, weak and bare version forms and rejects garbage', async () => {
@@ -500,7 +513,7 @@ describe('ticket lifecycle', () => {
       ]);
 
       expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
-      const stored = await Ticket.findById(ticket.id);
+      const stored = await storedTicket(ticket.id);
       expect(stored.__v).toBe(1);
       expect(stored.activity).toHaveLength(1);
       expect(stored.activity[0].from).toBe('open');
@@ -516,11 +529,11 @@ describe('ticket lifecycle', () => {
       ]);
 
       expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
-      const stored = await Ticket.findById(ticket.id);
+      const stored = await storedTicket(ticket.id);
       expect(stored.__v).toBe(3);
       // Each change starts from what the previous one produced: no two entries share a `from`.
       const priorityChanges = stored.activity.filter(
-        (entry) => entry.action === 'priority_changed'
+        (entry: Activity) => entry.action === 'priority_changed'
       );
       expect(priorityChanges).toHaveLength(2);
       expect(priorityChanges[1].from).toBe(priorityChanges[0].to);
@@ -537,7 +550,7 @@ describe('ticket lifecycle', () => {
 
   test('recalculates the SLA due date when priority changes', async () => {
     const ticket = await seedTicket({ priority: 'low' });
-    const original = await Ticket.findById(ticket.id);
+    const original = await storedTicket(ticket.id);
 
     const response = await request(app)
       .patch(`/api/tickets/${ticket.id}`)
@@ -546,7 +559,7 @@ describe('ticket lifecycle', () => {
       .expect(200);
 
     expect(new Date(response.body.ticket.dueAt).getTime()).toBe(
-      original.createdAt.getTime() + 4 * HOUR
+      (original.createdAt as Date).getTime() + 4 * HOUR
     );
   });
 

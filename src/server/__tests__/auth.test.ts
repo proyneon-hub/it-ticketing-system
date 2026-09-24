@@ -1,8 +1,10 @@
-const { authenticateDemoUser, issueToken, verifyToken } = require('../auth');
+import request from 'supertest';
+import app from '../app';
+import { authenticateDemoUser, issueToken, verifyToken, type PublicUser } from '../auth';
 
 describe('demo auth tokens', () => {
   test('authenticates a seeded admin and verifies the issued token', () => {
-    const user = authenticateDemoUser('admin@demo.local', 'AdminPass123!');
+    const user = authenticateDemoUser('admin@demo.local', 'AdminPass123!') as PublicUser;
     const token = issueToken(user);
 
     expect(user.role).toBe('admin');
@@ -19,21 +21,19 @@ describe('demo auth tokens', () => {
 });
 
 describe('signing secret', () => {
-  const request = require('supertest');
-  const app = require('../app');
   const originalEnv = { ...process.env };
 
   afterEach(() => {
     process.env = { ...originalEnv };
   });
 
-  const setProductionSecret = (secret) => {
+  const setProductionSecret = (secret: string | undefined) => {
     process.env.NODE_ENV = 'production';
     if (secret === undefined) delete process.env.AUTH_SECRET;
     else process.env.AUTH_SECRET = secret;
   };
 
-  const demoUser = () => authenticateDemoUser('admin@demo.local', 'AdminPass123!');
+  const demoUser = () => authenticateDemoUser('admin@demo.local', 'AdminPass123!') as PublicUser;
 
   test.each([
     ['unset', undefined],

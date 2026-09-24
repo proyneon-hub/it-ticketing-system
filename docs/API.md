@@ -2,7 +2,7 @@
 
 The complete, interactive reference is served by the app itself at **`/api/docs`** (Swagger UI), and the machine-readable OpenAPI 3.1 document is at **`/api/openapi.json`** (source: [`src/server/openapi.json`](../src/server/openapi.json)). Use **Try it out** with the demo accounts below.
 
-The spec is not just documentation: [`openapi.contract.test.js`](../src/server/__tests__/openapi.contract.test.js) validates every real response against its schemas, so the docs and the API cannot drift apart without a test failing.
+The spec is not just documentation: [`openapi.contract.test.ts`](../src/server/__tests__/openapi.contract.test.ts) validates every real response against its schemas, so the docs and the API cannot drift apart without a test failing.
 
 This page covers the behaviour that is easiest to miss.
 
@@ -84,7 +84,7 @@ stateDiagram-v2
     closed --> in_progress: reopen (admin only)
 ```
 
-The transition table is `statusTransitions` in [`src/shared/ticket-constants.json`](../src/shared/ticket-constants.json). The API enforces it ([`ticketWorkflow.js`](../src/server/domain/ticketWorkflow.js)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
+The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
 Default SLA windows, measured from when the ticket was created:
 

@@ -10,6 +10,7 @@ export default [
   {
     ignores: [
       'dist/**',
+      'dist-server/**',
       'coverage/**',
       'playwright-report*/**',
       'test-results/**',
@@ -31,18 +32,8 @@ export default [
     },
   },
   {
-    files: [
-      'server.js',
-      'api/**/*.js',
-      'scripts/**/*.js',
-      'src/server/**/*.js',
-      'src/shared/**/*.js',
-    ],
+    files: ['api/**/*.js', 'scripts/**/*.js'],
     languageOptions: { sourceType: 'commonjs', globals: globals.node },
-  },
-  {
-    files: ['src/server/**/*.test.js'],
-    languageOptions: { globals: { ...globals.node, ...globals.vitest } },
   },
   {
     files: ['src/client/**/*.{js,jsx}', 'vite.config.mjs', 'vitest.config.mjs'],

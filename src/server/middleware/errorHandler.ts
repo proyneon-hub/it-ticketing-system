@@ -1,11 +1,32 @@
-const { isDatabaseConnectivityError } = require('../db');
-const { HttpError } = require('../errors');
-const { logger } = require('../logger');
+import type { ErrorRequestHandler, RequestHandler } from 'express';
+import { isDatabaseConnectivityError } from '../db';
+import { HttpError, type FieldError } from '../errors';
+import { logger } from '../logger';
+
+interface DescribedError {
+  status: number;
+  message: string;
+  errors?: FieldError[];
+}
+
+// The properties of the errors this handler recognises. Anything else thrown is
+// treated as an unexpected failure.
+interface KnownErrorShape {
+  name?: string;
+  message?: string;
+  code?: number | string;
+  path?: string;
+  errors?: unknown;
+  statusCode?: number;
+  status?: number;
+}
 
 // Turns anything thrown by a route into { status, message, errors? }. Anything
 // unrecognised becomes a generic 500 so internals never reach the client.
-function describeError(error) {
-  if (error.message && error.message.includes('MONGODB_URI is missing')) {
+export function describeError(thrown: unknown): DescribedError {
+  const error = (thrown ?? {}) as KnownErrorShape;
+
+  if (error.message?.includes('MONGODB_URI is missing')) {
     return {
       status: 503,
       message:
@@ -24,10 +45,9 @@ function describeError(error) {
   // Schema validation that slipped past request validation is still the
   // client's mistake, not a server fault.
   if (error.name === 'ValidationError' && error.errors) {
-    const errors = Object.values(error.errors).map((item) => ({
-      field: item.path,
-      message: item.message,
-    }));
+    const errors = Object.values(
+      error.errors as Record<string, { path: string; message: string }>
+    ).map((item) => ({ field: item.path, message: item.message }));
     return { status: 400, message: errors[0]?.message || 'Validation failed.', errors };
   }
 
@@ -42,15 +62,19 @@ function describeError(error) {
   // An HttpError is thrown on purpose with a message written for the client, so
   // it keeps its status even for 5xx. Any other 5xx may leak internals.
   const status = error.statusCode || error.status || 500;
-  if (status < 500 || error instanceof HttpError) {
-    return { status, message: error.message, ...(error.errors ? { errors: error.errors } : {}) };
+  if (status < 500 || thrown instanceof HttpError) {
+    return {
+      status,
+      message: error.message ?? 'Request failed.',
+      ...(Array.isArray(error.errors) ? { errors: error.errors as FieldError[] } : {}),
+    };
   }
 
   return { status: 500, message: 'Internal server error.' };
 }
 
 // Express identifies error handlers by their four arguments, so `_next` must stay.
-function errorHandler(error, req, res, _next) {
+export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   const { status, message, errors } = describeError(error);
   const log = req.log || logger;
 
@@ -59,12 +83,10 @@ function errorHandler(error, req, res, _next) {
   if (status >= 500) log.error({ err: error }, message);
 
   res.status(status).json({ message, ...(errors ? { errors } : {}), requestId: req.id });
-}
+};
 
-function notFoundHandler(req, res) {
+export const notFoundHandler: RequestHandler = (req, res) => {
   res
     .status(404)
     .json({ message: `Route not found: ${req.method} ${req.path}`, requestId: req.id });
-}
-
-module.exports = { describeError, errorHandler, notFoundHandler };
+};

@@ -1,14 +1,14 @@
-const express = require('express');
-const path = require('path');
-const { version } = require('../../package.json');
-const { connectToDatabase, pingDatabase } = require('./db');
-const { hasStrongAuthSecret, resolveTrustProxy } = require('./config');
-const { requestLogger } = require('./logger');
-const { docsRouter } = require('./docs');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const { corsPolicy, securityHeaders } = require('./middleware/security');
-const authRoutes = require('./routes/auth');
-const ticketRoutes = require('./routes/tickets');
+import express from 'express';
+import path from 'path';
+import { version } from '../../package.json';
+import { docsRouter } from './docs';
+import { hasStrongAuthSecret, resolveTrustProxy } from './config';
+import { connectToDatabase, pingDatabase } from './db';
+import { requestLogger } from './logger';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { corsPolicy, securityHeaders } from './middleware/security';
+import authRoutes from './routes/auth';
+import ticketRoutes from './routes/tickets';
 
 const app = express();
 
@@ -73,7 +73,9 @@ app.use('/api', async (_req, _res, next) => {
 app.use('/api', ticketRoutes);
 
 if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(__dirname, '..', '..', 'dist');
+  // The built React app. Relative to the working directory rather than this file,
+  // because the compiled server lives in dist-server/ and would otherwise look in the wrong place.
+  const distPath = process.env.CLIENT_DIST_DIR || path.join(process.cwd(), 'dist');
   app.use(express.static(distPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api')) return next();
@@ -87,4 +89,4 @@ app.use(notFoundHandler);
 // Central error handler: every failure leaves as consistent JSON with a request id.
 app.use(errorHandler);
 
-module.exports = app;
+export default app;

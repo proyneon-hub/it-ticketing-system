@@ -1,6 +1,4 @@
-import shared from '../../shared/ticket-constants.json';
-
-const { adminOnlyTransitions, statusTransitions } = shared;
+import { adminOnlyTransitions, statusTransitions } from '../../shared/ticket-constants';
 
 const isAdminOnly = (from, to) =>
   adminOnlyTransitions.some(([source, target]) => source === from && target === to);

@@ -10,6 +10,10 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     fileParallelism: false,
+    // Worker threads, not forked processes: on Windows the forked workers crashed at
+    // start (exit code 0xC0000409) in roughly one full run in eight. Threads did not in
+    // twelve runs. Linux CI never showed it, so this is a mitigation, not a diagnosis.
+    pool: 'threads',
     testTimeout: 60_000,
     // The first run downloads and starts a MongoDB binary.
     hookTimeout: 300_000,
@@ -18,22 +22,22 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
-          include: ['src/server/**/*.test.js'],
-          exclude: ['src/server/**/*.integration.test.js', 'src/server/**/*.contract.test.js'],
+          include: ['src/server/**/*.test.ts'],
+          exclude: ['src/server/**/*.integration.test.ts', 'src/server/**/*.contract.test.ts'],
         },
       },
       {
         extends: true,
         test: {
           name: 'integration',
-          include: ['src/server/**/*.integration.test.js', 'src/server/**/*.contract.test.js'],
+          include: ['src/server/**/*.integration.test.ts', 'src/server/**/*.contract.test.ts'],
         },
       },
     ],
     coverage: {
       provider: 'v8',
-      include: ['src/server/**/*.js'],
-      exclude: ['src/server/**/*.test.js', 'src/server/__tests__/**'],
+      include: ['src/server/**/*.ts'],
+      exclude: ['src/server/**/*.test.ts', 'src/server/__tests__/**', 'src/server/**/*.d.ts'],
       reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage/server',
       thresholds: { statements: 88, branches: 78, functions: 88, lines: 88 },

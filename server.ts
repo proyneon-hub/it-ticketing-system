@@ -1,8 +1,7 @@
-require('dotenv').config();
-
-const app = require('./src/server/app');
-const { assertProductionConfig } = require('./src/server/config');
-const { logger } = require('./src/server/logger');
+import 'dotenv/config';
+import app from './src/server/app';
+import { assertProductionConfig } from './src/server/config';
+import { logger } from './src/server/logger';
 
 assertProductionConfig();
 
@@ -16,7 +15,7 @@ const server = app.listen(port, () => {
 
 // Surface a clear message when the API port is already taken. Without this,
 // the dev server can fail with a less helpful low-level Node error.
-server.on('error', (error) => {
+server.on('error', (error: NodeJS.ErrnoException) => {
   if (error.code === 'EADDRINUSE') {
     console.error(
       `Port ${port} is already in use. Stop the other API process or set PORT to a free port.`

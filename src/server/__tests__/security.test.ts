@@ -1,10 +1,10 @@
 // None of these paths touch MongoDB, so the real app runs with no mocks and no database.
-const express = require('express');
-const request = require('supertest');
-const app = require('../app');
-const { assertProductionConfig, resolveTrustProxy } = require('../config');
-const { describeError } = require('../middleware/errorHandler');
-const { corsPolicy } = require('../middleware/security');
+import express from 'express';
+import request from 'supertest';
+import app from '../app';
+import { assertProductionConfig, resolveTrustProxy } from '../config';
+import { describeError } from '../middleware/errorHandler';
+import { corsPolicy } from '../middleware/security';
 
 describe('security headers', () => {
   test('sets hardening headers and does not advertise the framework', async () => {
@@ -50,7 +50,7 @@ describe('login rate limiting', () => {
     delete process.env.LOGIN_RATE_LIMIT_MAX;
   });
 
-  const login = (password) =>
+  const login = (password: string) =>
     request(app).post('/api/auth/login').send({ email: 'admin@demo.local', password });
 
   test('throttles repeated failures but never counts successful sign-ins', async () => {
@@ -71,13 +71,17 @@ describe('login rate limiting', () => {
 });
 
 describe('authentication routes', () => {
-  const login = async (email, password) =>
+  const login = async (email: string, password: string) =>
     (await request(app).post('/api/auth/login').send({ email, password }).expect(200)).body.token;
 
   test('lists the demo accounts so reviewers can sign in with one click', async () => {
     const response = await request(app).get('/api/auth/demo-users').expect(200);
 
-    expect(response.body.users.map((user) => user.role)).toEqual(['admin', 'technician', 'user']);
+    expect(response.body.users.map((user: { role: string }) => user.role)).toEqual([
+      'admin',
+      'technician',
+      'user',
+    ]);
     expect(response.body.users[0]).toMatchObject({ email: 'admin@demo.local' });
     expect(response.body.users[0]).not.toHaveProperty('password'); // Only demoPassword is exposed.
   });
@@ -98,7 +102,7 @@ describe('authentication routes', () => {
 });
 
 describe('database unavailable', () => {
-  let originalUri;
+  let originalUri: string | undefined;
 
   beforeAll(() => {
     originalUri = process.env.MONGODB_URI;

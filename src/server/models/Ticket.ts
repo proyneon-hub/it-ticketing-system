@@ -1,15 +1,61 @@
-const mongoose = require('mongoose');
-const {
+import mongoose, { type HydratedDocument, type Model, type Types } from 'mongoose';
+import {
   priorities,
   roles,
   slaHoursByPriority,
   statuses,
   terminalStatuses,
-} = require('../../shared/ticket-constants.json');
+  type Priority,
+  type Role,
+  type Status,
+} from '../../shared/ticket-constants';
+
+// One entry in a ticket's history. Written by the service on every change.
+export interface ActivityEntry {
+  action: string;
+  actorName?: string | undefined;
+  actorRole?: Role | undefined;
+  actorEmail?: string | undefined;
+  from?: string | undefined;
+  to?: string | undefined;
+  detail?: string | undefined;
+  createdAt?: Date | undefined;
+}
+
+// The fields stored for a ticket.
+export interface TicketAttrs {
+  ticketNumber?: string;
+  title: string;
+  description: string;
+  requesterName: string;
+  requesterEmail: string;
+  requesterUserId: string;
+  status: Status;
+  priority: Priority;
+  assignee: string;
+  category: string;
+  dueAt?: Date;
+  resolvedAt?: Date;
+  activity: ActivityEntry[];
+  createdByRole: Role;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// A ticket as read back with .lean(): plain data, with the id and the version
+// (`__v`) Mongoose adds.
+export type TicketRecord = TicketAttrs & {
+  _id: Types.ObjectId;
+  __v?: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TicketDocument = HydratedDocument<TicketAttrs>;
 
 // Mongoose schema for a support ticket. The schema is the source of truth for
 // validation, defaults, and the shape of documents stored in MongoDB.
-const ticketSchema = new mongoose.Schema(
+const ticketSchema = new mongoose.Schema<TicketAttrs>(
   {
     ticketNumber: {
       type: String,
@@ -145,7 +191,7 @@ ticketSchema.pre('validate', function setSlaDueDate(next) {
     this.dueAt = new Date(created.getTime() + slaHoursByPriority[this.priority] * 60 * 60 * 1000);
   }
 
-  if (terminalStatuses.includes(this.status) && !this.resolvedAt) {
+  if ((terminalStatuses as readonly string[]).includes(this.status) && !this.resolvedAt) {
     this.resolvedAt = new Date();
   }
 
@@ -167,4 +213,8 @@ ticketSchema.index({
 
 // Reuse an existing model when hot reloading or serverless functions reload the
 // file. Mongoose throws if the same model name is compiled twice.
-module.exports = mongoose.models.Ticket || mongoose.model('Ticket', ticketSchema);
+const Ticket: Model<TicketAttrs> =
+  (mongoose.models.Ticket as Model<TicketAttrs> | undefined) ||
+  mongoose.model<TicketAttrs>('Ticket', ticketSchema);
+
+export default Ticket;

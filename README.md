@@ -4,7 +4,7 @@
 [![Playwright Regression](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered Node.js/Express API on MongoDB, a React client, an OpenAPI contract, 306 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a React client, an OpenAPI contract, 306 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
 
 **[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
 
@@ -105,7 +105,7 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 | Layer             | Tooling                                                                  |
 | ----------------- | ------------------------------------------------------------------------ |
 | Frontend          | React 18, Vite                                                           |
-| Backend           | Node.js, Express, Mongoose, Zod, helmet, pino                            |
+| Backend           | TypeScript (strict), Express, Mongoose, Zod, helmet, pino                |
 | Database          | MongoDB                                                                  |
 | Contract and docs | OpenAPI 3.1, Swagger UI, Ajv                                             |
 | Tests             | Vitest, Supertest, Testing Library, Playwright (TypeScript), Axe, pytest |
@@ -115,12 +115,12 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 ## Project structure
 
 ```text
-src/server/       Express API: routes, validation, services, models, middleware, OpenAPI spec
+src/server/       TypeScript Express API: routes, validation, services, domain rules, models, middleware, OpenAPI spec
 src/client/       React app: components, hooks, API client, unit tests
-src/shared/       Constants used by both (statuses, priorities, SLA windows)
+src/shared/       Typed constants used by both (statuses, transitions, priorities, SLA windows)
 tests/            Playwright: mocked regression, accessibility, real-stack smoke, page objects
 Support-Ops-Automation/   Python health, sign-in and status-report tooling with its own tests
-api/              Vercel serverless adapters for the Express app
+api/              Vercel serverless adapters that load the compiled Express app
 docs/             Architecture, decisions, test plan, runbook, security notes, defect log
 ```
 
@@ -143,7 +143,7 @@ This is a portfolio demo with in-code demo accounts, not a production identity s
 - Notifications for assignment and SLA risk
 - Saved filters and reporting views
 - A shared rate-limit store for multi-instance deployments
-- Migrating the server and client to TypeScript
+- Migrating the client to TypeScript
 
 ## License
 

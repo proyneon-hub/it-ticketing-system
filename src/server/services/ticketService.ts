@@ -1,13 +1,26 @@
-const Counter = require('../models/Counter');
-const Ticket = require('../models/Ticket');
-const {
+import type { FilterQuery, PipelineStage, UpdateQuery } from 'mongoose';
+import {
   priorities,
   slaHoursByPriority,
   statuses,
   terminalStatuses,
-} = require('../../shared/ticket-constants.json');
-const { HttpError, badRequest, forbidden } = require('../errors');
-const { assertTransition, isReopen } = require('../domain/ticketWorkflow');
+} from '../../shared/ticket-constants';
+import type { TokenPayload } from '../auth';
+import { assertTransition, isReopen } from '../domain/ticketWorkflow';
+import { HttpError, badRequest, forbidden } from '../errors';
+import Counter from '../models/Counter';
+import Ticket, {
+  type ActivityEntry,
+  type TicketAttrs,
+  type TicketDocument,
+  type TicketRecord,
+} from '../models/Ticket';
+import type {
+  CreateTicketInput,
+  ExportQuery,
+  ListQuery,
+  PatchTicketInput,
+} from '../validation/tickets';
 
 const HOUR_MS = 60 * 60 * 1000;
 const DUE_SOON_WINDOW_MS = 24 * HOUR_MS;
@@ -16,25 +29,37 @@ const EXPORT_ROW_LIMIT = 10000;
 // Requesters may only touch descriptive fields. Workflow, assignment, SLA and
 // requester identity fields stay with staff, otherwise a requester could hand
 // their ticket to another user's queue.
-const REQUESTER_EDITABLE_FIELDS = ['title', 'description', 'priority', 'category'];
+const REQUESTER_EDITABLE_FIELDS: readonly string[] = [
+  'title',
+  'description',
+  'priority',
+  'category',
+];
 
-const isTerminal = (status) => terminalStatuses.includes(status);
-const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isTerminal = (status: string): boolean =>
+  (terminalStatuses as readonly string[]).includes(status);
+const escapeRegex = (value: string): string => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const notFound = () => new HttpError(404, 'Ticket not found.');
 
-function assertValidObjectId(id) {
+function assertValidObjectId(id: string): void {
   if (!/^[a-f\d]{24}$/i.test(String(id))) {
     throw badRequest('Invalid ticket id.');
   }
 }
 
+type TicketFilter = FilterQuery<TicketAttrs>;
+
 // Requesters only ever see tickets raised under their own email address.
-function applyRoleScope(filter, user) {
+function applyRoleScope(filter: TicketFilter, user: TokenPayload): TicketFilter {
   return user.role === 'user' ? { ...filter, requesterEmail: user.email } : filter;
 }
 
-function buildTicketFilter(query, user, now = new Date()) {
-  const filter = {};
+export function buildTicketFilter(
+  query: Partial<ListQuery>,
+  user: TokenPayload,
+  now = new Date()
+): TicketFilter {
+  const filter: TicketFilter = {};
 
   if (query.status) filter.status = query.status;
   if (query.priority) filter.priority = query.priority;
@@ -45,7 +70,7 @@ function buildTicketFilter(query, user, now = new Date()) {
     // filter instead of overwriting it: asking for "resolved AND breached"
     // matches nothing rather than silently ignoring the status.
     if (!query.status) {
-      filter.status = { $nin: terminalStatuses };
+      filter.status = { $nin: [...terminalStatuses] };
     } else if (isTerminal(query.status)) {
       filter.status = { $in: [] };
     }
@@ -73,17 +98,21 @@ function buildTicketFilter(query, user, now = new Date()) {
 }
 
 // _id is the tie-breaker so pages stay stable when many tickets share a status or priority.
-function sortDirection(query) {
+function sortDirection(query: Pick<ListQuery, 'sortOrder'>): 1 | -1 {
   return query.sortOrder === 'asc' ? 1 : -1;
 }
 
-function findSortedTickets(filter, query, { skip = 0, limit } = {}) {
+async function findSortedTickets(
+  filter: TicketFilter,
+  query: Pick<ListQuery, 'sortBy' | 'sortOrder'>,
+  { skip = 0, limit }: { skip?: number; limit?: number } = {}
+): Promise<TicketRecord[]> {
   const direction = sortDirection(query);
 
   if (query.sortBy === 'priority') {
     // Priority is an enum, so a plain string sort would order it alphabetically
     // (high, low, medium, urgent). Rank it by its position in the priority list instead.
-    const stages = [
+    const stages: PipelineStage[] = [
       { $match: filter },
       { $addFields: { priorityRank: { $indexOfArray: [priorities, '$priority'] } } },
       { $sort: { priorityRank: direction, _id: direction } },
@@ -91,17 +120,17 @@ function findSortedTickets(filter, query, { skip = 0, limit } = {}) {
       ...(limit ? [{ $limit: limit }] : []),
       { $project: { priorityRank: 0 } },
     ];
-    return Ticket.aggregate(stages);
+    return Ticket.aggregate<TicketRecord>(stages);
   }
 
   let cursor = Ticket.find(filter)
     .sort({ [query.sortBy]: direction, _id: direction })
     .skip(skip);
   if (limit) cursor = cursor.limit(limit);
-  return cursor.lean();
+  return cursor.lean<TicketRecord[]>();
 }
 
-async function listTickets(user, query) {
+export async function listTickets(user: TokenPayload, query: ListQuery) {
   const filter = buildTicketFilter(query, user);
   const skip = (query.page - 1) * query.limit;
 
@@ -121,36 +150,59 @@ async function listTickets(user, query) {
   };
 }
 
-async function getTicket(user, id) {
+export async function getTicket(user: TokenPayload, id: string): Promise<TicketRecord> {
   assertValidObjectId(id);
-  const ticket = await Ticket.findOne(applyRoleScope({ _id: id }, user)).lean();
+  const ticket = await Ticket.findOne(applyRoleScope({ _id: id }, user)).lean<TicketRecord>();
   if (!ticket) throw notFound();
   return ticket;
 }
 
-async function getStats(user) {
+interface GroupCount {
+  _id: string;
+  count: number;
+}
+
+export async function getStats(user: TokenPayload) {
   const baseMatch = applyRoleScope({}, user);
-  const openMatch = { ...baseMatch, status: { $nin: terminalStatuses } };
+  const openMatch: TicketFilter = { ...baseMatch, status: { $nin: [...terminalStatuses] } };
   const now = new Date();
   const dueSoon = new Date(now.getTime() + DUE_SOON_WINDOW_MS);
 
   const [statusCounts, priorityCounts, total, breached, dueSoonCount] = await Promise.all([
-    Ticket.aggregate([{ $match: baseMatch }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
-    Ticket.aggregate([{ $match: baseMatch }, { $group: { _id: '$priority', count: { $sum: 1 } } }]),
+    Ticket.aggregate<GroupCount>([
+      { $match: baseMatch },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]),
+    Ticket.aggregate<GroupCount>([
+      { $match: baseMatch },
+      { $group: { _id: '$priority', count: { $sum: 1 } } },
+    ]),
     Ticket.countDocuments(baseMatch),
     Ticket.countDocuments({ ...openMatch, dueAt: { $lt: now } }),
     Ticket.countDocuments({ ...openMatch, dueAt: { $gte: now, $lte: dueSoon } }),
   ]);
 
-  const byStatus = Object.fromEntries(statuses.map((item) => [item, 0]));
-  const byPriority = Object.fromEntries(priorities.map((item) => [item, 0]));
+  const byStatus: Record<string, number> = Object.fromEntries(statuses.map((item) => [item, 0]));
+  const byPriority: Record<string, number> = Object.fromEntries(
+    priorities.map((item) => [item, 0])
+  );
   for (const row of statusCounts) byStatus[row._id] = row.count;
   for (const row of priorityCounts) byPriority[row._id] = row.count;
 
   return { total, byStatus, byPriority, sla: { breached, dueSoon: dueSoonCount } };
 }
 
-function activityEntry(user, { action, from, to, detail }) {
+interface ActivityInput {
+  action: string;
+  from?: unknown;
+  to?: unknown;
+  detail?: string;
+}
+
+function activityEntry(
+  user: TokenPayload,
+  { action, from, to, detail }: ActivityInput
+): ActivityEntry {
   return {
     action,
     actorName: user.name,
@@ -162,15 +214,20 @@ function activityEntry(user, { action, from, to, detail }) {
   };
 }
 
-function activityEntriesForPatch(user, existing, payload) {
-  const trackedFields = [
-    ['status', 'status_changed'],
-    ['priority', 'priority_changed'],
-    ['assignee', 'assignee_changed'],
-  ];
+const TRACKED_FIELDS = [
+  ['status', 'status_changed'],
+  ['priority', 'priority_changed'],
+  ['assignee', 'assignee_changed'],
+] as const;
 
-  const entries = trackedFields
-    .filter(([field]) => Object.prototype.hasOwnProperty.call(payload, field))
+function activityEntriesForPatch(
+  user: TokenPayload,
+  existing: TicketRecord,
+  payload: PatchTicketInput
+): ActivityEntry[] {
+  const entries = TRACKED_FIELDS.filter(([field]) =>
+    Object.prototype.hasOwnProperty.call(payload, field)
+  )
     .filter(([field]) => String(existing[field] || '') !== String(payload[field] || ''))
     .map(([field, action]) =>
       activityEntry(user, { action, from: existing[field], to: payload[field] })
@@ -199,7 +256,7 @@ function activityEntriesForPatch(user, existing, payload) {
 }
 
 // Atomic $inc keeps ticket numbers unique and gap-free under concurrent creates.
-async function generateTicketNumber() {
+async function generateTicketNumber(): Promise<string> {
   const counter = await Counter.findByIdAndUpdate(
     'ticket',
     { $inc: { seq: 1 } },
@@ -208,8 +265,11 @@ async function generateTicketNumber() {
   return `TKT-${String(counter.seq).padStart(4, '0')}`;
 }
 
-async function createTicket(user, payload) {
-  const data = { ...payload };
+export async function createTicket(
+  user: TokenPayload,
+  payload: CreateTicketInput
+): Promise<TicketDocument> {
+  const data: Partial<TicketAttrs> = { ...payload };
 
   if (user.role === 'user') {
     // Requesters cannot pick the requester identity, workflow state or owner.
@@ -229,7 +289,11 @@ async function createTicket(user, payload) {
   return Ticket.create(data);
 }
 
-function assertCanMutateTicket(user, ticket, patch) {
+function assertCanMutateTicket(
+  user: TokenPayload,
+  ticket: TicketRecord,
+  patch: PatchTicketInput
+): void {
   if (user.role !== 'user') return;
 
   if (String(ticket.requesterEmail || '').toLowerCase() !== user.email.toLowerCase()) {
@@ -244,11 +308,19 @@ function assertCanMutateTicket(user, ticket, patch) {
   }
 }
 
+interface TimestampChanges {
+  set: { resolvedAt?: Date; dueAt?: Date };
+  unset: { resolvedAt?: 1 };
+}
+
 // Derives the resolvedAt / dueAt side effects of a change so the timestamps
 // always agree with the ticket's current workflow state.
-function deriveTimestampChanges(existing, payload) {
-  const set = {};
-  const unset = {};
+export function deriveTimestampChanges(
+  existing: Pick<TicketRecord, 'status' | 'priority' | 'resolvedAt'> & { createdAt?: Date },
+  payload: PatchTicketInput
+): TimestampChanges {
+  const set: TimestampChanges['set'] = {};
+  const unset: TimestampChanges['unset'] = {};
 
   if (payload.status) {
     if (isTerminal(payload.status)) {
@@ -268,7 +340,8 @@ function deriveTimestampChanges(existing, payload) {
 }
 
 // A version filter that also matches documents written before versioning existed.
-const versionFilter = (version) => (version === undefined ? { $exists: false } : version);
+const versionFilter = (version: number | undefined) =>
+  version === undefined ? { $exists: false } : version;
 
 const versionConflict = () =>
   new HttpError(409, 'This ticket changed since you loaded it. Reload it and try again.');
@@ -282,14 +355,19 @@ const MAX_UNCONDITIONAL_ATTEMPTS = 3;
 // change (and the `from` values in its activity entries) is never built from a
 // stale copy. `expectedVersion` is the caller's If-Match: when it does not match
 // the current version the update is refused with 409.
-async function updateTicket(user, id, payload, { expectedVersion } = {}) {
+export async function updateTicket(
+  user: TokenPayload,
+  id: string,
+  payload: PatchTicketInput,
+  { expectedVersion }: { expectedVersion?: number | undefined } = {}
+): Promise<TicketDocument> {
   assertValidObjectId(id);
   if (Object.keys(payload).length === 0) {
     throw badRequest('No supported ticket fields were provided.');
   }
 
   for (let attempt = 1; ; attempt += 1) {
-    const existing = await Ticket.findById(id).lean();
+    const existing = await Ticket.findById(id).lean<TicketRecord>();
     if (!existing) throw notFound();
 
     assertCanMutateTicket(user, existing, payload);
@@ -303,7 +381,7 @@ async function updateTicket(user, id, payload, { expectedVersion } = {}) {
     }
 
     const { set, unset } = deriveTimestampChanges(existing, payload);
-    const update = {
+    const update: UpdateQuery<TicketAttrs> = {
       $set: { ...payload, ...set },
       $push: { activity: { $each: activityEntriesForPatch(user, existing, payload) } },
       $inc: { __v: 1 },
@@ -325,7 +403,7 @@ async function updateTicket(user, id, payload, { expectedVersion } = {}) {
   }
 }
 
-async function deleteTicket(id) {
+export async function deleteTicket(id: string): Promise<void> {
   assertValidObjectId(id);
   const ticket = await Ticket.findByIdAndDelete(id);
   if (!ticket) throw notFound();
@@ -333,7 +411,7 @@ async function deleteTicket(id) {
 
 // Spreadsheet apps execute cells that start with = + - @, so text a requester
 // controls (like a title) is prefixed with an apostrophe to keep it inert.
-function csvEscape(value) {
+export function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return '';
   let text = value instanceof Date ? value.toISOString() : String(value);
   if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
@@ -353,7 +431,7 @@ const CSV_HEADER = [
   'SLA Breached',
 ];
 
-function ticketToCsvRow(ticket, now = Date.now()) {
+function ticketToCsvRow(ticket: TicketRecord, now = Date.now()): string[] {
   const dueAt = ticket.dueAt ? new Date(ticket.dueAt) : null;
   const isSlaBreached = dueAt && !isTerminal(ticket.status) && dueAt.getTime() < now;
 
@@ -371,22 +449,9 @@ function ticketToCsvRow(ticket, now = Date.now()) {
   ].map(csvEscape);
 }
 
-async function exportTicketsCsv(user, query) {
+export async function exportTicketsCsv(user: TokenPayload, query: ExportQuery): Promise<string> {
   const filter = buildTicketFilter(query, user);
   const tickets = await findSortedTickets(filter, query, { limit: EXPORT_ROW_LIMIT });
   const rows = [CSV_HEADER.map(csvEscape), ...tickets.map((ticket) => ticketToCsvRow(ticket))];
   return rows.map((row) => row.join(',')).join('\n');
 }
-
-module.exports = {
-  buildTicketFilter,
-  createTicket,
-  csvEscape,
-  deleteTicket,
-  deriveTimestampChanges,
-  exportTicketsCsv,
-  getStats,
-  getTicket,
-  listTickets,
-  updateTicket,
-};

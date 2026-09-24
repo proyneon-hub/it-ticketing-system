@@ -36,7 +36,7 @@ flowchart LR
 | Services           | `services/ticketService.js`           | Business rules: role scoping, filters, SLA, timestamps, activity log, CSV  |
 | Models             | `models/`                             | Mongoose schemas, defaults, indexes                                        |
 | Auth               | `auth.js`                             | Signed tokens and role middleware                                          |
-| Shared constants   | `src/shared/ticket-constants.json`    | Statuses, priorities, SLA windows: read by the API, the models and the UI  |
+| Shared constants   | `src/shared/ticket-constants.ts`      | Statuses, priorities, SLA windows: read by the API, the models and the UI  |
 | API contract       | `openapi.json`, `docs.js`             | OpenAPI 3.1 document and the Swagger UI that serves it                     |
 
 Errors are thrown as `HttpError` (or by Mongoose) and leave through one handler, so every failure has the same JSON shape and a request id.
@@ -82,7 +82,7 @@ stateDiagram-v2
     closed --> in_progress: reopen (admin only)
 ```
 
-The transition table is `statusTransitions` in [`src/shared/ticket-constants.json`](../src/shared/ticket-constants.json). The API enforces it ([`ticketWorkflow.js`](../src/server/domain/ticketWorkflow.js)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
+The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
 Resolved and closed tickets are terminal: they stop the SLA clock. Each priority has an SLA window (urgent 4h, high 24h, medium 48h, low 72h) that sets the due date.
 

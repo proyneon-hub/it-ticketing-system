@@ -6,8 +6,11 @@ FROM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY index.html vite.config.mjs ./
+COPY index.html vite.config.mjs tsconfig.server.json ./
+COPY server.ts ./
 COPY src ./src
+COPY scripts/seed.ts ./scripts/seed.ts
+# Builds the React app to dist/ and compiles the API to dist-server/.
 RUN npm run build
 
 # Stage 2: production dependencies only, so the runtime image carries no test
@@ -29,10 +32,8 @@ ARG GIT_COMMIT=unknown
 ENV GIT_COMMIT=${GIT_COMMIT}
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
-COPY --chown=node:node package.json server.js ./
-COPY --chown=node:node src/server ./src/server
-COPY --chown=node:node src/shared ./src/shared
-COPY --chown=node:node scripts/seed.js ./scripts/seed.js
+COPY --chown=node:node package.json ./
+COPY --from=build --chown=node:node /app/dist-server ./dist-server
 COPY --from=build --chown=node:node /app/dist ./dist
 
 # Never run as root inside the container.
@@ -43,4 +44,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/api/ready" || exit 1
 
-CMD ["node", "server.js"]
+# Source maps make production stack traces point at the TypeScript.
+CMD ["node", "--enable-source-maps", "dist-server/server.js"]

@@ -41,7 +41,7 @@ LIVE_SMOKE_ENABLED=true LIVE_BASE_URL=http://127.0.0.1:5000 E2E_ADMIN_EMAIL=admi
 docker compose down --volumes
 ```
 
-Without Docker, `npm run dev:db` starts a throwaway MongoDB, and `npm run build` followed by `NODE_ENV=production AUTH_SECRET=local-smoke-secret-at-least-32-chars node server.js` serves the production build the same way the image does.
+Without Docker, `npm run dev:db` starts a throwaway MongoDB, and `npm run build` followed by `NODE_ENV=production AUTH_SECRET=local-smoke-secret-at-least-32-chars npm start` serves the production build the same way the image does.
 
 Without the enable flag, every test skips with a safety reason.
 

@@ -21,7 +21,7 @@ Demo users are defined in code and receive HMAC-SHA256 signed bearer tokens that
 | Information exposure | Unexpected errors return a generic 500; stacks stay in the server log; headers and tokens are never logged                                                        |
 | Request size         | JSON bodies are capped at 1 MB                                                                                                                                    |
 | Traceability         | Every request has an id that appears in the response, the logs and any error                                                                                      |
-| Configuration        | Production refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters: `server.js` fails to start, and serverless functions answer 503       |
+| Configuration        | Production refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters: `server.ts` fails to start, and serverless functions answer 503       |
 | Container            | The image runs as the unprivileged `node` user, contains production dependencies only, and MongoDB is published to localhost only in Compose                      |
 | Supply chain         | `npm audit` gates CI (high or critical production findings fail the build), and Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker        |
 

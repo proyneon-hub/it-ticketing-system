@@ -1,24 +1,23 @@
-const { z } = require('zod');
-const {
-  statuses,
-  priorities,
-  slaFilters,
-  sortFields,
-} = require('../../shared/ticket-constants.json');
-const { badRequest } = require('../errors');
+import { z } from 'zod';
+import { priorities, slaFilters, sortFields, statuses } from '../../shared/ticket-constants';
+import { badRequest } from '../errors';
 
 // Query-string and JSON values arrive untrusted. These schemas are the single
 // place where they are trimmed, coerced, bounded, and rejected with a 400.
 
-const blankToUndefined = (value) => {
+const blankToUndefined = (value: unknown): unknown => {
   if (typeof value !== 'string') return value;
   const trimmed = value.trim();
   return trimmed === '' ? undefined : trimmed;
 };
 
-const optionalFilter = (schema) => z.preprocess(blankToUndefined, schema.optional());
+const optionalFilter = <T extends z.ZodType>(schema: T) =>
+  z.preprocess(blankToUndefined, schema.optional());
 
-function integerParam(name, { defaultValue, min, max }) {
+function integerParam(
+  name: string,
+  { defaultValue, min, max }: { defaultValue: number; min: number; max: number }
+) {
   const error = `${name} must be an integer between ${min} and ${max}.`;
   return z.preprocess((value) => {
     const cleaned = blankToUndefined(value);
@@ -55,7 +54,7 @@ const listQuerySchema = z.object({
 // Exports always return the whole filtered set, so paging parameters are ignored.
 const exportQuerySchema = listQuerySchema.omit({ page: true, limit: true });
 
-const text = (label, max) =>
+const text = (label: string, max: number) =>
   z
     .string({ error: `${label} must be text.` })
     .trim()
@@ -93,7 +92,12 @@ const ticketFields = {
 const createTicketSchema = z.object(ticketFields).partial().extend({ title: ticketFields.title });
 const patchTicketSchema = z.object(ticketFields).partial();
 
-function parseOrThrow(schema, input) {
+export type ListQuery = z.output<typeof listQuerySchema>;
+export type ExportQuery = z.output<typeof exportQuerySchema>;
+export type CreateTicketInput = z.output<typeof createTicketSchema>;
+export type PatchTicketInput = z.output<typeof patchTicketSchema>;
+
+function parseOrThrow<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
   const result = schema.safeParse(input);
 
   if (!result.success) {
@@ -101,26 +105,30 @@ function parseOrThrow(schema, input) {
       field: issue.path.join('.') || undefined,
       message: issue.message,
     }));
-    throw badRequest(errors[0].message, errors);
+    throw badRequest(errors[0]?.message ?? 'Invalid request.', errors);
   }
 
-  return Object.fromEntries(Object.entries(result.data).filter(([, value]) => value !== undefined));
+  // Optional fields that were not sent come back as undefined; drop them so the
+  // result only holds what the caller actually provided.
+  return Object.fromEntries(
+    Object.entries(result.data as object).filter(([, value]) => value !== undefined)
+  ) as z.output<S>;
 }
+
+export const parseListQuery = (query: unknown): ListQuery => parseOrThrow(listQuerySchema, query);
+export const parseExportQuery = (query: unknown): ExportQuery =>
+  parseOrThrow(exportQuerySchema, query);
+export const parseCreateTicket = (body: unknown): CreateTicketInput =>
+  parseOrThrow(createTicketSchema, body);
+export const parsePatchTicket = (body: unknown): PatchTicketInput =>
+  parseOrThrow(patchTicketSchema, body);
 
 // If-Match carries the ticket version the client last saw: "3", W/"3" or a bare 3.
 // `*` (any current version) and a missing header both mean "no precondition".
-function parseIfMatch(header) {
+export function parseIfMatch(header: string | undefined): number | undefined {
   if (header === undefined || header.trim() === '*') return undefined;
 
   const match = /^(?:W\/)?"?(\d+)"?$/.exec(header.trim());
   if (!match) throw badRequest('If-Match must be a ticket version such as "3".');
   return Number(match[1]);
 }
-
-module.exports = {
-  parseIfMatch,
-  parseListQuery: (query) => parseOrThrow(listQuerySchema, query),
-  parseExportQuery: (query) => parseOrThrow(exportQuerySchema, query),
-  parseCreateTicket: (body) => parseOrThrow(createTicketSchema, body),
-  parsePatchTicket: (body) => parseOrThrow(patchTicketSchema, body),
-};

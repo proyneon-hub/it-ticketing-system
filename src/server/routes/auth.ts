@@ -1,13 +1,13 @@
-const express = require('express');
-const { authenticateDemoUser, demoUsers, issueToken, requireAuth } = require('../auth');
+import { Router } from 'express';
+import { authenticateDemoUser, demoUsers, issueToken, requireAuth } from '../auth';
+import { unauthorized } from '../errors';
+import { loginRateLimiter } from '../middleware/security';
 
-const { unauthorized } = require('../errors');
-const { loginRateLimiter } = require('../middleware/security');
-
-const router = express.Router();
+const router = Router();
 
 router.post('/auth/login', loginRateLimiter(), (req, res) => {
-  const user = authenticateDemoUser(req.body.email, req.body.password);
+  const { email, password } = (req.body ?? {}) as { email?: unknown; password?: unknown };
+  const user = authenticateDemoUser(email, password);
 
   if (!user) {
     throw unauthorized('Invalid email or password.');
@@ -29,4 +29,4 @@ router.get('/auth/demo-users', (_req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

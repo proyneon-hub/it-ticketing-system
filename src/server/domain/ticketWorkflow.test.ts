@@ -1,10 +1,10 @@
-const { allowedNextStatuses, assertTransition, isReopen } = require('./ticketWorkflow');
+import { allowedNextStatuses, assertTransition, isReopen } from './ticketWorkflow';
 
 const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
 
 // Written out by hand, not derived from the shared table, so editing the table
 // without meaning to fails here.
-const legal = {
+const legal: Record<string, string[]> = {
   open: ['assigned', 'in-progress', 'closed'],
   assigned: ['in-progress', 'open'],
   'in-progress': ['resolved', 'assigned'],
@@ -13,7 +13,7 @@ const legal = {
 };
 const adminOnly = new Set(['closed->in-progress']);
 
-const pairs = statuses.flatMap((from) => statuses.map((to) => [from, to]));
+const pairs = statuses.flatMap((from) => statuses.map((to): [string, string] => [from, to]));
 
 describe('assertTransition', () => {
   test.each(pairs)('%s -> %s as a technician', (from, to) => {

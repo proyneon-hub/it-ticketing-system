@@ -1,10 +1,13 @@
-const cors = require('cors');
-const helmet = require('helmet');
-const { rateLimit } = require('express-rate-limit');
+import cors from 'cors';
+import type { RequestHandler } from 'express';
+import { rateLimit } from 'express-rate-limit';
+import helmet from 'helmet';
+
+type Env = Record<string, string | undefined>;
 
 // Security headers. `upgrade-insecure-requests` is dropped from the default CSP
 // because it breaks plain-http localhost and Docker runs in Safari.
-function securityHeaders() {
+export function securityHeaders(): RequestHandler {
   return helmet({
     contentSecurityPolicy: {
       useDefaults: true,
@@ -16,7 +19,7 @@ function securityHeaders() {
 // The app and API are served from one origin (the Vite dev proxy, Docker and
 // Vercel all preserve that), so cross-origin access is off unless explicitly
 // allowed with CORS_ORIGINS="https://a.example,https://b.example".
-function corsPolicy(env = process.env) {
+export function corsPolicy(env: Env = process.env): RequestHandler {
   const origins = (env.CORS_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim())
@@ -28,7 +31,7 @@ function corsPolicy(env = process.env) {
 // Counts only failed sign-ins, so demo visitors switching between accounts are
 // never locked out while password guessing is still throttled. The store is
 // per-instance memory: best effort on serverless, exact on a single container.
-function loginRateLimiter() {
+export function loginRateLimiter(): RequestHandler {
   return rateLimit({
     windowMs: Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     // A function, so the limit is read on every request (tests change it at runtime).
@@ -38,12 +41,11 @@ function loginRateLimiter() {
     legacyHeaders: false,
     // Tests log in constantly; they opt in by setting LOGIN_RATE_LIMIT_MAX.
     skip: () => process.env.NODE_ENV === 'test' && !process.env.LOGIN_RATE_LIMIT_MAX,
-    handler: (req, res) =>
+    handler: (req, res) => {
       res.status(429).json({
         message: 'Too many failed sign-in attempts. Try again later.',
         requestId: req.id,
-      }),
+      });
+    },
   });
 }
-
-module.exports = { corsPolicy, loginRateLimiter, securityHeaders };
