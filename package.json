@@ -45,6 +45,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "free:api-port": "powershell -ExecutionPolicy Bypass -File scripts/free-api-port.ps1",
     "seed": "tsx scripts/seed.ts",
+    "worker": "tsx scripts/worker.ts",
     "test:api:unit": "vitest run -c vitest.server.config.mjs --project unit",
     "test:integration": "vitest run -c vitest.server.config.mjs --project integration",
     "build:client": "vite build",

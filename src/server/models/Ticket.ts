@@ -94,6 +94,12 @@ const ticketSchema = new mongoose.Schema<TicketAttrs>(
     resolvedAt: {
       type: Date,
     },
+    slaAtRiskAt: {
+      type: Date,
+    },
+    slaBreachedAt: {
+      type: Date,
+    },
     activity: [
       {
         action: {
@@ -108,7 +114,7 @@ const ticketSchema = new mongoose.Schema<TicketAttrs>(
         },
         actorRole: {
           type: String,
-          enum: roles,
+          enum: [...roles, 'system'],
           default: 'user',
         },
         actorEmail: {

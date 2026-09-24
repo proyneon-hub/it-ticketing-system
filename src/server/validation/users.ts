@@ -1,8 +1,10 @@
 import { ValidationError } from '../errors';
 import {
   listAuditQuerySchema,
+  listOutboxQuerySchema,
   patchUserSchema,
   type ListAuditQuery,
+  type ListOutboxQuery,
   type PatchUserInput,
 } from '../../shared/schemas';
 import type { z } from 'zod';
@@ -20,5 +22,7 @@ function parse<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
 }
 
 export const parsePatchUser = (body: unknown): PatchUserInput => parse(patchUserSchema, body);
+export const parseOutboxQuery = (query: unknown): ListOutboxQuery =>
+  parse(listOutboxQuerySchema, query);
 export const parseAuditQuery = (query: unknown): ListAuditQuery =>
   parse(listAuditQuerySchema, query);

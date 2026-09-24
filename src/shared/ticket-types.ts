@@ -4,7 +4,8 @@ import type { CommentVisibility, Priority, Role, Status } from './ticket-constan
 export interface ActivityEntry {
   action: string;
   actorName?: string | undefined;
-  actorRole?: Role | undefined;
+  // 'system' for changes made by an automated job rather than a person.
+  actorRole?: Role | 'system' | undefined;
   actorEmail?: string | undefined;
   from?: string | undefined;
   to?: string | undefined;
@@ -29,6 +30,9 @@ export interface TicketAttrs {
   category: string;
   dueAt?: Date;
   resolvedAt?: Date;
+  // Set once by the SLA escalation job, so running it again changes nothing.
+  slaAtRiskAt?: Date;
+  slaBreachedAt?: Date;
   activity: ActivityEntry[];
   createdByRole: Role;
   createdAt?: Date;
@@ -39,12 +43,14 @@ export interface TicketAttrs {
 // id and the version (`__v`), which clients send back as If-Match.
 export interface Ticket extends Omit<
   TicketAttrs,
-  'dueAt' | 'resolvedAt' | 'createdAt' | 'updatedAt' | 'activity'
+  'dueAt' | 'resolvedAt' | 'slaAtRiskAt' | 'slaBreachedAt' | 'createdAt' | 'updatedAt' | 'activity'
 > {
   _id: string;
   __v: number;
   dueAt: string;
   resolvedAt?: string;
+  slaAtRiskAt?: string;
+  slaBreachedAt?: string;
   createdAt: string;
   updatedAt: string;
   activity: (Omit<ActivityEntry, 'createdAt'> & { createdAt?: string })[];

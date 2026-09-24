@@ -47,6 +47,10 @@ services:
       # out of the box. Set AUTH_SECRET for anything shared.
       AUTH_SECRET: ${AUTH_SECRET:-local-compose-demo-secret-do-not-reuse}
       MONGODB_URI: mongodb://mongo:27017/it_ticketing?replicaSet=rs0
+      # Enables POST /api/jobs/* for a scheduler (32+ characters). Unset, the jobs are off.
+      CRON_SECRET: ${CRON_SECRET:-}
+      # Notifications (Discord, Slack or any JSON endpoint). Unset, nothing is recorded or sent.
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
     ports:
       - '5000:5000'
     # Health is defined by the image's HEALTHCHECK (/api/ready).
@@ -61,6 +65,23 @@ services:
     environment:
       MONGODB_URI: mongodb://mongo:27017/it_ticketing?replicaSet=rs0
     command: ['node', 'dist-server/scripts/seed.js']
+
+  # Runs the scheduled jobs (SLA escalation and webhook delivery) on a timer, so a container
+  # deployment needs no external scheduler:  docker compose --profile worker up worker
+  worker:
+    image: it-ticketing-system:local
+    profiles: ['worker']
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/it_ticketing?replicaSet=rs0
+      # Notifications are off unless a webhook is set: WEBHOOK_URL=https://discord.com/api/webhooks/...
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WORKER_INTERVAL_MS: ${WORKER_INTERVAL_MS:-30000}
+    command: ['node', '--enable-source-maps', 'dist-server/scripts/worker.js']
 
 volumes:
   mongo-data:

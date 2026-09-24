@@ -30,6 +30,10 @@
     {
       "name": "Administration",
       "description": "Admin-only: who has which role, and the security audit log."
+    },
+    {
+      "name": "Jobs",
+      "description": "Scheduled work, called by a scheduler with the CRON_SECRET bearer token. Safe to call at any time and as often as you like."
     }
   ],
   "paths": {
@@ -832,6 +836,193 @@
           }
         }
       }
+    },
+    "/jobs/sla-escalation": {
+      "post": {
+        "tags": ["Jobs"],
+        "summary": "Run SLA escalation",
+        "description": "Marks unresolved tickets that have passed their deadline (raising the priority one step, without moving the deadline) or are within 24 hours of it. Each step is recorded once on the ticket, so running it again changes nothing.",
+        "operationId": "runSlaEscalation",
+        "security": [
+          {
+            "cronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the run did.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EscalationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "description": "`JOBS_NOT_CONFIGURED`: CRON_SECRET is missing or shorter than 32 characters, so the jobs are off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/jobs/outbox-delivery": {
+      "post": {
+        "tags": ["Jobs"],
+        "summary": "Deliver outbox events",
+        "description": "Sends events that are due to the configured webhook, retrying failures with exponential backoff. Does nothing when no webhook is configured.",
+        "operationId": "runOutboxDelivery",
+        "security": [
+          {
+            "cronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the run did.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeliveryResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "description": "`JOBS_NOT_CONFIGURED`: CRON_SECRET is missing or shorter than 32 characters, so the jobs are off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outbox": {
+      "get": {
+        "tags": ["Administration"],
+        "summary": "List outbox events",
+        "description": "Events waiting to be sent to the webhook, newest first. Filter by `status=dead` to see what gave up.",
+        "operationId": "listOutbox",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/OutboxStatus"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboxList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/outbox/{id}/retry": {
+      "post": {
+        "tags": ["Administration"],
+        "summary": "Retry a dead event",
+        "description": "Puts a dead event back in the queue with a fresh set of attempts. Recorded in the audit log.",
+        "operationId": "retryOutboxEvent",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{24}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event, pending again.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboxEventEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -840,6 +1031,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Token returned by `POST /auth/login`."
+      },
+      "cronAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The `CRON_SECRET` shared with the scheduler. Not a user token."
       }
     },
     "parameters": {
@@ -1103,6 +1299,7 @@
               "VALIDATION_FAILED",
               "UNAUTHORIZED",
               "AUTH_NOT_CONFIGURED",
+              "JOBS_NOT_CONFIGURED",
               "FORBIDDEN",
               "NOT_FOUND",
               "INVALID_TRANSITION",
@@ -1221,7 +1418,7 @@
       },
       "ActivityEntry": {
         "type": "object",
-        "required": ["action", "actorName", "actorRole", "actorEmail", "createdAt"],
+        "required": ["action", "actorName", "actorRole", "createdAt"],
         "properties": {
           "action": {
             "type": "string",
@@ -1231,10 +1428,13 @@
             "type": "string"
           },
           "actorRole": {
-            "$ref": "#/components/schemas/Role"
+            "type": "string",
+            "enum": ["admin", "technician", "user", "system"],
+            "description": "`system` for a change made by an automated job (such as SLA escalation) rather than a person."
           },
           "actorEmail": {
-            "type": "string"
+            "type": "string",
+            "description": "Absent for a change made by an automated job."
           },
           "from": {
             "type": "string"
@@ -1340,6 +1540,16 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "slaAtRiskAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the SLA job first saw the ticket within 24 hours of its deadline. Set once."
+          },
+          "slaBreachedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the SLA job first saw the deadline pass, and raised the priority one step. Set once."
           }
         }
       },
@@ -1574,7 +1784,8 @@
           "refresh_reuse",
           "role_changed",
           "ticket_deleted",
-          "permission_denied"
+          "permission_denied",
+          "outbox_retried"
         ]
       },
       "AuditEvent": {
@@ -1803,6 +2014,129 @@
                 "description": "Share of resolved tickets that met their deadline, to one decimal place. Null when nothing was resolved."
               }
             }
+          }
+        }
+      },
+      "OutboxStatus": {
+        "type": "string",
+        "enum": ["pending", "sending", "delivered", "dead"],
+        "description": "pending: waiting to be sent or retried. sending: claimed by a worker. delivered: the webhook accepted it. dead: gave up after the sixth attempt; an admin can retry it."
+      },
+      "OutboxEvent": {
+        "type": "object",
+        "required": ["_id", "type", "payload", "status", "attempts", "nextAttemptAt", "createdAt"],
+        "properties": {
+          "_id": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ticket.created",
+              "ticket.status_changed",
+              "ticket.assigned",
+              "ticket.comment_added",
+              "ticket.sla_at_risk",
+              "ticket.sla_breached"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "description": "What is sent to the webhook. Never contains comment text or ticket descriptions."
+          },
+          "status": {
+            "$ref": "#/components/schemas/OutboxStatus"
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextAttemptAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastError": {
+            "type": "string",
+            "description": "Why the last attempt failed. The webhook address is never included."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliveredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OutboxList": {
+        "type": "object",
+        "required": ["events", "data", "pagination"],
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutboxEvent"
+            }
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutboxEvent"
+            },
+            "description": "Same as `events`."
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "OutboxEventEnvelope": {
+        "type": "object",
+        "required": ["event"],
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/OutboxEvent"
+          }
+        }
+      },
+      "EscalationResult": {
+        "type": "object",
+        "required": ["breached", "atRisk", "more"],
+        "properties": {
+          "breached": {
+            "type": "integer",
+            "description": "Tickets that had just passed their deadline; each was raised one priority step (unless already urgent)."
+          },
+          "atRisk": {
+            "type": "integer",
+            "description": "Tickets newly within 24 hours of their deadline."
+          },
+          "more": {
+            "type": "boolean",
+            "description": "True when the run stopped at its limit with more still to do; the next run continues."
+          }
+        }
+      },
+      "DeliveryResult": {
+        "type": "object",
+        "required": ["configured", "delivered", "retried", "dead"],
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "description": "False when no webhook is configured; nothing else happens in that case."
+          },
+          "delivered": {
+            "type": "integer"
+          },
+          "retried": {
+            "type": "integer",
+            "description": "Sent unsuccessfully and put back for another try."
+          },
+          "dead": {
+            "type": "integer",
+            "description": "Sent unsuccessfully for the last time."
           }
         }
       }

@@ -35,3 +35,32 @@ export function resolveTrustProxy(env: Env = process.env): number | string | fal
   }
   return env.VERCEL ? 1 : false;
 }
+
+// The secret that scheduled jobs (SLA escalation, outbox delivery) present as a bearer token.
+// Like AUTH_SECRET it must be long: it is the only thing between the internet and the jobs.
+export const MIN_CRON_SECRET_LENGTH = 32;
+
+export function hasStrongCronSecret(env: Env = process.env): boolean {
+  return typeof env.CRON_SECRET === 'string' && env.CRON_SECRET.length >= MIN_CRON_SECRET_LENGTH;
+}
+
+// Where ticket events are sent: a Discord or Slack incoming-webhook URL, or any endpoint
+// that accepts a JSON POST. Unset means notifications are off: no events are recorded and
+// the delivery job does nothing. An unusable value is treated the same way (and the caller
+// logs it), rather than failing every ticket change.
+export interface WebhookConfig {
+  url: string;
+  format: string | undefined;
+}
+
+export function webhookConfig(env: Env = process.env): WebhookConfig | null {
+  const url = env.WEBHOOK_URL?.trim();
+  if (!url) return null;
+  try {
+    const { protocol } = new URL(url);
+    if (protocol !== 'https:' && protocol !== 'http:') return null;
+  } catch {
+    return null;
+  }
+  return { url, format: env.WEBHOOK_FORMAT?.trim().toLowerCase() || undefined };
+}

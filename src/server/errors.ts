@@ -6,6 +6,7 @@ export type ErrorCode =
   | 'VALIDATION_FAILED'
   | 'UNAUTHORIZED'
   | 'AUTH_NOT_CONFIGURED'
+  | 'JOBS_NOT_CONFIGURED'
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'INVALID_TRANSITION'
@@ -76,7 +77,11 @@ export class ConflictError extends AppError {
 // The service cannot do this right now (missing configuration, database down).
 export class ServiceUnavailableError extends AppError {
   constructor(
-    code: 'AUTH_NOT_CONFIGURED' | 'DATABASE_NOT_CONFIGURED' | 'DATABASE_UNAVAILABLE',
+    code:
+      | 'AUTH_NOT_CONFIGURED'
+      | 'JOBS_NOT_CONFIGURED'
+      | 'DATABASE_NOT_CONFIGURED'
+      | 'DATABASE_UNAVAILABLE',
     message: string
   ) {
     super(503, code, message);

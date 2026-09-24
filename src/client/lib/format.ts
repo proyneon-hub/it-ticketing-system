@@ -45,6 +45,8 @@ const activityLabels: Record<string, string> = {
   ticket_closed: 'Ticket closed',
   ticket_reopened: 'Ticket reopened',
   comment_added: 'Comment added',
+  sla_at_risk: 'SLA at risk',
+  sla_breached: 'SLA breached',
 };
 
 export function activityLabel(activity: { action?: string }): string {
