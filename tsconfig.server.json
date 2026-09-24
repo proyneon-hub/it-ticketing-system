@@ -20,6 +20,12 @@
     "outDir": "dist-server",
     "types": ["node"]
   },
-  "include": ["server.ts", "src/server/**/*.ts", "src/shared/**/*.ts", "scripts/seed.ts"],
+  "include": [
+    "server.ts",
+    "src/server/**/*.ts",
+    "src/shared/**/*.ts",
+    "scripts/seed.ts",
+    "scripts/sync-indexes.ts"
+  ],
   "exclude": ["src/server/**/*.test.ts", "src/server/__tests__/**"]
 }

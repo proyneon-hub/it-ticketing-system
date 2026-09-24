@@ -40,8 +40,8 @@
     "test:all": "npm test && npm run test:e2e",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.{js,ts}\" \"src/**/*.{js,jsx,ts,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --write",
-    "format:check": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.{js,ts}\" \"src/**/*.{js,jsx,ts,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --check",
+    "format": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.{js,ts}\" \"perf/**/*.js\" \"src/**/*.{js,jsx,ts,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --write",
+    "format:check": "prettier \"*.{js,mjs,ts,json,md,yml,yaml,html,css}\" \".github/**/*.{md,yml,yaml}\" \"api/**/*.js\" \"docs/**/*.md\" \"scripts/**/*.{js,ts}\" \"perf/**/*.js\" \"src/**/*.{js,jsx,ts,css}\" \"tests/**/*.{js,ts}\" \".prettierrc\" --check",
     "preview": "vite preview --host 0.0.0.0",
     "free:api-port": "powershell -ExecutionPolicy Bypass -File scripts/free-api-port.ps1",
     "seed": "tsx scripts/seed.ts",
@@ -49,7 +49,9 @@
     "test:integration": "vitest run -c vitest.server.config.mjs --project integration",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.playwright.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.playwright.json",
+    "perf": "k6 run perf/load.js",
+    "db:sync-indexes": "tsx scripts/sync-indexes.ts"
   },
   "keywords": [
     "it-ticketing",

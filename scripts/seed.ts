@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { connectToDatabase } from '../src/server/db';
 import Counter from '../src/server/models/Counter';
 import Ticket, { type TicketAttrs } from '../src/server/models/Ticket';
+import { generateTickets } from './sampleData';
 
 // Small set of sample tickets for local demos and portfolio screenshots.
 const tickets: Partial<TicketAttrs>[] = [
@@ -131,6 +132,13 @@ const tickets: Partial<TicketAttrs>[] = [
   },
 ];
 
+// `--count 10000` pads the demo set with generated tickets, for load tests.
+function requestedCount(): number {
+  const index = process.argv.indexOf('--count');
+  const value = index === -1 ? 0 : Number(process.argv[index + 1]);
+  return Number.isInteger(value) && value > tickets.length ? value : tickets.length;
+}
+
 async function seed(): Promise<void> {
   // Reuse the same database helper as the API so seeding respects MONGODB_URI,
   // DNS settings, and connection timeout behavior.
@@ -138,11 +146,20 @@ async function seed(): Promise<void> {
 
   // This is intentionally destructive: it clears existing tickets so the sample
   // data is predictable every time the script runs.
-  await Ticket.deleteMany({});
-  await Ticket.insertMany(tickets);
-  await Counter.updateOne({ _id: 'ticket' }, { $set: { seq: tickets.length } }, { upsert: true });
+  const total = requestedCount();
+  const all = [
+    ...tickets,
+    ...generateTickets(total - tickets.length, { firstNumber: tickets.length + 1 }),
+  ];
 
-  console.log(`Seeded ${tickets.length} tickets.`);
+  await Ticket.deleteMany({});
+  // In batches, so a large count does not build one enormous write.
+  for (let start = 0; start < all.length; start += 1000) {
+    await Ticket.insertMany(all.slice(start, start + 1000));
+  }
+  await Counter.updateOne({ _id: 'ticket' }, { $set: { seq: all.length } }, { upsert: true });
+
+  console.log(`Seeded ${all.length} tickets.`);
   process.exit(0);
 }
 

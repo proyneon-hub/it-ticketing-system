@@ -1,4 +1,4 @@
-import type { FilterQuery, PipelineStage } from 'mongoose';
+import type { FilterQuery, PipelineStage, SortOrder } from 'mongoose';
 import { priorities, terminalStatuses, type SortField } from '../../shared/ticket-constants';
 import type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
 import { DUE_SOON_WINDOW_MS } from '../domain/sla';
@@ -16,6 +16,26 @@ type TicketFilter = FilterQuery<TicketAttrs>;
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const OPEN_STATUSES = { $nin: [...terminalStatuses] };
+
+// Someone typing TKT-0012 (or the start of it) wants that ticket, not a text search.
+const TICKET_NUMBER_PREFIX = /^TKT-?\d*$/i;
+
+// Ticket numbers are stored upper case, so an anchored, case-sensitive prefix match
+// can use the unique index on ticketNumber (a case-insensitive one cannot).
+function ticketNumberPrefix(search: string): string {
+  return search.toUpperCase().replace(/^TKT(?!-)/, 'TKT-');
+}
+
+// Text-search syntax is meant for people writing queries, not for a search box: a
+// leading minus excludes a word and quotes demand a phrase. Strip both so the input is
+// just words.
+function plainWords(search: string): string {
+  const words = search
+    .replace(/["\\]/g, ' ')
+    .replace(/(^|\s)-+/g, '$1')
+    .trim();
+  return words || search;
+}
 
 // Translates criteria into a MongoDB filter.
 export function toFilter(criteria: TicketCriteria): TicketFilter {
@@ -42,16 +62,13 @@ export function toFilter(criteria: TicketCriteria): TicketFilter {
   }
 
   if (search) {
-    const pattern = { $regex: escapeRegex(search), $options: 'i' };
-    filter.$or = [
-      { ticketNumber: pattern },
-      { title: pattern },
-      { description: pattern },
-      { requesterName: pattern },
-      { requesterEmail: pattern },
-      { assignee: pattern },
-      { category: pattern },
-    ];
+    const text = search.trim();
+    if (TICKET_NUMBER_PREFIX.test(text)) {
+      filter.ticketNumber = { $regex: `^${escapeRegex(ticketNumberPrefix(text))}` };
+    } else {
+      // Uses the text index. Matches whole words (and their other forms), not fragments.
+      filter.$text = { $search: plainWords(text) };
+    }
   }
 
   if (requesterEmail) filter.requesterEmail = requesterEmail;
@@ -60,26 +77,56 @@ export function toFilter(criteria: TicketCriteria): TicketFilter {
 }
 
 export interface Sort {
-  sortBy: SortField;
+  // Left out, results are ranked best match first after a text search and newest
+  // first otherwise.
+  sortBy?: SortField | undefined;
   sortOrder: 'asc' | 'desc';
 }
 
+interface ResolvedSort {
+  sortBy: SortField | 'relevance';
+  sortOrder: 'asc' | 'desc';
+}
+
+// Relevance only exists for a text search (a ticket-number search has no score).
+function resolveSort(filter: TicketFilter, { sortBy, sortOrder }: Sort): ResolvedSort {
+  return { sortBy: sortBy ?? (filter.$text ? 'relevance' : 'createdAt'), sortOrder };
+}
+
 // _id is the tie-breaker so pages stay stable when many tickets share a status or priority.
+function sortSpec({
+  sortBy,
+  sortOrder,
+}: ResolvedSort): Record<string, SortOrder | { $meta: 'textScore' }> {
+  const direction = sortOrder === 'asc' ? 1 : -1;
+  return sortBy === 'relevance'
+    ? { score: { $meta: 'textScore' as const }, _id: direction }
+    : { [sortBy]: direction, _id: direction };
+}
+
+// The query for a page of tickets in priority order: the shared core of find() and stream().
+function priorityStages(filter: TicketFilter, sortOrder: 'asc' | 'desc'): PipelineStage[] {
+  const direction = sortOrder === 'asc' ? 1 : -1;
+  // Priority is an enum, so a plain string sort would order it alphabetically
+  // (high, low, medium, urgent). Rank it by its position in the priority list instead.
+  return [
+    { $match: filter },
+    { $addFields: { priorityRank: { $indexOfArray: [priorities, '$priority'] } } },
+    { $sort: { priorityRank: direction, _id: direction } },
+  ];
+}
+
 export async function find(
   criteria: TicketCriteria,
-  { sortBy, sortOrder }: Sort,
+  sort: Sort,
   { skip = 0, limit }: { skip?: number; limit?: number } = {}
 ): Promise<TicketRecord[]> {
   const filter = toFilter(criteria);
-  const direction = sortOrder === 'asc' ? 1 : -1;
+  const resolved = resolveSort(filter, sort);
 
-  if (sortBy === 'priority') {
-    // Priority is an enum, so a plain string sort would order it alphabetically
-    // (high, low, medium, urgent). Rank it by its position in the priority list instead.
+  if (resolved.sortBy === 'priority') {
     const stages: PipelineStage[] = [
-      { $match: filter },
-      { $addFields: { priorityRank: { $indexOfArray: [priorities, '$priority'] } } },
-      { $sort: { priorityRank: direction, _id: direction } },
+      ...priorityStages(filter, resolved.sortOrder),
       { $skip: skip },
       ...(limit ? [{ $limit: limit }] : []),
       { $project: { priorityRank: 0 } },
@@ -87,11 +134,24 @@ export async function find(
     return Ticket.aggregate<TicketRecord>(stages);
   }
 
-  let query = Ticket.find(filter)
-    .sort({ [sortBy]: direction, _id: direction })
-    .skip(skip);
+  let query = Ticket.find(filter).sort(sortSpec(resolved)).skip(skip);
   if (limit) query = query.limit(limit);
   return query.lean<TicketRecord[]>();
+}
+
+// Every matching ticket, one at a time from a database cursor, so memory use does
+// not grow with the size of the result.
+export function stream(criteria: TicketCriteria, sort: Sort): AsyncIterable<TicketRecord> {
+  const filter = toFilter(criteria);
+  const resolved = resolveSort(filter, sort);
+
+  if (resolved.sortBy === 'priority') {
+    return Ticket.aggregate<TicketRecord>([
+      ...priorityStages(filter, resolved.sortOrder),
+      { $project: { priorityRank: 0 } },
+    ]).cursor();
+  }
+  return Ticket.find(filter).sort(sortSpec(resolved)).lean<TicketRecord>().cursor();
 }
 
 export const count = (criteria: TicketCriteria): Promise<number> =>

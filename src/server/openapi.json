@@ -187,7 +187,7 @@
       "get": {
         "tags": ["Tickets"],
         "summary": "Export tickets as CSV",
-        "description": "Takes the same filters as the list, ignores paging, and returns at most 10,000 rows. Cells that begin with `=`, `+`, `-` or `@` are prefixed with an apostrophe so spreadsheets do not run them as formulas.",
+        "description": "Takes the same filters as the list, ignores paging, and returns every matching row. The CSV is streamed from a database cursor in chunks, so a large export does not grow the server's memory. Cells that begin with `=`, `+`, `-` or `@` are prefixed with an apostrophe so spreadsheets do not run them as formulas.",
         "operationId": "exportTickets",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
@@ -344,7 +344,7 @@
             "createdAt",
             "updatedAt"
           ],
-          "default": "createdAt"
+          "description": "Defaults to `createdAt`, or to relevance (best match first) when `search` is used and no sort is asked for."
         }
       },
       "SortOrder": {
@@ -377,7 +377,7 @@
       "Search": {
         "name": "search",
         "in": "query",
-        "description": "Case-insensitive text search across ticket number, title, description, requester, assignee and category. Treated as literal text, not a pattern.",
+        "description": "Full-text search across ticket number, title, description, requester, assignee and category. It matches whole words and their other forms (`connecting` finds `connect`), ignoring case, not fragments of a word. Input of the form `TKT-0012` (or its start) matches ticket numbers by prefix instead. Treated as plain words: search operators such as a leading `-` or quotes have no special meaning.",
         "schema": { "type": "string", "maxLength": 100 }
       }
     },

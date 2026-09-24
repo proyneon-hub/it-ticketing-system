@@ -29,10 +29,9 @@ export const listQuerySchema = z.object({
   status: optionalFilter(z.enum(statuses, { error: 'Invalid status filter.' })),
   priority: optionalFilter(z.enum(priorities, { error: 'Invalid priority filter.' })),
   sla: optionalFilter(z.enum(slaFilters, { error: 'Invalid SLA filter.' })),
-  sortBy: z.preprocess(
-    blankToUndefined,
-    z.enum(sortFields, { error: 'Invalid sortBy field.' }).default('createdAt')
-  ),
+  // No default here: when a search is given and no sort is asked for, results are
+  // ranked by relevance, which only the service knows.
+  sortBy: optionalFilter(z.enum(sortFields, { error: 'Invalid sortBy field.' })),
   sortOrder: z.preprocess(
     blankToUndefined,
     z.enum(['asc', 'desc'], { error: 'Invalid sortOrder value.' }).default('desc')

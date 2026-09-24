@@ -1,4 +1,6 @@
 import { Router, type Request } from 'express';
+import { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
 import asyncHandler from '../asyncHandler';
 import { requireAuth, requireRole, type TokenPayload } from '../auth';
 import * as tickets from '../services/ticketService';
@@ -31,13 +33,33 @@ router.get(
   })
 );
 
+// Puts back a chunk that was read ahead of the rest.
+async function* replay<T>(first: IteratorResult<T>, rest: AsyncIterator<T>): AsyncGenerator<T> {
+  if (first.done) return;
+  yield first.value;
+  for (let next = await rest.next(); !next.done; next = await rest.next()) yield next.value;
+}
+
 router.get(
   '/tickets/export',
   asyncHandler(async (req, res) => {
-    const csv = await tickets.exportTicketsCsv(actor(req), parseExportQuery(req.query));
+    const chunks = tickets.exportTicketsCsv(actor(req), parseExportQuery(req.query));
+    // Read the first chunk before sending anything: if the database fails now it is
+    // still an ordinary JSON error, not a response that dies half way.
+    const first = await chunks.next();
+
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="tickets.csv"');
-    res.send(csv);
+
+    try {
+      // pipeline waits for the client to drain each chunk (backpressure) and closes
+      // the database cursor if the client goes away.
+      await pipeline(Readable.from(replay(first, chunks)), res);
+    } catch (error) {
+      // The status line is already sent, so all that is left is to log and drop the connection.
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ERR_STREAM_PREMATURE_CLOSE') req.log.error({ err: error }, 'CSV export failed');
+    }
   })
 );
 

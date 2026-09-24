@@ -33,7 +33,7 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Actual:** `200`. The ticket left the requester's own scope and appeared in another requester's queue.
 - **Root cause:** `requesterName` and `requesterEmail` were in the list of fields a requester may edit, and requester scoping is based on `requesterEmail`.
 - **Fix:** Requesters may edit only `title`, `description`, `priority` and `category`. The 403 message now names requester fields.
-- **Regression test:** `a requester cannot reassign a ticket to another requester` (`tickets.integration.test.js`).
+- **Regression test:** `a requester cannot reassign a ticket to another requester` (`tickets.integration.test.ts`).
 
 ## DEF-002: Priority sorting was alphabetical
 

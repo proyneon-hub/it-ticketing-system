@@ -21,8 +21,9 @@ import type {
 // domain rules, and persist through the repository. HTTP stays in the routes and
 // storage in the repository, so the rules here read the way the product works.
 
-// Exports stream the whole filtered set; the cap keeps a huge queue from exhausting memory.
-const EXPORT_ROW_LIMIT = 10000;
+// Rows per chunk of a streamed export: large enough to keep writes efficient, small
+// enough that memory stays flat however many tickets match.
+const EXPORT_CHUNK_ROWS = 500;
 
 const notFound = () => new NotFoundError('Ticket not found.');
 
@@ -169,9 +170,24 @@ export async function deleteTicket(id: string): Promise<void> {
   if (!(await repository.deleteById(id))) throw notFound();
 }
 
-export async function exportTicketsCsv(user: TokenPayload, query: ExportQuery): Promise<string> {
-  const tickets = await repository.find(criteriaFor(query, user), query, {
-    limit: EXPORT_ROW_LIMIT,
-  });
-  return [csvHeaderLine(), ...tickets.map((ticket) => ticketToCsvLine(ticket))].join('\n');
+// The CSV for every ticket the caller may see that matches `query`, as chunks of
+// text. Tickets are read from a database cursor one at a time, so memory stays flat
+// however large the export is. Nothing is yielded until the first batch is read, so a
+// database failure surfaces before any of the response has been sent.
+export async function* exportTicketsCsv(
+  user: TokenPayload,
+  query: ExportQuery
+): AsyncGenerator<string, void, undefined> {
+  const now = Date.now();
+  let lines = [csvHeaderLine()];
+
+  for await (const ticket of repository.stream(criteriaFor(query, user), query)) {
+    lines.push(ticketToCsvLine(ticket, now));
+    if (lines.length >= EXPORT_CHUNK_ROWS) {
+      yield `${lines.join('\n')}\n`;
+      lines = [];
+    }
+  }
+
+  if (lines.length > 0) yield `${lines.join('\n')}\n`;
 }

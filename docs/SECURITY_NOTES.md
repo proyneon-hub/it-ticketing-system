@@ -8,22 +8,22 @@ Demo users are defined in code and receive HMAC-SHA256 signed bearer tokens that
 
 ## Implemented controls
 
-| Area                 | Control                                                                                                                                                           |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authorization        | Roles are enforced in the API for every protected route. UI controls mirror them but are never the only check                                                     |
-| Data scoping         | Requester visibility is applied in the database query, on lists, single reads, exports, stats and search. A requester asking for someone else's ticket gets `404` |
-| Privilege boundaries | Requesters can edit only `title`, `description`, `priority` and `category`; identity, status, assignee and SLA fields stay with staff                             |
-| Tokens               | Signature compared in constant time; expiry checked; tampered or malformed tokens rejected                                                                        |
-| Input validation     | Zod schemas whitelist fields, cap lengths, and reject non-text values such as `search[$ne]=x`; unknown fields are dropped                                         |
-| Injection            | Search text is escaped and matched literally; ids are validated before any query; CSV cells that could run as spreadsheet formulas are neutralised                |
-| Brute force          | Failed sign-ins are rate limited per client address; successful sign-ins are not counted                                                                          |
-| Browser hardening    | `helmet` security headers and a Content-Security-Policy that allows only same-origin scripts; CORS disabled unless `CORS_ORIGINS` lists an origin                 |
-| Information exposure | Unexpected errors return a generic 500; stacks stay in the server log; headers and tokens are never logged                                                        |
-| Request size         | JSON bodies are capped at 1 MB                                                                                                                                    |
-| Traceability         | Every request has an id that appears in the response, the logs and any error                                                                                      |
-| Configuration        | Production refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters: `server.ts` fails to start, and serverless functions answer 503       |
-| Container            | The image runs as the unprivileged `node` user, contains production dependencies only, and MongoDB is published to localhost only in Compose                      |
-| Supply chain         | `npm audit` gates CI (high or critical production findings fail the build), and Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker        |
+| Area                 | Control                                                                                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authorization        | Roles are enforced in the API for every protected route. UI controls mirror them but are never the only check                                                                                                                           |
+| Data scoping         | Requester visibility is applied in the database query, on lists, single reads, exports, stats and search. A requester asking for someone else's ticket gets `404`                                                                       |
+| Privilege boundaries | Requesters can edit only `title`, `description`, `priority` and `category`; identity, status, assignee and SLA fields stay with staff                                                                                                   |
+| Tokens               | Signature compared in constant time; expiry checked; tampered or malformed tokens rejected                                                                                                                                              |
+| Input validation     | Zod schemas whitelist fields, cap lengths, and reject non-text values such as `search[$ne]=x`; unknown fields are dropped                                                                                                               |
+| Injection            | Search text is passed to MongoDB as plain words (text-search operators are stripped) and ticket-number prefixes are regex-escaped; ids are validated before any query; CSV cells that could run as spreadsheet formulas are neutralised |
+| Brute force          | Failed sign-ins are rate limited per client address; successful sign-ins are not counted                                                                                                                                                |
+| Browser hardening    | `helmet` security headers and a Content-Security-Policy that allows only same-origin scripts; CORS disabled unless `CORS_ORIGINS` lists an origin                                                                                       |
+| Information exposure | Unexpected errors return a generic 500; stacks stay in the server log; headers and tokens are never logged                                                                                                                              |
+| Request size         | JSON bodies are capped at 1 MB                                                                                                                                                                                                          |
+| Traceability         | Every request has an id that appears in the response, the logs and any error                                                                                                                                                            |
+| Configuration        | Production refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters: `server.ts` fails to start, and serverless functions answer 503                                                                             |
+| Container            | The image runs as the unprivileged `node` user, contains production dependencies only, and MongoDB is published to localhost only in Compose                                                                                            |
+| Supply chain         | `npm audit` gates CI (high or critical production findings fail the build), and Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker                                                                              |
 
 ## Known limitations
 

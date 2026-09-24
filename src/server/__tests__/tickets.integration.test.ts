@@ -8,6 +8,8 @@ import app from '../app';
 import { connectToDatabase } from '../db';
 import type { Priority } from '../../shared/ticket-constants';
 import Ticket, { type TicketAttrs } from '../models/Ticket';
+import { generateTickets } from '../../../scripts/sampleData';
+import { toFilter } from '../repositories/ticketRepository';
 import { bearer, signInAll, startTestDatabase, type Account, type Tokens } from './helpers';
 
 const HOUR = 60 * 60 * 1000;
@@ -270,40 +272,117 @@ describe('SLA and status filters', () => {
 });
 
 describe('search', () => {
-  test('matches title, requester and ticket number case-insensitively', async () => {
-    await seedTicket({ title: 'VPN client fails', requesterName: 'Casey' });
-    await seedTicket({ title: 'Printer jam', requesterName: 'Jamie' });
+  const titles = async (query: string, role: Account = 'admin') =>
+    (await request(app).get(`/api/tickets?${query}`).set(as(role)).expect(200)).body.data.map(
+      (ticket: Row) => ticket.title
+    );
 
-    const byTitle = await request(app).get('/api/tickets?search=vpn').set(as('admin')).expect(200);
-    expect(byTitle.body.data.map((ticket: Row) => ticket.title)).toEqual(['VPN client fails']);
+  test('matches whole words in title, description, people and category, ignoring case', async () => {
+    await seedTicket({ title: 'VPN client fails', requesterName: 'Casey Brown' });
+    await seedTicket({ title: 'Printer jam', description: 'Paper stuck in tray two' });
+    await seedTicket({ title: 'Laptop', category: 'Onboarding' });
+    await seedTicket({ title: 'Mouse', requesterEmail: 'avery@example.com' });
 
-    const byNumber = await request(app)
-      .get('/api/tickets?search=tkt-0002')
-      .set(as('admin'))
-      .expect(200);
-    expect(byNumber.body.data.map((ticket: Row) => ticket.title)).toEqual(['Printer jam']);
+    expect(await titles('search=vpn')).toEqual(['VPN client fails']);
+    expect(await titles('search=CASEY')).toEqual(['VPN client fails']);
+    expect(await titles('search=paper')).toEqual(['Printer jam']);
+    expect(await titles('search=onboarding')).toEqual(['Laptop']);
+    expect(await titles('search=avery')).toEqual(['Mouse']);
   });
 
-  test('treats regex metacharacters as literal text', async () => {
-    await seedTicket({ title: 'Cost is (100)' });
+  test('matches other forms of a word, so connecting finds connect', async () => {
+    await seedTicket({ title: 'Cannot connect to Wi-Fi' });
     await seedTicket({ title: 'Something else' });
 
-    const response = await request(app)
+    expect(await titles('search=connecting')).toEqual(['Cannot connect to Wi-Fi']);
+  });
+
+  test('finds a ticket by the start of its number', async () => {
+    await seedTicket({ title: 'First' });
+    await seedTicket({ title: 'Second' });
+    await seedTicket({ ticketNumber: 'TKT-0100', title: 'Hundredth' });
+
+    expect(await titles('search=tkt-0002&sortBy=ticketNumber&sortOrder=asc')).toEqual(['Second']);
+    expect(await titles('search=TKT-00&sortBy=ticketNumber&sortOrder=asc')).toEqual([
+      'First',
+      'Second',
+    ]);
+    expect(await titles('search=tkt-01')).toEqual(['Hundredth']);
+  });
+
+  test('ranks the best match first unless a sort is requested', async () => {
+    // The description mention is newer; the title mention is more relevant.
+    await seedTicket({ title: 'VPN is down', createdAt: new Date('2026-01-01') });
+    await seedTicket({
+      title: 'Something else',
+      description: 'The vpn is mentioned here',
+      createdAt: new Date('2026-06-01'),
+    });
+
+    expect(await titles('search=vpn')).toEqual(['VPN is down', 'Something else']);
+    expect(await titles('search=vpn&sortBy=createdAt&sortOrder=desc')).toEqual([
+      'Something else',
+      'VPN is down',
+    ]);
+  });
+
+  test('treats the search as text, not as a pattern or as search syntax', async () => {
+    await seedTicket({ title: 'Cost is (100)' });
+    await seedTicket({ title: 'VPN client fails' });
+
+    const pattern = await request(app)
       .get('/api/tickets')
       .query({ search: '.*' })
       .set(as('admin'))
       .expect(200);
-    expect(response.body.data).toEqual([]);
+    expect(pattern.body.data).toEqual([]);
+
+    // A leading minus would exclude a word, and quotes would demand a phrase.
+    expect(await titles('search=-vpn')).toEqual(['VPN client fails']);
+    expect(await titles('search=%22vpn')).toEqual(['VPN client fails']);
+  });
+
+  test('combines with filters and pagination', async () => {
+    for (let index = 0; index < 5; index += 1) {
+      await seedTicket({ title: `Printer ${index}`, status: index < 3 ? 'open' : 'closed' });
+    }
+
+    const response = await request(app)
+      .get('/api/tickets?search=printer&status=open&limit=2&page=2')
+      .set(as('admin'))
+      .expect(200);
+
+    expect(response.body.pagination).toMatchObject({ total: 3, totalPages: 2, page: 2 });
+    expect(response.body.data).toHaveLength(1);
   });
 
   test('search cannot escape a requester scope', async () => {
     await seedTicket({ requesterEmail: 'other@example.com', title: 'Secret' });
 
-    const response = await request(app)
-      .get('/api/tickets?search=secret')
-      .set(as('user'))
-      .expect(200);
-    expect(response.body.data).toEqual([]);
+    expect(await titles('search=secret', 'user')).toEqual([]);
+  });
+
+  describe('uses an index instead of scanning every ticket', () => {
+    const planFor = async (search: string) =>
+      JSON.stringify(
+        await Ticket.find(toFilter({ search, now: new Date() })).explain('queryPlanner')
+      );
+
+    test('text search runs on the text index', async () => {
+      await seedTicket({ title: 'VPN client fails' });
+
+      const plan = await planFor('vpn');
+      expect(plan).toContain('TEXT');
+      expect(plan).not.toContain('COLLSCAN');
+    });
+
+    test('a ticket-number prefix runs on the ticketNumber index', async () => {
+      await seedTicket({ title: 'First' });
+
+      const plan = await planFor('TKT-00');
+      expect(plan).toContain('IXSCAN');
+      expect(plan).not.toContain('COLLSCAN');
+    });
   });
 });
 
@@ -728,6 +807,33 @@ describe('CSV export', () => {
     const response = await request(app).get('/api/tickets/export').set(as('admin')).expect(200);
 
     expect(response.text).toContain(`"'=HYPERLINK(""http://evil.example"",""click"")"`);
+  });
+
+  test('streams every matching ticket in chunks, with no row cap', async () => {
+    // More than the 10,000 rows the old in-memory export would stop at.
+    const count = 10_050;
+    await Ticket.insertMany(generateTickets(count, { seed: 7 }));
+
+    const response = await request(app).get('/api/tickets/export').set(as('admin')).expect(200);
+
+    expect(response.headers['transfer-encoding']).toBe('chunked');
+    expect(response.headers['content-length']).toBeUndefined();
+    expect(response.headers['content-disposition']).toContain('tickets.csv');
+    expect(response.text.trim().split('\n')).toHaveLength(1 + count);
+  });
+
+  test('keeps the list ordering, including priority rank, in the streamed rows', async () => {
+    for (const priority of ['low', 'urgent', 'medium', 'high'] as const) {
+      await seedTicket({ priority, title: priority });
+    }
+
+    const response = await request(app)
+      .get('/api/tickets/export?sortBy=priority&sortOrder=desc')
+      .set(as('admin'))
+      .expect(200);
+
+    const rows = response.text.trim().split('\n').slice(1);
+    expect(rows.map((row) => row.split(',')[1])).toEqual(['urgent', 'high', 'medium', 'low']);
   });
 
   test('applies the same filters as the list view and ignores paging', async () => {

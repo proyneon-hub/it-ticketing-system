@@ -168,16 +168,33 @@ ticketSchema.pre('validate', function setSlaDueDate(next) {
 
 // Optimizes the dashboard's most common filters and newest-first sorting.
 ticketSchema.index({ status: 1, priority: 1, dueAt: 1, createdAt: -1 });
-// Provides a text index for future full-text search support. The current route
-// uses regex search, but this index makes it easy to switch to $text later.
-ticketSchema.index({
-  ticketNumber: 'text',
-  title: 'text',
-  description: 'text',
-  requesterName: 'text',
-  requesterEmail: 'text',
-  assignee: 'text',
-});
+// Full-text search. MongoDB allows one text index per collection, so it covers every
+// searchable field. Weights make a hit in the title or ticket number outrank one in
+// the description. Changing this definition needs `npm run db:sync-indexes` on an
+// existing database, because MongoDB will not alter a text index in place.
+ticketSchema.index(
+  {
+    ticketNumber: 'text',
+    title: 'text',
+    description: 'text',
+    requesterName: 'text',
+    requesterEmail: 'text',
+    assignee: 'text',
+    category: 'text',
+  },
+  {
+    name: 'ticket_text',
+    weights: {
+      ticketNumber: 10,
+      title: 10,
+      requesterName: 5,
+      requesterEmail: 5,
+      assignee: 3,
+      category: 3,
+      description: 1,
+    },
+  }
+);
 
 // Reuse an existing model when hot reloading or serverless functions reload the
 // file. Mongoose throws if the same model name is compiled twice.

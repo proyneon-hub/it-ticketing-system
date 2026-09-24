@@ -130,19 +130,22 @@ A requester asking for someone else's ticket gets `404`, not `403`, so ids canno
 
 `GET /tickets` supports:
 
-| Query        | Description                                                                                                                                         |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `page`       | Page number, `1` to `100000`                                                                                                                        |
-| `limit`      | Page size, `1` to `100` (default 10)                                                                                                                |
-| `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`                                                      |
-| `sortOrder`  | `asc` or `desc`                                                                                                                                     |
-| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                           |
-| `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                 |
-| `assignedTo` | Case-insensitive assignee match                                                                                                                     |
-| `search`     | Case-insensitive text search across number, title, description, requester, assignee and category. It is matched as literal text, never as a pattern |
-| `sla`        | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                       |
+| Query        | Description                                                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page`       | Page number, `1` to `100000`                                                                                                                            |
+| `limit`      | Page size, `1` to `100` (default 10)                                                                                                                    |
+| `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`. Default: `createdAt`, or best match first with `search` |
+| `sortOrder`  | `asc` or `desc`                                                                                                                                         |
+| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                               |
+| `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                     |
+| `assignedTo` | Case-insensitive assignee match                                                                                                                         |
+| `search`     | Full-text search across number, title, description, requester, assignee and category. See below                                                         |
+| `sla`        | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                           |
 
 - Sorting by `priority` ranks by severity: descending gives urgent, high, medium, low.
+- **Search matches whole words, not fragments.** `connecting` finds "Cannot connect to Wi-Fi", but `conn` and `prin` do not find "connect" or "printer". A hit in the title or ticket number ranks above one in the description, and with no `sortBy` the best match comes first. Case is ignored.
+- **Ticket numbers match by prefix.** `TKT-0012`, `tkt-00` and `TKT` are read as ticket numbers, not words.
+- Search is plain words: a leading `-` (which would exclude a word) and quotes (which would demand a phrase) are stripped, and regular-expression characters are just text.
 - Ties are broken by `_id`, so pages are stable.
 - Unknown filter values and non-text values (such as `search[$ne]=x`) are rejected with `400`.
 
@@ -154,7 +157,7 @@ The response has `data` (the rows), `pagination` (`page`, `limit`, `total`, `tot
 
 ## CSV export
 
-`GET /tickets/export` takes the same filters as the list, ignores paging, and returns at most 10,000 rows scoped to what the caller may see.
+`GET /tickets/export` takes the same filters and ordering as the list, ignores paging, and returns every matching row the caller may see. The body is streamed in chunks (`Transfer-Encoding: chunked`) from a database cursor, so the size of an export does not affect the server's memory.
 
 ```text
 Ticket ID, Title, Status, Priority, Requester, Assigned To, Created At, Updated At, SLA Due At, SLA Breached

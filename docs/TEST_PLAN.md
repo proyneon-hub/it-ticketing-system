@@ -45,23 +45,27 @@ Out of scope for the demo:
 
 ## Automated coverage map
 
-| Requirement                                           | Where it is tested                                                                                                                                    |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sign-in, token expiry and tampered tokens             | `auth.test.js`, `security.test.js`, `tests/e2e-mocked/auth.spec.ts`, `tests/smoke-live/login.spec.ts`                                                 |
-| Role permissions and requester scoping                | `tickets.integration.test.js` (real database), `app.test.js`, `tests/e2e-mocked/role-permissions.spec.ts`, `tests/smoke-live/requester-scope.spec.ts` |
-| Ticket lifecycle, workflow rules and activity history | `tickets.integration.test.js`, `tests/e2e-mocked/ticket-lifecycle.spec.ts`, `tests/smoke-live/ticket-lifecycle.spec.ts`                               |
-| SLA due dates, breached and due-soon filters, stats   | `tickets.integration.test.js`, `TicketRow.test.jsx`, `format.test.js`                                                                                 |
-| Filters, search, sorting and pagination               | `tickets.integration.test.js`, `useTickets.test.js`, `tests/e2e-mocked/filters-export.spec.ts`                                                        |
-| CSV export, including formula neutralisation          | `tickets.integration.test.js`, `tests/e2e-mocked/filters-export.spec.ts`                                                                              |
-| Input validation and error responses                  | `tickets.integration.test.js`, `security.test.js`, `openapi.contract.test.js`                                                                         |
-| API contract and documentation                        | `openapi.contract.test.js`, `tests/smoke-live/docs.spec.ts`                                                                                           |
-| Loading, empty and error states, request-id reference | `App.test.jsx`, `SmallComponents.test.jsx`, `tests/e2e-mocked/error-handling.spec.ts`                                                                 |
-| Search debounce and stale-response handling           | `useTickets.test.js`, `App.test.jsx`                                                                                                                  |
-| Session restore and expiry                            | `useAuth.test.js`, `api.test.js`, `App.test.jsx`                                                                                                      |
-| Security headers, CORS, rate limiting, startup config | `security.test.js`                                                                                                                                    |
-| Health, readiness and request tracing                 | `tickets.integration.test.js`, `security.test.js`, `tests/smoke-live/readiness.spec.ts`, Support-Ops `test_health_check.py`                           |
-| Accessibility                                         | `tests/accessibility/` and the manual checklist in [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md)                                               |
-| Production image and the whole stack                  | The real-stack job in `.github/workflows/e2e.yml`                                                                                                     |
+| Requirement                                           | Where it is tested                                                                                                                     |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in, token expiry and tampered tokens             | `auth.test.ts`, `security.test.ts`, `tests/e2e-mocked/auth.spec.ts`, `tests/smoke-live/login.spec.ts`                                  |
+| Role permissions and requester scoping                | `tickets.integration.test.ts` (real database), `tests/e2e-mocked/role-permissions.spec.ts`, `tests/smoke-live/requester-scope.spec.ts` |
+| Status workflow, versioned edits, error codes         | `ticketWorkflow.test.ts` (all 25 status pairs), `tickets.integration.test.ts`, `tests/smoke-live/workflow.spec.ts`                     |
+| Domain rules: SLA, activity, permissions, CSV         | `sla.test.ts`, `activity.test.ts`, `permissions.test.ts`, `csv.test.ts` (no database)                                                  |
+| Layer boundaries (routes, services, domain)           | `architecture.test.ts`                                                                                                                 |
+| Ticket lifecycle and activity history                 | `tickets.integration.test.ts`, `tests/e2e-mocked/ticket-lifecycle.spec.ts`, `tests/smoke-live/ticket-lifecycle.spec.ts`                |
+| SLA due dates, breached and due-soon filters, stats   | `tickets.integration.test.ts`, `TicketRow.test.jsx`, `format.test.js`                                                                  |
+| Filters, sorting and pagination                       | `tickets.integration.test.ts`, `useTickets.test.js`, `tests/e2e-mocked/filters-export.spec.ts`                                         |
+| Full-text search, ranking and index use (`explain()`) | `tickets.integration.test.ts` (search)                                                                                                 |
+| CSV export: formulas, streaming, no row cap           | `tickets.integration.test.ts`, `tests/e2e-mocked/filters-export.spec.ts`                                                               |
+| Input validation and error responses                  | `tickets.integration.test.ts`, `security.test.ts`, `openapi.contract.test.ts`                                                          |
+| API contract and documentation                        | `openapi.contract.test.ts`, `tests/smoke-live/docs.spec.ts`                                                                            |
+| Loading, empty and error states, request-id reference | `App.test.jsx`, `SmallComponents.test.jsx`, `tests/e2e-mocked/error-handling.spec.ts`                                                  |
+| Search debounce and stale-response handling           | `useTickets.test.js`, `App.test.jsx`                                                                                                   |
+| Session restore and expiry                            | `useAuth.test.js`, `api.test.js`, `App.test.jsx`                                                                                       |
+| Security headers, CORS, rate limiting, startup config | `security.test.ts`                                                                                                                     |
+| Health, readiness and request tracing                 | `tickets.integration.test.ts`, `security.test.ts`, `tests/smoke-live/readiness.spec.ts`, Support-Ops `test_health_check.py`            |
+| Accessibility                                         | `tests/accessibility/` and the manual checklist in [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md)                                |
+| Production image and the whole stack                  | The real-stack job in `.github/workflows/e2e.yml`                                                                                      |
 
 ## Manual smoke tests
 
@@ -91,16 +95,16 @@ Run these after significant changes, or to demonstrate the app.
 
 | Edge case                                       | Covered by                                                               |
 | ----------------------------------------------- | ------------------------------------------------------------------------ |
-| Database unavailable                            | `security.test.js` (503 with guidance; readiness reports `down`)         |
-| Expired or malformed bearer token               | `auth.test.js`, `security.test.js`, `api.test.js`, `useAuth.test.js`     |
+| Database unavailable                            | `security.test.ts` (503 with guidance; readiness reports `down`)         |
+| Expired or malformed bearer token               | `auth.test.ts`, `security.test.ts`, `api.test.js`, `useAuth.test.js`     |
 | Empty search result                             | `tests/e2e-mocked/filters-export.spec.ts`, `App.test.jsx`                |
-| Assigned status with no assignee                | `tickets.integration.test.js`                                            |
-| Resolved or closed tickets with an overdue date | `tickets.integration.test.js` (excluded from breached), `format.test.js` |
-| Reopening a resolved ticket                     | `tickets.integration.test.js` (`resolvedAt` cleared)                     |
-| Concurrent ticket creation                      | `tickets.integration.test.js` (unique, gap-free numbers)                 |
-| Tickets that tie on the sort key                | `tickets.integration.test.js` (stable pages)                             |
-| Regex characters and operators in search        | `tickets.integration.test.js`                                            |
-| Long text near the model limits                 | `tickets.integration.test.js` (title over 120 characters rejected)       |
+| Assigned status with no assignee                | `tickets.integration.test.ts`                                            |
+| Resolved or closed tickets with an overdue date | `tickets.integration.test.ts` (excluded from breached), `format.test.js` |
+| Reopening a resolved ticket                     | `tickets.integration.test.ts` (`resolvedAt` cleared)                     |
+| Concurrent ticket creation                      | `tickets.integration.test.ts` (unique, gap-free numbers)                 |
+| Tickets that tie on the sort key                | `tickets.integration.test.ts` (stable pages)                             |
+| Regex characters and search operators in search | `tickets.integration.test.ts`                                            |
+| Long text near the model limits                 | `tickets.integration.test.ts` (title over 120 characters rejected)       |
 | Slow responses arriving out of order            | `useTickets.test.js`                                                     |
 
 Defects found by this plan are recorded in [DEFECT_LOG.md](DEFECT_LOG.md).
