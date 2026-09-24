@@ -49,7 +49,7 @@
     "test:integration": "vitest run -c vitest.server.config.mjs --project integration",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.playwright.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.client.json && tsc -p tsconfig.playwright.json",
     "perf": "k6 run perf/load.js",
     "db:sync-indexes": "tsx scripts/sync-indexes.ts"
   },
