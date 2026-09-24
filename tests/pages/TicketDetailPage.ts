@@ -32,6 +32,37 @@ export class TicketDetailPage {
     ).toBeVisible();
   }
 
+  private comments() {
+    return this.page.getByTestId('comment');
+  }
+
+  async expectCommentCount(count: number): Promise<void> {
+    await expect(this.comments()).toHaveCount(count);
+  }
+
+  async expectComment(text: string): Promise<void> {
+    await expect(this.comments().filter({ hasText: text })).toBeVisible();
+  }
+
+  async expectNoComment(text: string): Promise<void> {
+    await expect(this.comments().filter({ hasText: text })).toHaveCount(0);
+  }
+
+  async expectInternalNote(text: string): Promise<void> {
+    await expect(this.comments().filter({ hasText: text })).toContainText('Internal note');
+  }
+
+  // A requester's form has no visibility choice at all.
+  async expectNoInternalOption(): Promise<void> {
+    await expect(this.page.getByLabel('Internal note (staff only)')).toHaveCount(0);
+  }
+
+  async postComment(text: string, { internal = false } = {}): Promise<void> {
+    await this.page.getByTestId('comment-body').fill(text);
+    if (internal) await this.page.getByLabel('Internal note (staff only)').check();
+    await this.page.getByRole('button', { name: internal ? 'Add note' : 'Post comment' }).click();
+  }
+
   async backToQueue(): Promise<void> {
     await this.page.getByRole('link', { name: /Back to the queue/ }).click();
   }
