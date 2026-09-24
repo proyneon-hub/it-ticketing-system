@@ -6,7 +6,7 @@ A React single-page app talks to an Express REST API, which stores tickets in Mo
 
 ```mermaid
 flowchart LR
-  User[Browser] --> Client[React client<br/>components and hooks]
+  User[Browser] --> Client[React client<br/>router, queries, components]
   Client -->|/api, bearer token| Edge
 
   subgraph API[Express API]
@@ -49,13 +49,15 @@ Errors the API raises on purpose are `AppError` subclasses with an HTTP status a
 
 ## Frontend
 
-`src/client` keeps state in hooks and rendering in small components:
+`src/client` is strict TypeScript. Server data lives in TanStack Query, the address holds the view, and small components render it:
 
-- `hooks/useAuth`: who is signed in; restores a saved session; reacts to an expired token.
-- `hooks/useTickets`: the ticket page and stats, filters, debounced search, and the create, update, delete and export actions. Requests are cancelled when superseded, so a slow response cannot overwrite a newer one.
-- `hooks/useNotices`, `hooks/useDebouncedValue`: the alert banner and the search delay.
-- `components/`: header, demo accounts, stats, form, filters, table, row, activity timeline, pagination, alert.
-- `api.js`: the only place that calls `fetch`. It attaches the token, turns failures into `ApiError` (carrying the request id) and signs the user out on `401`.
+- `routes.tsx`: React Router routes `/login`, `/tickets`, `/tickets/:id`, `/admin/users` and `/admin/audit`. `RequireAuth` and `RequireRole` (`auth/guards.tsx`) decide who sees a page; a signed-out visitor is sent to `/login` and back to the page they asked for. On Vercel a rewrite in `vercel.json` serves the app for any non-API path so these addresses survive a reload.
+- `auth/AuthContext.tsx`: who is signed in. The access token is kept in memory only; after a reload the refresh cookie is traded for a new one (only tried when this browser signed in before). When a session ends unasked, the user sees why.
+- `queries/`: ticket, stats and user queries, keyed by their filters, so a slow response for an old search cannot replace a newer one. The status and priority changes are optimistic: the row updates at once and rolls back if the server refuses, for example on a version conflict, and the server's answer is refetched either way.
+- `hooks/useTicketFilters`: filters, sort and page live in the URL search params, so a filtered view can be linked and survives a reload.
+- `notices/NoticeContext.tsx`, `hooks/useDebouncedValue`: the alert banner (cleared when the page changes) and the search delay.
+- `pages/`, `layout/`, `components/`: one component per screen, the shared header and navigation, and the smaller pieces (form, filters, table, row, timeline, pagination).
+- `api.ts`: the only place that calls `fetch`. It attaches the token, turns failures into `ApiError` (carrying the request id and code), shares one refresh between concurrent requests and retries once after a `401`.
 
 ## Request flow
 
