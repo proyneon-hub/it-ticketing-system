@@ -32,3 +32,18 @@ export interface TicketAttrs {
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+// A ticket as the API sends it: dates arrive as ISO strings, and Mongoose adds the
+// id and the version (`__v`), which clients send back as If-Match.
+export interface Ticket extends Omit<
+  TicketAttrs,
+  'dueAt' | 'resolvedAt' | 'createdAt' | 'updatedAt' | 'activity'
+> {
+  _id: string;
+  __v: number;
+  dueAt: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  activity: (Omit<ActivityEntry, 'createdAt'> & { createdAt?: string })[];
+}

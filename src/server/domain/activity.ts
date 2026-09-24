@@ -1,6 +1,6 @@
 import type { TokenPayload } from '../auth';
 import type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
-import type { PatchTicketInput } from '../validation/tickets';
+import type { PatchTicketInput } from '../../shared/schemas';
 import { isReopen } from './ticketWorkflow';
 
 interface ActivityInput {

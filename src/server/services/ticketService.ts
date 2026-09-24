@@ -15,7 +15,7 @@ import type {
   ExportQuery,
   ListQuery,
   PatchTicketInput,
-} from '../validation/tickets';
+} from '../../shared/schemas';
 
 // Orchestrates one use case per function: check the caller may do it, apply the
 // domain rules, and persist through the repository. HTTP stays in the routes and

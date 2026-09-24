@@ -1,6 +1,6 @@
 import { slaHoursByPriority, terminalStatuses, type Priority } from '../../shared/ticket-constants';
 import type { TicketAttrs } from '../../shared/ticket-types';
-import type { PatchTicketInput } from '../validation/tickets';
+import type { PatchTicketInput } from '../../shared/schemas';
 
 export const HOUR_MS = 60 * 60 * 1000;
 // A ticket is "due soon" when its SLA deadline falls within this window.
