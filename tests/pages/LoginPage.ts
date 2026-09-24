@@ -17,6 +17,9 @@ export class LoginPage {
   async loginAs(role: UserRole): Promise<void> {
     await this.goto();
     await this.page.getByTestId(`demo-login-${role}`).click();
+    // Wait for the sign-in to finish: a test that navigates straight away would otherwise
+    // cancel the request that is signing it in.
+    await expect(this.page.getByTestId('logout-button')).toBeVisible();
   }
 
   async logout(): Promise<void> {

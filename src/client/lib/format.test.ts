@@ -42,6 +42,7 @@ describe('activityLabel', () => {
     expect(activityLabel({ action: 'status_changed' })).toBe('Status changed');
     expect(activityLabel({ action: 'ticket_reopened' })).toBe('Ticket reopened');
     expect(activityLabel({ action: 'comment_added' })).toBe('Comment added');
+    expect(activityLabel({ action: 'sla_breached' })).toBe('SLA breached');
     expect(activityLabel({ action: 'something_new' })).toBe('Something New');
     expect(activityLabel({})).toBe('Activity');
   });
