@@ -27,10 +27,12 @@ export interface MockUser {
 export interface MockActivity {
   action: string;
   detail?: string;
-  from?: TicketStatus;
-  to?: TicketStatus;
+  // A status, a priority or an assignee, depending on the action.
+  from?: string;
+  to?: string;
   actorName: string;
   actorRole: UserRole;
+  actorEmail?: string;
   createdAt: string;
 }
 

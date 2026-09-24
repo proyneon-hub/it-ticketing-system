@@ -4,26 +4,27 @@ Real defects found while reviewing and testing this project, with how each was f
 
 Severity follows impact: **High** breaks a security boundary or core workflow, **Medium** gives wrong results or a wrong status code, **Low** is cosmetic or narrow.
 
-| ID                                                                                    | Severity | Summary                                                        | Origin                                          |
-| ------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------- | ----------------------------------------------- |
-| [DEF-001](#def-001-a-requester-could-move-their-ticket-into-another-users-queue)      | High     | Requester could reassign their own ticket to another requester | Original code                                   |
-| [DEF-002](#def-002-priority-sorting-was-alphabetical)                                 | Medium   | Sorting by priority was alphabetical                           | Original code                                   |
-| [DEF-003](#def-003-the-sla-filter-overwrote-the-status-filter)                        | Medium   | SLA filter overwrote the status filter                         | Original code                                   |
-| [DEF-004](#def-004-an-over-long-title-returned-500)                                   | Medium   | Over-long title returned 500 instead of 400                    | Original code                                   |
-| [DEF-005](#def-005-csv-export-allowed-spreadsheet-formula-injection)                  | Medium   | CSV export allowed spreadsheet formula injection               | Original code                                   |
-| [DEF-006](#def-006-resolvedat-was-reset-and-never-cleared)                            | Medium   | `resolvedAt` reset on every update and never cleared on reopen | Original code                                   |
-| [DEF-007](#def-007-the-sla-due-date-ignored-priority-changes)                         | Medium   | SLA due date ignored priority changes                          | Original code                                   |
-| [DEF-008](#def-008-page-order-was-not-deterministic)                                  | Low      | Page order not deterministic when tickets tie                  | Original code                                   |
-| [DEF-009](#def-009-search-fired-a-request-per-keystroke-and-could-show-stale-results) | Low      | Search request per keystroke; stale responses could win        | Original code                                   |
-| [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)  | High     | Dashboard empty after sign-in against the real API             | Introduced and caught during the refactor       |
-| [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                         | Low      | 401/403 responses had no `requestId`                           | Introduced and caught during the upgrade        |
-| [DEF-012](#def-012-input-validation-gaps)                                             | Low      | Malformed email and query-string objects accepted              | Original code                                   |
-| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                | Medium   | Any status could jump to any other, including open to resolved | Original code                                   |
-| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)    | Medium   | Concurrent edits were lost; activity `from` could be stale     | Original code                                   |
-| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)         | High     | Serverless deployments signed tokens with a public secret      | Original code                                   |
-| [DEF-016](#def-016-the-api-docs-link-returned-404-on-vercel)                          | Medium   | The `/api/docs` link returned 404 on Vercel                    | Introduced with the docs, found after deploy    |
-| [DEF-017](#def-017-a-session-that-ended-showed-the-wrong-message)                     | Low      | An ended session showed "Authentication required."             | Original code                                   |
-| [DEF-018](#def-018-the-signed-in-message-was-lost-when-sign-in-led-to-a-linked-page)  | Low      | "Signed in" message lost after signing in from a deep link     | Introduced and caught during the client rewrite |
+| ID                                                                                                | Severity | Summary                                                                        | Origin                                          |
+| ------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------ | ----------------------------------------------- |
+| [DEF-001](#def-001-a-requester-could-move-their-ticket-into-another-users-queue)                  | High     | Requester could reassign their own ticket to another requester                 | Original code                                   |
+| [DEF-002](#def-002-priority-sorting-was-alphabetical)                                             | Medium   | Sorting by priority was alphabetical                                           | Original code                                   |
+| [DEF-003](#def-003-the-sla-filter-overwrote-the-status-filter)                                    | Medium   | SLA filter overwrote the status filter                                         | Original code                                   |
+| [DEF-004](#def-004-an-over-long-title-returned-500)                                               | Medium   | Over-long title returned 500 instead of 400                                    | Original code                                   |
+| [DEF-005](#def-005-csv-export-allowed-spreadsheet-formula-injection)                              | Medium   | CSV export allowed spreadsheet formula injection                               | Original code                                   |
+| [DEF-006](#def-006-resolvedat-was-reset-and-never-cleared)                                        | Medium   | `resolvedAt` reset on every update and never cleared on reopen                 | Original code                                   |
+| [DEF-007](#def-007-the-sla-due-date-ignored-priority-changes)                                     | Medium   | SLA due date ignored priority changes                                          | Original code                                   |
+| [DEF-008](#def-008-page-order-was-not-deterministic)                                              | Low      | Page order not deterministic when tickets tie                                  | Original code                                   |
+| [DEF-009](#def-009-search-fired-a-request-per-keystroke-and-could-show-stale-results)             | Low      | Search request per keystroke; stale responses could win                        | Original code                                   |
+| [DEF-010](#def-010-the-dashboard-stayed-empty-after-signing-in-against-the-real-api)              | High     | Dashboard empty after sign-in against the real API                             | Introduced and caught during the refactor       |
+| [DEF-011](#def-011-401-and-403-responses-lacked-a-request-id)                                     | Low      | 401/403 responses had no `requestId`                                           | Introduced and caught during the upgrade        |
+| [DEF-012](#def-012-input-validation-gaps)                                                         | Low      | Malformed email and query-string objects accepted                              | Original code                                   |
+| [DEF-013](#def-013-any-status-could-jump-to-any-other)                                            | Medium   | Any status could jump to any other, including open to resolved                 | Original code                                   |
+| [DEF-014](#def-014-concurrent-edits-were-lost-and-the-activity-log-could-be-wrong)                | Medium   | Concurrent edits were lost; activity `from` could be stale                     | Original code                                   |
+| [DEF-015](#def-015-serverless-deployments-signed-tokens-with-a-public-secret)                     | High     | Serverless deployments signed tokens with a public secret                      | Original code                                   |
+| [DEF-016](#def-016-the-api-docs-link-returned-404-on-vercel)                                      | Medium   | The `/api/docs` link returned 404 on Vercel                                    | Introduced with the docs, found after deploy    |
+| [DEF-017](#def-017-a-session-that-ended-showed-the-wrong-message)                                 | Low      | An ended session showed "Authentication required."                             | Original code                                   |
+| [DEF-018](#def-018-the-signed-in-message-was-lost-when-sign-in-led-to-a-linked-page)              | Low      | "Signed in" message lost after signing in from a deep link                     | Introduced and caught during the client rewrite |
+| [DEF-019](#def-019-a-quick-second-edit-was-refused-as-a-conflict-with-the-persons-own-first-edit) | Low      | A quick second edit was refused as a conflict with the person's own first edit | Original code (found while scripting the demo)  |
 
 ---
 
@@ -218,3 +219,16 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Root cause:** the sign-in page redirects anyone who is already signed in. Once sign-in set the user, that redirect raced the page's own navigation, which carries the message, and won in real browsers.
 - **Fix:** while the page is handling a sign-in itself it renders nothing and does the navigating, so the redirect only applies to someone who arrives already signed in.
 - **Why the unit tests missed it:** jsdom applies the two updates in the other order, so the component tests passed either way. Only the browser test fails without the fix (all three browsers); the unit test added alongside it documents the behaviour but would not have caught this.
+
+## DEF-019: A quick second edit was refused as a conflict with the person's own first edit
+
+- **Severity:** Low
+- **Found by:** scripting the README demo (assign a ticket, then move it through its statuses). Some runs failed: the last move was refused and rolled back, and the ticket history stopped one step short.
+- **Reproduce:** change a ticket's status, and change it again before the reload that follows the first change has finished.
+- **Expected:** both edits are saved.
+- **Actual:** the second edit was sent with the version the row had before the first edit, so the API answered `409 VERSION_CONFLICT` (correctly: that version was no longer current) and the screen rolled the second edit back.
+- **Root cause:** after an edit the client waited for a full reload to learn the ticket's new version, although the server's answer to the edit already carries it. Until the reload finished, the next edit used the old one.
+- **Fix:** on success the answer is written into every cached copy of the ticket (each page of the list and the detail view), so the next edit starts from the saved version. The reload still follows, so the server keeps the last word.
+- **Regression test:** `queries/tickets.test.tsx` ("takes the new version from the answer"), which fails without the fix. It was checked by removing the fix.
+- **Limit:** an edit started before the first one has been answered is still sent with the old version and refused. That is the correct answer to two overlapping edits, and the screen explains it.
+- **Why the tests missed it:** no test made a second edit before the reload after the first had finished, which a script (or an impatient person) does.
