@@ -78,28 +78,32 @@ test(
 );
 
 test(
-  'AUTH-009 an expired access token is renewed without the user noticing',
+  'AUTH-009 an expired access token is renewed, once, without the user noticing',
   { tag: ['@regression', '@auth'] },
   async ({ page, loginPage, dashboardPage }) => {
-    let rejectedOnce = false;
+    let renewed = false;
     let refreshes = 0;
     await page.route('**/api/auth/refresh', (route) => {
       refreshes += 1;
+      renewed = true;
       return route.fallback();
     });
-    // The first ticket request after sign-in finds the token expired.
-    await page.route('**/api/tickets?*', (route) => {
-      if (rejectedOnce) return route.fallback();
-      rejectedOnce = true;
-      return route.fulfill({
-        status: 401,
-        json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
-      });
-    });
+    // Until the token is renewed the access token is expired, so every ticket request
+    // (the list and the stats fire together, and twice in development) is rejected.
+    await page.route('**/api/tickets?*', (route) =>
+      renewed
+        ? route.fallback()
+        : route.fulfill({
+            status: 401,
+            json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+          })
+    );
 
     await loginPage.loginAs('admin');
 
     await dashboardPage.expectTicketVisible('TKT-0001');
+    await dashboardPage.expectDataLoaded();
+    // A refresh token works once, so simultaneous requests must share a single refresh.
     expect(refreshes).toBe(1);
     await expect(page.getByText('Your session expired. Sign in again.')).toHaveCount(0);
   }

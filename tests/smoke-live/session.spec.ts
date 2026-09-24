@@ -104,3 +104,35 @@ test(
     expect((await request.get('/api/audit', await token(requester))).status()).toBe(403);
   }
 );
+
+// Deep links only work when the server falls back to the app for any non-API path, and a
+// reload on one of them has to restore the session before the route guard decides.
+test(
+  'LIVE-ROUTE-001 a deep link reloads onto the same page and stays signed in',
+  { tag: ['@smoke', '@auth'] },
+  async ({ page }) => {
+    const credentials = credentialsFor('admin');
+    if (!credentials) {
+      test.skip(true, 'Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD for the routing smoke test.');
+      return;
+    }
+    const loginPage = new LoginPage(page);
+    const dashboardPage = new TicketDashboardPage(page);
+
+    await loginPage.goto();
+    await loginPage.login(credentials.email, credentials.password);
+    await dashboardPage.expectLoaded();
+
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'Users' })
+      .click();
+    await expect(page).toHaveURL(/\/admin\/users$/);
+    await expect(page.getByTestId('user-row').first()).toBeVisible();
+
+    await page.reload();
+
+    await expect(page).toHaveURL(/\/admin\/users$/);
+    await expect(page.getByTestId('user-row').first()).toBeVisible();
+  }
+);

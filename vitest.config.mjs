@@ -8,12 +8,17 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/client/test/setup.js'],
-    include: ['src/client/**/*.test.{js,jsx}'],
+    setupFiles: ['./src/client/test/setup.ts'],
+    include: ['src/client/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['src/client/**/*.{js,jsx}'],
-      exclude: ['src/client/main.jsx', 'src/client/test/**', 'src/client/**/*.test.*'],
+      include: ['src/client/**/*.{ts,tsx}'],
+      exclude: [
+        'src/client/main.tsx',
+        'src/client/test/**',
+        'src/client/**/*.test.*',
+        'src/client/**/*.d.ts',
+      ],
       reporter: ['text', 'json-summary', 'lcov'],
       reportsDirectory: 'coverage/client',
       thresholds: { statements: 85, branches: 80, functions: 85, lines: 85 },

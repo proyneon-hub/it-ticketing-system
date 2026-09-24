@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fproyneon-hub.github.io%2Fit-ticketing-system%2Fcoverage.json)](https://proyneon-hub.github.io/it-ticketing-system/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a React client, an OpenAPI contract, 445 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 503 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
 
 **[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
 
@@ -13,12 +13,12 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 
 ## What this project demonstrates
 
-| Building software                                                                                       | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
-| ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| API split into routes, Zod validation, services and models, so business rules are testable on their own | 445 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
-| React client split into hooks and small components; debounced search that cancels stale requests        | 12 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
-| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                             | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
-| Role-based access enforced in the API and in the database query, not just the UI                        | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
+| Building software                                                                                          | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 503 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
+| Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 18 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
+| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
+| Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
 
 ## Try it
 
@@ -68,7 +68,7 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 
 ```mermaid
 flowchart LR
-  Browser --> Client[React client<br/>hooks and components]
+  Browser --> Client[React client<br/>router, queries, components]
   Client -->|/api| Edge[Request id, logs,<br/>helmet, CORS]
   Edge --> Routes[Routes and Zod validation]
   Routes --> Services[Ticket service<br/>roles, SLA, activity]
@@ -83,11 +83,11 @@ Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](d
 | Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
 | --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
 | API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 278                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
-| Frontend unit and component | Vitest, Testing Library                  | 119                | Hooks (debounce, stale responses, session), components and the whole `App`      | `npm run test:unit`                  |
+| Frontend unit and component | Vitest, Testing Library                  | 164                | Route guards, session restore, optimistic edits and rollback, components, `App` | `npm run test:unit`                  |
 | Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
-| Mocked browser regression   | Playwright, page objects, typed fixtures | 25 (75 runs)       | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
-| Accessibility               | Playwright and Axe                       | 3 (9 runs)         | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
-| Real-stack smoke            | Playwright against Docker Compose        | 11                 | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
+| Mocked browser regression   | Playwright, page objects, typed fixtures | 34 (102 runs)      | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
+| Accessibility               | Playwright and Axe                       | 6 (18 runs)        | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
+| Real-stack smoke            | Playwright against Docker Compose        | 12                 | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
 | Support monitoring          | pytest                                   | 9                  | The Python health, sign-in and report tooling                                   | `pytest` in `Support-Ops-Automation` |
 
 `npm test` runs the API and frontend suites; `npm run test:coverage` adds coverage thresholds. The strategy, and why each layer exists, is in [ADR 002](docs/adr/002-layered-test-strategy.md); the map from requirement to test is in the [Test plan](docs/TEST_PLAN.md).
@@ -108,7 +108,7 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 
 | Layer             | Tooling                                                                  |
 | ----------------- | ------------------------------------------------------------------------ |
-| Frontend          | React 18, Vite                                                           |
+| Frontend          | React 18, TypeScript (strict), React Router, TanStack Query, Vite        |
 | Backend           | TypeScript (strict), Express, Mongoose, Zod, helmet, pino                |
 | Database          | MongoDB                                                                  |
 | Contract and docs | OpenAPI 3.1, Swagger UI, Ajv                                             |
@@ -120,7 +120,7 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 
 ```text
 src/server/       TypeScript Express API: routes, validation, services, domain rules, models, middleware, OpenAPI spec
-src/client/       React app: components, hooks, API client, unit tests
+src/client/       TypeScript React app: pages, components, queries, auth, API client, unit tests
 src/shared/       Typed constants used by both (statuses, transitions, priorities, SLA windows)
 tests/            Playwright: mocked regression, accessibility, real-stack smoke, page objects
 Support-Ops-Automation/   Python health, sign-in and status-report tooling with its own tests
@@ -147,7 +147,6 @@ Users are stored with argon2id password hashes, sessions use 15-minute access to
 - Notifications for assignment and SLA risk
 - Saved filters and reporting views
 - A shared rate-limit store for multi-instance deployments
-- Migrating the client to TypeScript
 
 ## License
 

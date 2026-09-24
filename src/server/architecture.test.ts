@@ -10,8 +10,8 @@ import path from 'path';
 //   repositories  storage: the only place that queries Mongoose
 //   domain        pure business rules: no framework, no database
 //
-// (typescript-eslint cannot run on TypeScript 7 yet, so this stands in for an
-// import-restriction lint rule.)
+// (ESLint has a matching import restriction for the domain layer, which reports a
+// violation in the editor; this test covers every layer and runs in CI.)
 
 const SERVER_DIR = __dirname;
 

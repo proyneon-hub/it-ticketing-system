@@ -55,17 +55,20 @@ Out of scope for the demo:
 | Domain rules: SLA, activity, permissions, CSV           | `sla.test.ts`, `activity.test.ts`, `permissions.test.ts`, `csv.test.ts` (no database)                                                      |
 | Layer boundaries (routes, services, domain)             | `architecture.test.ts`                                                                                                                     |
 | Ticket lifecycle and activity history                   | `tickets.integration.test.ts`, `tests/e2e-mocked/ticket-lifecycle.spec.ts`, `tests/smoke-live/ticket-lifecycle.spec.ts`                    |
-| SLA due dates, breached and due-soon filters, stats     | `tickets.integration.test.ts`, `TicketRow.test.jsx`, `format.test.js`                                                                      |
-| Filters, sorting and pagination                         | `tickets.integration.test.ts`, `useTickets.test.js`, `tests/e2e-mocked/filters-export.spec.ts`                                             |
+| SLA due dates, breached and due-soon filters, stats     | `tickets.integration.test.ts`, `TicketRow.test.tsx`, `format.test.ts`                                                                      |
+| Filters, sorting and pagination                         | `tickets.integration.test.ts`, `useTicketFilters.test.tsx`, `App.test.tsx`, `tests/e2e-mocked/filters-export.spec.ts`                      |
 | Full-text search, ranking and index use (`explain()`)   | `tickets.integration.test.ts` (search)                                                                                                     |
 | CSV export: formulas, streaming, no row cap             | `tickets.integration.test.ts`, `tests/e2e-mocked/filters-export.spec.ts`                                                                   |
 | Input validation and error responses                    | `tickets.integration.test.ts`, `security.test.ts`, `openapi.contract.test.ts`                                                              |
 | API contract and documentation                          | `openapi.contract.test.ts`, `tests/smoke-live/docs.spec.ts`                                                                                |
-| Loading, empty and error states, request-id reference   | `App.test.jsx`, `SmallComponents.test.jsx`, `tests/e2e-mocked/error-handling.spec.ts`                                                      |
-| Search debounce and stale-response handling             | `useTickets.test.js`, `App.test.jsx`                                                                                                       |
-| Session restore and expiry                              | `useAuth.test.js`, `api.test.js`, `App.test.jsx`                                                                                           |
+| Loading, empty and error states, request-id reference   | `App.test.tsx`, `SmallComponents.test.tsx`, `tests/e2e-mocked/error-handling.spec.ts`                                                      |
+| Search debounce and stale-response handling             | `App.test.tsx`, `useDebouncedValue.test.ts`                                                                                                |
+| Session restore and expiry                              | `AuthContext.test.tsx`, `api.test.ts`, `App.test.tsx`, `tests/smoke-live/session.spec.ts`                                                  |
 | Security headers, CORS, rate limiting, startup config   | `security.test.ts`                                                                                                                         |
 | Health, readiness and request tracing                   | `tickets.integration.test.ts`, `security.test.ts`, `tests/smoke-live/readiness.spec.ts`, Support-Ops `test_health_check.py`                |
+| Routing, deep links and route guards                    | `App.test.tsx`, `pages.test.tsx`, `tests/e2e-mocked/routing.spec.ts`, `tests/smoke-live/session.spec.ts`                                   |
+| Optimistic edits and rollback on a conflict             | `tickets.test.tsx`, `App.test.tsx`, `tests/e2e-mocked/ticket-lifecycle.spec.ts` (TICKET-008)                                               |
+| Admin users and audit log pages                         | `pages.test.tsx`, `tests/e2e-mocked/routing.spec.ts`, `tests/accessibility/detail-and-admin.a11y.spec.ts`                                  |
 | Accessibility                                           | `tests/accessibility/` and the manual checklist in [ACCESSIBILITY_TESTING.md](ACCESSIBILITY_TESTING.md)                                    |
 | Production image and the whole stack                    | The real-stack job in `.github/workflows/e2e.yml`                                                                                          |
 
@@ -95,19 +98,19 @@ Run these after significant changes, or to demonstrate the app.
 
 ## Edge cases and where they are covered
 
-| Edge case                                       | Covered by                                                               |
-| ----------------------------------------------- | ------------------------------------------------------------------------ |
-| Database unavailable                            | `security.test.ts` (503 with guidance; readiness reports `down`)         |
-| Expired or malformed bearer token               | `auth.test.ts`, `security.test.ts`, `api.test.js`, `useAuth.test.js`     |
-| Empty search result                             | `tests/e2e-mocked/filters-export.spec.ts`, `App.test.jsx`                |
-| Assigned status with no assignee                | `tickets.integration.test.ts`                                            |
-| Resolved or closed tickets with an overdue date | `tickets.integration.test.ts` (excluded from breached), `format.test.js` |
-| Reopening a resolved ticket                     | `tickets.integration.test.ts` (`resolvedAt` cleared)                     |
-| Concurrent ticket creation                      | `tickets.integration.test.ts` (unique, gap-free numbers)                 |
-| Tickets that tie on the sort key                | `tickets.integration.test.ts` (stable pages)                             |
-| Regex characters and search operators in search | `tickets.integration.test.ts`                                            |
-| Long text near the model limits                 | `tickets.integration.test.ts` (title over 120 characters rejected)       |
-| Slow responses arriving out of order            | `useTickets.test.js`                                                     |
+| Edge case                                       | Covered by                                                                |
+| ----------------------------------------------- | ------------------------------------------------------------------------- |
+| Database unavailable                            | `security.test.ts` (503 with guidance; readiness reports `down`)          |
+| Expired or malformed bearer token               | `auth.test.ts`, `security.test.ts`, `api.test.ts`, `AuthContext.test.tsx` |
+| Empty search result                             | `tests/e2e-mocked/filters-export.spec.ts`, `App.test.tsx`                 |
+| Assigned status with no assignee                | `tickets.integration.test.ts`                                             |
+| Resolved or closed tickets with an overdue date | `tickets.integration.test.ts` (excluded from breached), `format.test.ts`  |
+| Reopening a resolved ticket                     | `tickets.integration.test.ts` (`resolvedAt` cleared)                      |
+| Concurrent ticket creation                      | `tickets.integration.test.ts` (unique, gap-free numbers)                  |
+| Tickets that tie on the sort key                | `tickets.integration.test.ts` (stable pages)                              |
+| Regex characters and search operators in search | `tickets.integration.test.ts`                                             |
+| Long text near the model limits                 | `tickets.integration.test.ts` (title over 120 characters rejected)        |
+| Slow responses arriving out of order            | `App.test.tsx`, `tickets.test.tsx`                                        |
 
 Defects found by this plan are recorded in [DEFECT_LOG.md](DEFECT_LOG.md).
 
