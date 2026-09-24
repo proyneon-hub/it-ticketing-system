@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   auditTypes,
+  commentVisibilities,
   priorities,
   roles,
   slaFilters,
@@ -105,6 +106,21 @@ export type ListQuery = z.output<typeof listQuerySchema>;
 export type ExportQuery = z.output<typeof exportQuerySchema>;
 export type CreateTicketInput = z.output<typeof createTicketSchema>;
 export type PatchTicketInput = z.output<typeof patchTicketSchema>;
+
+// --- Comments -------------------------------------------------------------------
+
+export const createCommentSchema = z.object({
+  body: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined ? 'Comment is required.' : 'Comment must be text.',
+    })
+    .trim()
+    .min(1, { error: 'Comment is required.' })
+    .max(2000, { error: 'Comment must be 2000 characters or fewer.' }),
+  visibility: z.enum(commentVisibilities, { error: 'Invalid visibility.' }).default('public'),
+});
+export type CreateCommentInput = z.output<typeof createCommentSchema>;
 
 // --- Administration -------------------------------------------------------------
 

@@ -8,12 +8,13 @@ interface ActivityInput {
   from?: unknown;
   to?: unknown;
   detail?: string;
+  internal?: boolean;
 }
 
 // Who did what, stamped onto the ticket's history.
 export function activityEntry(
   user: TokenPayload,
-  { action, from, to, detail }: ActivityInput
+  { action, from, to, detail, internal }: ActivityInput
 ): ActivityEntry {
   return {
     action,
@@ -23,6 +24,7 @@ export function activityEntry(
     ...(from !== undefined ? { from: String(from || '') } : {}),
     ...(to !== undefined ? { to: String(to || '') } : {}),
     ...(detail ? { detail } : {}),
+    ...(internal ? { internal } : {}),
   };
 }
 

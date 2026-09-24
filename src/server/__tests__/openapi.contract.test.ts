@@ -142,6 +142,22 @@ describe('responses match their documented schemas', () => {
     conforms('TicketEnvelope', fetched.body);
     used('getTicket');
 
+    const comment = await request(app)
+      .post(`/api/tickets/${id}/comments`)
+      .set(as('tech'))
+      .send({ body: 'Checking the switch.', visibility: 'internal' })
+      .expect(201);
+    conforms('CommentEnvelope', comment.body);
+    used('addComment');
+
+    const thread = await request(app)
+      .get(`/api/tickets/${id}/comments`)
+      .set(as('admin'))
+      .expect(200);
+    conforms('CommentList', thread.body);
+    expect(thread.body.comments).toHaveLength(1);
+    used('listComments');
+
     const updated = await request(app)
       .patch(`/api/tickets/${id}`)
       .set(as('tech'))

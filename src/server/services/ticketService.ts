@@ -2,12 +2,14 @@ import { priorities, statuses } from '../../shared/ticket-constants';
 import type { TicketAttrs } from '../../shared/ticket-types';
 import type { TokenPayload } from '../auth';
 import { activityEntriesForPatch, activityEntry } from '../domain/activity';
+import { visibleActivity } from '../domain/comments';
 import { csvHeaderLine, ticketToCsvLine } from '../domain/csv';
 import { assertCanMutateTicket, requesterOverrides, requesterScope } from '../domain/permissions';
 import { deriveTimestampChanges } from '../domain/sla';
 import type { TicketCriteria } from '../domain/ticketCriteria';
 import { assertTransition } from '../domain/ticketWorkflow';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
+import * as commentRepository from '../repositories/commentRepository';
 import * as repository from '../repositories/ticketRepository';
 import type { TicketDocument, TicketRecord } from '../repositories/ticketRepository';
 import type {
@@ -26,6 +28,14 @@ import type {
 const EXPORT_CHUNK_ROWS = 500;
 
 const notFound = () => new NotFoundError('Ticket not found.');
+
+// A ticket as the caller may see it: plain data, and without the history entries about
+// internal notes when the caller is a requester. Every response that carries a ticket
+// goes through here, so a note cannot leak through the list, an edit or a create.
+function present(ticket: TicketRecord | TicketDocument, user: TokenPayload): TicketRecord {
+  const plain = ('toObject' in ticket ? ticket.toObject() : ticket) as TicketRecord;
+  return { ...plain, activity: visibleActivity(plain.activity, user.role) };
+}
 
 function assertValidObjectId(id: string): void {
   if (!/^[a-f\d]{24}$/i.test(String(id))) {
@@ -59,7 +69,7 @@ export async function listTickets(user: TokenPayload, query: ListQuery) {
   ]);
 
   return {
-    tickets,
+    tickets: tickets.map((ticket) => present(ticket, user)),
     pagination: {
       page: query.page,
       limit: query.limit,
@@ -73,7 +83,7 @@ export async function getTicket(user: TokenPayload, id: string): Promise<TicketR
   assertValidObjectId(id);
   const ticket = await repository.findOne(id, requesterScope(user));
   if (!ticket) throw notFound();
-  return ticket;
+  return present(ticket, user);
 }
 
 export async function getStats(user: TokenPayload) {
@@ -94,7 +104,7 @@ export async function getStats(user: TokenPayload) {
 export async function createTicket(
   user: TokenPayload,
   payload: CreateTicketInput
-): Promise<TicketDocument> {
+): Promise<TicketRecord> {
   const data: Partial<TicketAttrs> = {
     ...payload,
     // Requesters cannot pick the requester identity, workflow state or owner.
@@ -106,7 +116,7 @@ export async function createTicket(
     ],
   };
 
-  return repository.create(data);
+  return present(await repository.create(data), user);
 }
 
 const versionConflict = () =>
@@ -129,7 +139,7 @@ export async function updateTicket(
   id: string,
   payload: PatchTicketInput,
   { expectedVersion }: { expectedVersion?: number | undefined } = {}
-): Promise<TicketDocument> {
+): Promise<TicketRecord> {
   assertValidObjectId(id);
   if (Object.keys(payload).length === 0) {
     throw new ValidationError('No supported ticket fields were provided.');
@@ -155,7 +165,7 @@ export async function updateTicket(
       clearResolvedAt: unset.resolvedAt === 1,
       activity: activityEntriesForPatch(user, existing, payload),
     });
-    if (updated) return updated;
+    if (updated) return present(updated, user);
 
     // Lost the race: someone changed or deleted the ticket after we read it.
     if (!(await repository.exists(id))) throw notFound();
@@ -170,6 +180,7 @@ export async function deleteTicket(id: string): Promise<string> {
   assertValidObjectId(id);
   const ticketNumber = await repository.deleteById(id);
   if (!ticketNumber) throw notFound();
+  await commentRepository.deleteForTicket(id);
   return ticketNumber;
 }
 

@@ -49,6 +49,10 @@ export const auditTypes = [
 ] as const;
 export type AuditType = (typeof auditTypes)[number];
 
+// Who may read a comment. Internal notes are for staff; a requester never receives one.
+export const commentVisibilities = ['public', 'internal'] as const;
+export type CommentVisibility = (typeof commentVisibilities)[number];
+
 export const slaFilters = ['breached', 'due-soon'] as const;
 export type SlaFilter = (typeof slaFilters)[number];
 

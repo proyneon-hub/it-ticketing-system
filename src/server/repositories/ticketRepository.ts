@@ -206,6 +206,13 @@ export async function updateAtVersion(
   );
 }
 
+// Adds one history entry without touching the version: a comment is not an edit, so it
+// must not make a concurrent status change fail with a version conflict.
+export async function appendActivity(id: string, entry: ActivityEntry): Promise<boolean> {
+  const result = await Ticket.updateOne({ _id: id }, { $push: { activity: entry } });
+  return result.matchedCount > 0;
+}
+
 // Atomic $inc keeps ticket numbers unique and gap-free under concurrent creates.
 export async function nextTicketNumber(): Promise<string> {
   const counter = await Counter.findByIdAndUpdate(

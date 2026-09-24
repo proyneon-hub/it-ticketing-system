@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTicketSchema, patchTicketSchema } from '../shared/schemas';
+import { createCommentSchema, createTicketSchema, patchTicketSchema } from '../shared/schemas';
 import spec from './openapi.json';
 
 // The request bodies in the OpenAPI document are written by hand, and the Zod
@@ -40,6 +40,7 @@ const constraints = ({ type, minLength, maxLength, enum: values }: JsonSchema) =
 describe.each([
   ['TicketCreate', createTicketSchema],
   ['TicketPatch', patchTicketSchema],
+  ['CommentCreate', createCommentSchema],
 ] as const)('OpenAPI %s matches the Zod schema the API enforces', (name, schema) => {
   const zod = z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' }) as JsonSchema;
   const documented = schemas[name] as JsonSchema;
