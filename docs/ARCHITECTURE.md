@@ -43,7 +43,7 @@ The API is TypeScript (`strict`). `tsc` compiles it to `dist-server/`, which is 
 | Shared             | `src/shared/`                         | `ticket-constants.ts` (statuses, transitions, SLA windows), `schemas.ts` (Zod), `ticket-types.ts`                     |
 | API contract       | `openapi.json`, `docs.ts`             | OpenAPI 3.1 document and the Swagger UI that serves it                                                                |
 
-`architecture.test.ts` enforces the boundaries against the real import statements: routes cannot reach the database, services cannot import Mongoose, and the domain cannot import a framework. (`typescript-eslint` does not run on TypeScript 7 yet, so a test does the job of an import-restriction lint rule.)
+`architecture.test.ts` enforces the boundaries against the real import statements: routes cannot reach the database, services cannot import Mongoose, and the domain cannot import a framework. The domain layer also has an ESLint import restriction, so a violation shows in the editor before the test runs. (TypeScript is pinned to 6.x because `typescript-eslint`, which lints all the TypeScript, does not support 7 yet.)
 
 Errors the API raises on purpose are `AppError` subclasses with an HTTP status and a stable `code` (see [API.md](API.md#errors-and-request-ids)); anything else is logged and returned as a generic 500. Both leave through one handler, so every failure has the same JSON shape and a request id.
 
