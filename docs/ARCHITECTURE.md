@@ -133,3 +133,8 @@ See [DEPLOYMENT.md](../DEPLOYMENT.md) and [RUNBOOK.md](RUNBOOK.md).
 - [ADR 001: ticket document model](adr/001-ticket-document-model.md)
 - [ADR 002: layered test strategy](adr/002-layered-test-strategy.md)
 - [ADR 003: operability and request tracing](adr/003-operability-and-request-tracing.md)
+- [ADR 004: authentication with short-lived tokens, a rotating refresh cookie and argon2id](adr/004-authentication-and-sessions.md)
+- [ADR 005: an explicit status workflow and optimistic concurrency](adr/005-workflow-state-machine-and-optimistic-concurrency.md)
+- [ADR 006: a transactional outbox for notifications, on a replica set](adr/006-transactional-outbox.md)
+- [ADR 007: full-text search with a text index](adr/007-text-search.md)
+- [ADR 008: TypeScript everywhere, compiled with tsc, tested with Vitest](adr/008-typescript-build-and-vitest.md)

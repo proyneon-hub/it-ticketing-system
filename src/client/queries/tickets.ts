@@ -80,7 +80,7 @@ interface CachedQuery {
 
 // Applies an edit to every cached copy of the ticket: in each page of the list and in
 // its detail view.
-function patchCachedTicket(queryClient: QueryClient, id: string, changes: TicketChanges): void {
+function patchCachedTicket(queryClient: QueryClient, id: string, changes: Partial<Ticket>): void {
   const patch = (ticket: Ticket): Ticket =>
     ticket._id === id ? { ...ticket, ...changes } : ticket;
 
@@ -117,6 +117,11 @@ export function useUpdateTicket() {
     onError: (_error, _variables, context) => {
       for (const { key, data } of context?.snapshot ?? []) queryClient.setQueryData(key, data);
     },
+
+    // The server's answer carries the ticket's new version. Putting it in the cache straight
+    // away means an edit made before the reload below finishes is sent with the current version
+    // instead of the one from before this edit, which the API would refuse as a conflict.
+    onSuccess: ({ ticket }) => patchCachedTicket(queryClient, ticket._id, ticket),
 
     // Success or failure, the server is the source of truth: fetch it again.
     onSettled: () => invalidateTickets(queryClient),

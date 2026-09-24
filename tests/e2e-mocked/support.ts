@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { testUsers } from '../test-data/users';
 import type {
+  MockActivity,
   MockDashboardStats,
   MockTicket,
   MockUser,
@@ -606,6 +607,13 @@ export async function installApiMocks(page: Page): Promise<void> {
       }
 
       const body = request.postDataJSON() as unknown;
+      // Like the API: what the caller sends is kept (priority and category included), a new
+      // ticket is open and unassigned, and its history starts with who created it.
+      const requestedPriority = stringFromPayload(body, 'priority');
+      const priority =
+        requestedPriority && isTicketPriority(requestedPriority) ? requestedPriority : 'medium';
+      const slaHours = { low: 72, medium: 48, high: 24, urgent: 4 }[priority];
+      const now = Date.now();
       const ticket = {
         ...baseTickets[0],
         _id: '665f0f40d5d4f541f8ef1999',
@@ -613,10 +621,25 @@ export async function installApiMocks(page: Page): Promise<void> {
         __v: 0,
         title: stringFromPayload(body, 'title') ?? '',
         description: stringFromPayload(body, 'description') ?? '',
+        category: stringFromPayload(body, 'category') || 'General Support',
+        priority,
+        status: 'open' as const,
+        assignee: 'Unassigned',
         requesterName: activeUser.name,
         requesterEmail: activeUser.email,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        dueAt: new Date(now + slaHours * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date(now).toISOString(),
+        updatedAt: new Date(now).toISOString(),
+        activity: [
+          {
+            action: 'ticket_created',
+            detail: `Ticket created by ${activeUser.role}`,
+            actorName: activeUser.name,
+            actorRole: activeUser.role,
+            actorEmail: activeUser.email,
+            createdAt: new Date(now).toISOString(),
+          },
+        ],
       };
       tickets = [ticket, ...tickets];
       return route.fulfill({ status: 201, json: { ticket } });
@@ -650,6 +673,38 @@ export async function installApiMocks(page: Page): Promise<void> {
           },
         });
       }
+      // One history entry per field that really changed, as the API records them, plus a
+      // milestone entry for resolved or closed, or a generic entry when nothing tracked changed.
+      const activityFor = (ticket: MockTicket, actor: MockUser) => {
+        const at = new Date().toISOString();
+        const entry = (action: string, from?: string, to?: string): MockActivity => {
+          const built: MockActivity = {
+            action,
+            actorName: actor.name,
+            actorRole: actor.role,
+            actorEmail: actor.email,
+            createdAt: at,
+          };
+          if (from !== undefined) built.from = from;
+          if (to !== undefined) built.to = to;
+          return built;
+        };
+        const entries: MockActivity[] = [];
+        if (nextStatus && nextStatus !== ticket.status) {
+          entries.push(entry('status_changed', ticket.status, nextStatus));
+        }
+        if (nextPriority && nextPriority !== ticket.priority) {
+          entries.push(entry('priority_changed', ticket.priority, nextPriority));
+        }
+        if (assignee !== undefined && assignee !== ticket.assignee) {
+          entries.push(entry('assignee_changed', ticket.assignee, assignee));
+        }
+        if (nextStatus && nextStatus !== ticket.status) {
+          if (nextStatus === 'resolved') entries.push(entry('ticket_resolved'));
+          if (nextStatus === 'closed') entries.push(entry('ticket_closed'));
+        }
+        return entries.length > 0 ? entries : [entry('ticket_updated')];
+      };
       tickets = tickets.map((ticket) =>
         ticket._id === id
           ? {
@@ -658,17 +713,7 @@ export async function installApiMocks(page: Page): Promise<void> {
               ...(nextPriority ? { priority: nextPriority } : {}),
               ...(assignee !== undefined ? { assignee } : {}),
               __v: ticket.__v + 1,
-              activity: [
-                ...ticket.activity,
-                {
-                  action: nextStatus ? 'status_changed' : 'ticket_updated',
-                  from: ticket.status,
-                  to: nextStatus,
-                  actorName: activeUser.name,
-                  actorRole: activeUser.role,
-                  createdAt: new Date().toISOString(),
-                },
-              ],
+              activity: [...ticket.activity, ...activityFor(ticket, activeUser)],
             }
           : ticket
       );

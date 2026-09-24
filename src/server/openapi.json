@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IT Ticketing System API",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "REST API for a role-based IT service desk. Sign in with `POST /auth/login` (demo accounts are listed by `GET /auth/demo-users`), then use **Authorize** to send the returned access token (valid 15 minutes) as a bearer token.\n\nEvery response carries an `x-request-id` header; error bodies repeat it as `requestId`, so a reported problem can be matched to a server log line. Send your own `x-request-id` to trace a specific request.",
     "license": {
       "name": "MIT",

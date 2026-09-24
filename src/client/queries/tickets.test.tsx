@@ -88,6 +88,24 @@ describe('editing a ticket', () => {
     expect(client.getQueryData<TicketPage>(listKey)?.data[1]?.status).toBe('open');
   });
 
+  it('takes the new version from the answer, so the next edit does not wait for the reload', async () => {
+    const ticket = seed();
+    client.setQueryData(listKey, ticketPage([ticket]));
+    client.setQueryData(ticketKeys.detail(ticket._id), ticket);
+    // The reload after an edit is slow; nothing it would fetch has arrived yet.
+    vi.mocked(api.updateTicket).mockResolvedValue({
+      ticket: { ...ticket, priority: 'urgent', __v: (ticket.__v ?? 0) + 1 },
+    });
+    const { result } = renderHook(() => useUpdateTicket(), { wrapper });
+
+    await act(() => result.current.mutateAsync({ ticket, changes: { priority: 'urgent' } }));
+
+    const version = (ticket.__v ?? 0) + 1;
+    expect(client.getQueryData<TicketPage>(listKey)?.data[0]?.__v).toBe(version);
+    expect(client.getQueryData<TicketPage>(listKey)?.tickets[0]?.__v).toBe(version);
+    expect(client.getQueryData<{ __v: number }>(ticketKeys.detail(ticket._id))?.__v).toBe(version);
+  });
+
   it('marks what it changed as stale either way, so the server has the last word', async () => {
     const ticket = seed();
     vi.mocked(api.updateTicket).mockResolvedValue({ ticket });
