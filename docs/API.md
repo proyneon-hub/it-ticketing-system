@@ -52,6 +52,10 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 | GET    | `/users`                | Admin only   | List users (never their password hashes)                          |
 | PATCH  | `/users/:id`            | Admin only   | Change a user's role                                              |
 | GET    | `/audit`                | Admin only   | Read the security audit log                                       |
+| GET    | `/outbox`               | Admin only   | List events waiting to be sent to the webhook                     |
+| POST   | `/outbox/:id/retry`     | Admin only   | Put a dead event back in the queue                                |
+| POST   | `/jobs/sla-escalation`  | Job secret   | Mark tickets that reached an SLA milestone                        |
+| POST   | `/jobs/outbox-delivery` | Job secret   | Send due events to the webhook                                    |
 
 ## Administration
 
@@ -90,6 +94,7 @@ Every response carries an `x-request-id` header. Send your own (letters, digits,
 | 409    | `DUPLICATE`               | A unique value already exists                                                                   |
 | 429    | `RATE_LIMITED`            | Too many failed sign-in attempts                                                                |
 | 503    | `AUTH_NOT_CONFIGURED`     | In production `AUTH_SECRET` is missing or shorter than 32 characters                            |
+| 503    | `JOBS_NOT_CONFIGURED`     | `CRON_SECRET` is missing or shorter than 32 characters, so the scheduled jobs are off           |
 | 503    | `DATABASE_NOT_CONFIGURED` | `MONGODB_URI` is not set                                                                        |
 | 503    | `DATABASE_UNAVAILABLE`    | The database cannot be reached                                                                  |
 | 500    | `INTERNAL_ERROR`          | Unexpected; details stay in the server log                                                      |
@@ -152,6 +157,15 @@ Every ticket carries a version, `__v`, that increases by one on each update. `PA
 - `sla.compliancePercent`: the share of those tickets resolved on or before their SLA deadline. `null` when nothing was resolved.
 
 `days` is 1 to 90 (default 30). `tz` is an IANA time zone name (default `UTC`) and decides where a day ends; an unknown name is a `400`. A ticket that is reopened and resolved again counts on the day of its latest resolution.
+
+## SLA escalation and notifications
+
+Two scheduled jobs, called with `Authorization: Bearer <CRON_SECRET>` (not a user token):
+
+- `POST /jobs/sla-escalation` looks at unresolved tickets. One **past its deadline** gets `slaBreachedAt` and its priority raised one step (an urgent ticket is only marked); one **within 24 hours** of its deadline gets `slaAtRiskAt`. Each step writes a history entry by `SLA automation` (`actorRole: "system"`) and bumps the ticket version, and happens once per ticket: the markers make a second run change nothing. The deadline (`dueAt`) is deliberately **not** recomputed, so a breached ticket keeps showing how late it is; this is the one exception to "a priority change resets the deadline". Response: `{ "breached": 1, "atRisk": 2, "more": false }`.
+- `POST /jobs/outbox-delivery` sends due events to `WEBHOOK_URL`. Response: `{ "configured": true, "delivered": 3, "retried": 0, "dead": 0 }`; `configured: false` means no webhook is set and nothing was done.
+
+The events are `ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ticket.comment_added`, `ticket.sla_at_risk` and `ticket.sla_breached`. Each is recorded in the same transaction as the change, sent at least once, and retried with exponential backoff (about 30 s, 1, 2, 4 and 8 minutes) up to six attempts, then marked `dead`. Statuses: `pending`, `sending`, `delivered`, `dead`. Delivered events are removed after 14 days (`OUTBOX_RETENTION_DAYS`); dead ones stay until an admin retries them (`POST /outbox/:id/retry`). With no `WEBHOOK_URL`, nothing is recorded or sent.
 
 ## Who can do what
 

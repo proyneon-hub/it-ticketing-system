@@ -5,6 +5,7 @@ import { activityEntriesForPatch, activityEntry } from '../domain/activity';
 import { visibleActivity } from '../domain/comments';
 import { csvHeaderLine, ticketToCsvLine } from '../domain/csv';
 import { assertCanMutateTicket, requesterOverrides, requesterScope } from '../domain/permissions';
+import { createdEvent, patchEvents } from '../domain/outbox';
 import { deriveTimestampChanges } from '../domain/sla';
 import {
   buildTrends,
@@ -18,6 +19,8 @@ import { assertTransition } from '../domain/ticketWorkflow';
 import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import * as commentRepository from '../repositories/commentRepository';
 import * as repository from '../repositories/ticketRepository';
+import { transaction } from '../repositories/transaction';
+import * as outbox from './outboxService';
 import type { TicketDocument, TicketRecord } from '../repositories/ticketRepository';
 import type {
   CreateTicketInput,
@@ -147,7 +150,12 @@ export async function createTicket(
     ],
   };
 
-  return present(await repository.create(data), user);
+  // The ticket and the event that announces it commit together, or neither does.
+  return transaction(async (tx) => {
+    const ticket = await repository.create(data, tx);
+    await outbox.record([createdEvent(ticket, user)], tx);
+    return present(ticket, user);
+  });
 }
 
 const versionConflict = () =>
@@ -191,10 +199,16 @@ export async function updateTicket(
     }
 
     const { set, unset } = deriveTimestampChanges(existing, payload);
-    const updated = await repository.updateAtVersion(id, existing.__v, {
+    const change = {
       set: { ...payload, ...set },
       clearResolvedAt: unset.resolvedAt === 1,
       activity: activityEntriesForPatch(user, existing, payload),
+    };
+    // The write and its events commit together. A lost race writes nothing, and so no event.
+    const updated = await transaction(async (tx) => {
+      const next = await repository.updateAtVersion(id, existing.__v, change, tx);
+      if (next) await outbox.record(patchEvents(existing, next, user), tx);
+      return next;
     });
     if (updated) return present(updated, user);
 

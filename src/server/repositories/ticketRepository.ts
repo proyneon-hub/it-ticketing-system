@@ -6,6 +6,7 @@ import type { OpenedRow, ResolvedRow } from '../domain/trends';
 import type { TicketCriteria } from '../domain/ticketCriteria';
 import Counter from '../models/Counter';
 import Ticket, { type TicketDocument, type TicketRecord } from '../models/Ticket';
+import type { Tx } from './transaction';
 
 // The only module that talks to Mongoose about tickets. Everything above it works
 // with plain data and TicketCriteria, so the storage can change without touching the rules.
@@ -168,7 +169,11 @@ export const findById = (id: string): Promise<TicketRecord | null> =>
 export const exists = async (id: string): Promise<boolean> =>
   Boolean(await Ticket.exists({ _id: id }));
 
-export const create = (data: Partial<TicketAttrs>): Promise<TicketDocument> => Ticket.create(data);
+// `tx` joins the caller's transaction, so the ticket and the event that describes it commit together.
+export async function create(data: Partial<TicketAttrs>, tx?: Tx): Promise<TicketDocument> {
+  const [ticket] = await Ticket.create([data], tx ? { session: tx } : {});
+  return ticket as TicketDocument;
+}
 
 // Deletes the ticket and returns its number, or null if there was no such ticket.
 export async function deleteById(id: string): Promise<string | null> {
@@ -193,7 +198,8 @@ export interface TicketChange {
 export async function updateAtVersion(
   id: string,
   version: number | undefined,
-  { set, clearResolvedAt, activity }: TicketChange
+  { set, clearResolvedAt, activity }: TicketChange,
+  tx?: Tx
 ): Promise<TicketDocument | null> {
   return Ticket.findOneAndUpdate(
     { _id: id, __v: version === undefined ? { $exists: false } : version },
@@ -203,15 +209,62 @@ export async function updateAtVersion(
       $inc: { __v: 1 },
       ...(clearResolvedAt ? { $unset: { resolvedAt: 1 } } : {}),
     },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true, ...(tx ? { session: tx } : {}) }
   );
 }
 
 // Adds one history entry without touching the version: a comment is not an edit, so it
 // must not make a concurrent status change fail with a version conflict.
-export async function appendActivity(id: string, entry: ActivityEntry): Promise<boolean> {
-  const result = await Ticket.updateOne({ _id: id }, { $push: { activity: entry } });
+export async function appendActivity(id: string, entry: ActivityEntry, tx?: Tx): Promise<boolean> {
+  const result = await Ticket.updateOne(
+    { _id: id },
+    { $push: { activity: entry } },
+    tx ? { session: tx } : {}
+  );
   return result.matchedCount > 0;
+}
+
+// The tickets the SLA job may need to touch: unresolved, and either past their deadline
+// without the breach marker or due within 24 hours without the at-risk marker. Most overdue first.
+export const escalationCandidates = (now: Date, limit: number): Promise<TicketRecord[]> =>
+  Ticket.find({
+    status: OPEN_STATUSES,
+    $or: [
+      { dueAt: { $lt: now }, slaBreachedAt: { $exists: false } },
+      {
+        dueAt: { $gte: now, $lte: new Date(now.getTime() + DUE_SOON_WINDOW_MS) },
+        slaAtRiskAt: { $exists: false },
+      },
+    ],
+  })
+    .sort({ dueAt: 1, _id: 1 })
+    .limit(limit)
+    .lean<TicketRecord[]>();
+
+// Records one SLA step on a ticket, once: it only matches while the marker is absent, the
+// ticket is still unresolved and (for a breach) its priority is still what the plan was made
+// from. Returns null when any of that changed, so nothing is written over someone else's edit.
+// It bumps the version, because the priority may have changed under anyone editing the ticket.
+export function applySlaStep(
+  id: unknown,
+  step: {
+    marker: 'slaAtRiskAt' | 'slaBreachedAt';
+    set: Partial<TicketAttrs>;
+    activity: ActivityEntry;
+    expectedPriority?: TicketAttrs['priority'];
+  },
+  tx: Tx
+): Promise<TicketDocument | null> {
+  return Ticket.findOneAndUpdate(
+    {
+      _id: id,
+      status: OPEN_STATUSES,
+      [step.marker]: { $exists: false },
+      ...(step.expectedPriority ? { priority: step.expectedPriority } : {}),
+    },
+    { $set: step.set, $push: { activity: step.activity }, $inc: { __v: 1 } },
+    { new: true, session: tx }
+  );
 }
 
 // Atomic $inc keeps ticket numbers unique and gap-free under concurrent creates.

@@ -26,6 +26,14 @@ What is implemented, why, and what is deliberately not. This is a portfolio demo
 
 Security events go to an `auditevents` collection: sign-in success and failure, sign-out, **refresh-token reuse**, role changes, ticket deletions and permission denials. Each records the actor, address, user agent, outcome and the request id (which matches the logs), and admins read it at `GET /api/audit`. The API has no endpoint that writes, edits or deletes events. A failure to write an event is logged and never fails the request it describes. `AUDIT_RETENTION_DAYS` optionally deletes old events.
 
+## Scheduled jobs and notifications
+
+- **Jobs are behind a shared secret.** `POST /api/jobs/*` needs `Authorization: Bearer <CRON_SECRET>`, compared in constant time. A missing or short secret turns the jobs off (503) rather than leaving them open, and a signed-in admin's token does not work: the scheduler and the users are separate credentials.
+- **Notifications carry no free text.** An event holds the ticket number, title, status, priority, assignee and who acted, and for a comment only whether it was internal, never its text or the ticket description. The webhook usually points at a chat channel, so an internal note cannot be read there by people who may not read it in the app.
+- **A title cannot ping a channel.** Requesters type ticket titles, so the message tells Discord not to notify any mention (`allowed_mentions`) and escapes `<`, `>` and `&` for Slack, which reads `<!channel>` as a command.
+- **The webhook address is a credential** (Discord and Slack URLs carry their own token). It is read from the environment, never stored in the database or logged, and removed from any error text that is kept. Sending refuses redirects, so a receiver cannot bounce the request elsewhere. Only `http` and `https` addresses are accepted.
+- **The outbox cannot leak a change or lose one.** The event is written in the same transaction as the ticket change, so it exists if and only if the change was committed.
+
 ## Other controls
 
 | Area                 | Control                                                                                                                                                                                                                                 |

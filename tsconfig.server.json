@@ -25,7 +25,8 @@
     "src/server/**/*.ts",
     "src/shared/**/*.ts",
     "scripts/seed.ts",
-    "scripts/sync-indexes.ts"
+    "scripts/sync-indexes.ts",
+    "scripts/worker.ts"
   ],
   "exclude": ["src/server/**/*.test.ts", "src/server/__tests__/**"]
 }

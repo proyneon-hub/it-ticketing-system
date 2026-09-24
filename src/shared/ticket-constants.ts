@@ -46,12 +46,29 @@ export const auditTypes = [
   'role_changed',
   'ticket_deleted',
   'permission_denied',
+  'outbox_retried',
 ] as const;
 export type AuditType = (typeof auditTypes)[number];
 
 // Who may read a comment. Internal notes are for staff; a requester never receives one.
 export const commentVisibilities = ['public', 'internal'] as const;
 export type CommentVisibility = (typeof commentVisibilities)[number];
+
+// Events that leave the system through the outbox (see src/server/domain/outbox.ts).
+export const outboxEventTypes = [
+  'ticket.created',
+  'ticket.status_changed',
+  'ticket.assigned',
+  'ticket.comment_added',
+  'ticket.sla_at_risk',
+  'ticket.sla_breached',
+] as const;
+export type OutboxEventType = (typeof outboxEventTypes)[number];
+
+// pending: waiting to be sent (or to be retried). sending: claimed by a worker. delivered:
+// the webhook accepted it. dead: gave up after the last attempt; an admin can retry it.
+export const outboxStatuses = ['pending', 'sending', 'delivered', 'dead'] as const;
+export type OutboxStatus = (typeof outboxStatuses)[number];
 
 export const slaFilters = ['breached', 'due-soon'] as const;
 export type SlaFilter = (typeof slaFilters)[number];

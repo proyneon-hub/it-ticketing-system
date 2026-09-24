@@ -1,6 +1,7 @@
 import type { CommentVisibility } from '../../shared/ticket-constants';
 import { Types } from 'mongoose';
 import Comment, { type CommentAttrs, type CommentRecord } from '../models/Comment';
+import type { Tx } from './transaction';
 
 export type { CommentRecord };
 
@@ -17,10 +18,14 @@ export const listForTicket = (
     .lean<CommentRecord[]>();
 
 export async function create(
-  data: Omit<CommentAttrs, 'createdAt' | 'ticketId'> & { ticketId: string }
+  data: Omit<CommentAttrs, 'createdAt' | 'ticketId'> & { ticketId: string },
+  tx?: Tx
 ): Promise<CommentRecord> {
-  const comment = await Comment.create({ ...data, ticketId: new Types.ObjectId(data.ticketId) });
-  return comment.toObject() as CommentRecord;
+  const [comment] = await Comment.create(
+    [{ ...data, ticketId: new Types.ObjectId(data.ticketId) }],
+    tx ? { session: tx } : {}
+  );
+  return (comment as NonNullable<typeof comment>).toObject() as CommentRecord;
 }
 
 export async function deleteForTicket(ticketId: string): Promise<void> {

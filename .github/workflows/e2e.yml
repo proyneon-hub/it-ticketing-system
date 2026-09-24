@@ -77,6 +77,9 @@ jobs:
       E2E_ADMIN_PASSWORD: AdminPass123!
       E2E_USER_EMAIL: user@demo.local
       E2E_USER_PASSWORD: UserPass123!
+      # A throwaway secret for the scheduled-job endpoints of this disposable stack; the smoke
+      # test presents it. Not a real credential.
+      CRON_SECRET: ci-only-cron-secret-for-the-throwaway-stack-0123
     steps:
       - name: Check out repository
         uses: actions/checkout@v7

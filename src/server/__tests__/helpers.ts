@@ -51,3 +51,53 @@ export function cookieLine(response: Response, name = 'rt'): string {
   const cookies = ([] as string[]).concat(response.headers['set-cookie'] ?? []);
   return cookies.find((cookie) => cookie.startsWith(`${name}=`)) ?? '';
 }
+
+// A local HTTP server that stands in for a Discord or Slack webhook: it records every body it
+// receives and answers with the next status in the queue (200 once the queue is empty, or
+// whatever `fallback` is set to).
+export interface WebhookStub {
+  url: string;
+  requests: { path: string; body: unknown }[];
+  // Statuses to answer with, one per request, before falling back to `fallback`.
+  queue: number[];
+  fallback: number;
+  reset(): void;
+  close(): Promise<void>;
+}
+
+export async function startWebhookStub(): Promise<WebhookStub> {
+  const { createServer } = await import('http');
+  const stub: WebhookStub = {
+    url: '',
+    requests: [],
+    queue: [],
+    fallback: 200,
+    reset() {
+      stub.requests.length = 0;
+      stub.queue.length = 0;
+      stub.fallback = 200;
+    },
+    close: () => new Promise((resolve) => server.close(() => resolve())),
+  };
+
+  const server = createServer((req, res) => {
+    let raw = '';
+    req.on('data', (chunk) => (raw += chunk));
+    req.on('end', () => {
+      let body: unknown = raw;
+      try {
+        body = JSON.parse(raw);
+      } catch {
+        // Keep the raw text.
+      }
+      stub.requests.push({ path: req.url ?? '', body });
+      res.statusCode = stub.queue.shift() ?? stub.fallback;
+      res.end('{}');
+    });
+  });
+
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as { port: number };
+  stub.url = `http://127.0.0.1:${port}/hook?token=super-secret-token`;
+  return stub;
+}

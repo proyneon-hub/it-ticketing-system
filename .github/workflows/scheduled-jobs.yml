@@ -1,0 +1,56 @@
+name: Scheduled jobs
+
+# Vercel's free plan only runs a cron job once a day, so the half-hourly work is scheduled
+# here instead: mark tickets that reached an SLA milestone, then send any webhook
+# notifications that are due. Both endpoints are safe to call at any time and as often as you
+# like (see docs/API.md).
+#
+# It does nothing until two repository secrets exist:
+#   BASE_URL     the deployment, for example https://it-ticketing-system-pi.vercel.app
+#   CRON_SECRET  the same value as CRON_SECRET in the deployment's environment (32+ characters)
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A slow run must not overlap the next one.
+concurrency:
+  group: scheduled-jobs
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: SLA escalation and notifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: ${{ secrets.BASE_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Check that the jobs are configured
+        id: config
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipped: add the BASE_URL and CRON_SECRET repository secrets to turn the scheduled jobs on."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: SLA escalation
+        if: steps.config.outputs.configured == 'true'
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 --retry 2 --retry-delay 5 \
+            -X POST -H "Authorization: Bearer $CRON_SECRET" \
+            "${BASE_URL%/}/api/jobs/sla-escalation"
+
+      - name: Deliver notifications
+        if: steps.config.outputs.configured == 'true'
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 --retry 2 --retry-delay 5 \
+            -X POST -H "Authorization: Bearer $CRON_SECRET" \
+            "${BASE_URL%/}/api/jobs/outbox-delivery"

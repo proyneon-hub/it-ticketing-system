@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   auditTypes,
   commentVisibilities,
+  outboxStatuses,
   priorities,
   roles,
   slaFilters,
@@ -146,3 +147,10 @@ export const listAuditQuerySchema = z.object({
   limit: integerParam('limit', { defaultValue: 25, min: 1, max: 100 }),
 });
 export type ListAuditQuery = z.output<typeof listAuditQuerySchema>;
+
+export const listOutboxQuerySchema = z.object({
+  status: optionalFilter(z.enum(outboxStatuses, { error: 'Invalid outbox status.' })),
+  page: integerParam('page', { defaultValue: 1, min: 1, max: 100000 }),
+  limit: integerParam('limit', { defaultValue: 25, min: 1, max: 100 }),
+});
+export type ListOutboxQuery = z.output<typeof listOutboxQuerySchema>;

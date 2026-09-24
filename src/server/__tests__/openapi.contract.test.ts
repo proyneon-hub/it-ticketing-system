@@ -8,6 +8,7 @@ import request from 'supertest';
 import { priorities, roles, slaFilters, sortFields, statuses } from '../../shared/ticket-constants';
 import app from '../app';
 import { connectToDatabase } from '../db';
+import OutboxEvent from '../models/OutboxEvent';
 import Ticket from '../models/Ticket';
 import spec from '../openapi.json';
 import {
@@ -300,6 +301,80 @@ describe('responses match their documented schemas', () => {
     conforms('AuditList', audit.body);
     expect(audit.body.events.length).toBeGreaterThan(0);
     used('listAudit');
+  });
+
+  test('scheduled jobs and the outbox match their schemas', async () => {
+    // Turn notifications on so events are recorded; nothing is delivered (the address is
+    // never called) because the events are only listed here.
+    process.env.WEBHOOK_URL = 'http://127.0.0.1:9/hook';
+    process.env.CRON_SECRET = 'contract-test-cron-secret-of-32-plus-characters';
+    try {
+      await request(app)
+        .post('/api/tickets')
+        .set(as('admin'))
+        .send({ title: 'Outbox contract check' })
+        .expect(201);
+      await OutboxEvent.updateOne(
+        {},
+        { $set: { status: 'dead', lastError: 'The webhook answered HTTP 500.' } }
+      );
+
+      const listed = await request(app).get('/api/outbox?status=dead').set(as('admin')).expect(200);
+      conforms('OutboxList', listed.body);
+      expect(listed.body.events).toHaveLength(1);
+      used('listOutbox');
+
+      const retried = await request(app)
+        .post(`/api/outbox/${listed.body.events[0]._id}/retry`)
+        .set(as('admin'))
+        .expect(200);
+      conforms('OutboxEventEnvelope', retried.body);
+      used('retryOutboxEvent');
+
+      const auth = { Authorization: `Bearer ${process.env.CRON_SECRET}` };
+      const escalation = await request(app).post('/api/jobs/sla-escalation').set(auth).expect(200);
+      conforms('EscalationResult', escalation.body);
+      used('runSlaEscalation');
+
+      // With no webhook configured the delivery job reports that and does nothing.
+      delete process.env.WEBHOOK_URL;
+      const delivery = await request(app).post('/api/jobs/outbox-delivery').set(auth).expect(200);
+      conforms('DeliveryResult', delivery.body);
+      expect(delivery.body.configured).toBe(false);
+      used('runOutboxDelivery');
+
+      const unauthorised = await request(app).post('/api/jobs/sla-escalation').expect(401);
+      conforms('Error', unauthorised.body);
+    } finally {
+      delete process.env.WEBHOOK_URL;
+      delete process.env.CRON_SECRET;
+    }
+  });
+
+  test('a ticket the SLA job has touched still conforms', async () => {
+    const created = await request(app)
+      .post('/api/tickets')
+      .set(as('admin'))
+      .send({ title: 'Overdue for the contract', priority: 'low', dueAt: '2020-01-01T00:00:00Z' })
+      .expect(201);
+    process.env.CRON_SECRET = 'contract-test-cron-secret-of-32-plus-characters';
+    try {
+      await request(app)
+        .post('/api/jobs/sla-escalation')
+        .set('Authorization', `Bearer ${process.env.CRON_SECRET}`)
+        .expect(200);
+    } finally {
+      delete process.env.CRON_SECRET;
+    }
+
+    const fetched = await request(app)
+      .get(`/api/tickets/${created.body.ticket._id}`)
+      .set(as('admin'))
+      .expect(200);
+
+    conforms('TicketEnvelope', fetched.body);
+    expect(fetched.body.ticket.slaBreachedAt).toBeDefined();
+    expect(fetched.body.ticket.activity.at(-1).actorRole).toBe('system');
   });
 
   test('every documented operation is exercised above', () => {
