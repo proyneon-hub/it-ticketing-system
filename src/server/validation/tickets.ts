@@ -48,12 +48,28 @@ export const parseCreateComment = (body: unknown): CreateCommentInput =>
 export const parsePatchTicket = (body: unknown): PatchTicketInput =>
   parseOrThrow(patchTicketSchema, body);
 
-// If-Match carries the ticket version the client last saw: "3", W/"3" or a bare 3.
-// `*` (any current version) and a missing header both mean "no precondition".
-export function parseIfMatch(header: string | undefined): number | undefined {
+// The ticket version a header carries: "3", W/"3" or a bare 3. `*` (any current version) and a
+// missing header both mean "no precondition".
+function parseVersionHeader(header: string | undefined, name: string): number | undefined {
   if (header === undefined || header.trim() === '*') return undefined;
 
   const match = /^(?:W\/)?"?(\d+)"?$/.exec(header.trim());
-  if (!match) throw new ValidationError('If-Match must be a ticket version such as "3".');
+  if (!match) throw new ValidationError(`${name} must be a ticket version such as "3".`);
   return Number(match[1]);
 }
+
+// If-Match carries the ticket version the client last saw.
+export const parseIfMatch = (header: string | undefined): number | undefined =>
+  parseVersionHeader(header, 'If-Match');
+
+// The version an edit was made against. `X-Ticket-Version` is the same thing as `If-Match`, for
+// callers behind a CDN that answers If-Match itself: Vercel compares it with the response's ETag,
+// so a successful edit (whose ETag is the new version) came back as 412 after it had been saved.
+// The web app sends X-Ticket-Version; if both are sent, it wins.
+export const parseExpectedVersion = (
+  ifMatch: string | undefined,
+  ticketVersion: string | undefined
+): number | undefined =>
+  ticketVersion !== undefined
+    ? parseVersionHeader(ticketVersion, 'X-Ticket-Version')
+    : parseIfMatch(ifMatch);

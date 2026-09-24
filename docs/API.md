@@ -142,6 +142,7 @@ Every ticket carries a version, `__v`, that increases by one on each update. `PA
 - **Send `If-Match: "<version>"`** with the version you loaded. If the ticket has changed since, the API answers `409` and writes nothing, so you cannot overwrite an edit you have not seen. The web app does this on every edit and reloads the list on a `409`.
 - **Without `If-Match`** the update is applied to the latest version. Each update is a single atomic write guarded by the version it was computed from; if another write lands first, the update is recomputed against the new state (up to three attempts), so the `from` value in the activity log is always the real previous value.
 - `If-Match` accepts `"3"`, `W/"3"` or `3`. `*` means any current version. Anything else is a `400`.
+- **`X-Ticket-Version: 3` means the same thing, and is what the web app sends.** Some hosts answer `If-Match` themselves: Vercel compares it with the response's `ETag`, so a successful edit (whose `ETag` is the new version) came back as `412` after it had been saved. Use `X-Ticket-Version` when the API is behind such a host; if both headers are sent it wins.
 
 ## Comments and internal notes
 

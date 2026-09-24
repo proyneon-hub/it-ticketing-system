@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe('updateTicket', () => {
-  it('sends the ticket version as a quoted If-Match so a stale edit is refused', async () => {
+  it('sends the ticket version as X-Ticket-Version so a stale edit is refused', async () => {
     const api = await loadApi();
     fetchMock.mockResolvedValue(json({ ticket: {} }));
 
@@ -35,18 +35,20 @@ describe('updateTicket', () => {
     const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/tickets/abc');
     expect(options.method).toBe('PATCH');
-    expect(options.headers['If-Match']).toBe('"3"');
+    expect(options.headers['X-Ticket-Version']).toBe('3');
+    // Not If-Match: some hosts answer that header themselves (see the API notes).
+    expect(options.headers['If-Match']).toBeUndefined();
   });
 
-  it('sends no If-Match when the version is unknown, and treats version 0 as known', async () => {
+  it('sends no version when it is unknown, and treats version 0 as known', async () => {
     const api = await loadApi();
     fetchMock.mockResolvedValue(json({ ticket: {} }));
 
     await api.updateTicket('abc', { priority: 'high' });
     await api.updateTicket('abc', { priority: 'high' }, { version: 0 });
 
-    expect(fetchMock.mock.calls[0][1].headers['If-Match']).toBeUndefined();
-    expect(fetchMock.mock.calls[1][1].headers['If-Match']).toBe('"0"');
+    expect(fetchMock.mock.calls[0][1].headers['X-Ticket-Version']).toBeUndefined();
+    expect(fetchMock.mock.calls[1][1].headers['X-Ticket-Version']).toBe('0');
   });
 });
 

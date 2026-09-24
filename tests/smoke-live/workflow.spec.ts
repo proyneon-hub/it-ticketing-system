@@ -38,7 +38,9 @@ test(
 
       // A legal move succeeds and returns the new version.
       const moved = await request.patch(url, {
-        headers: { ...headers, 'If-Match': `"${ticket.__v}"` },
+        // X-Ticket-Version, as the web app sends it. On Vercel, If-Match would be answered by the
+        // platform (412) after the edit was saved.
+        headers: { ...headers, 'X-Ticket-Version': String(ticket.__v) },
         data: { status: 'in-progress' },
       });
       expect(moved.status()).toBe(200);
@@ -46,7 +48,7 @@ test(
 
       // Editing from the version loaded before that move is refused.
       const stale = await request.patch(url, {
-        headers: { ...headers, 'If-Match': `"${ticket.__v}"` },
+        headers: { ...headers, 'X-Ticket-Version': String(ticket.__v) },
         data: { priority: 'urgent' },
       });
       expect(stale.status()).toBe(409);

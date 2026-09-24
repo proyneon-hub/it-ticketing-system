@@ -122,7 +122,7 @@ test(
     // Someone else changed the ticket after this page loaded it.
     await page.route('**/api/tickets/*', (route) => {
       if (route.request().method() !== 'PATCH') return route.fallback();
-      sentVersion = route.request().headers()['if-match'];
+      sentVersion = route.request().headers()['x-ticket-version'];
       return route.fulfill({
         status: 409,
         json: {
@@ -141,7 +141,7 @@ test(
     await dashboardPage.expectError(
       'This ticket changed since you loaded it. Reload it and try again.'
     );
-    expect(sentVersion).toBe('"0"');
+    expect(sentVersion).toBe('0');
     await expect.poll(() => listRequests).toBeGreaterThan(listRequestsBeforeEdit);
   }
 );

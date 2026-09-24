@@ -93,7 +93,7 @@ function patchCachedTicket(queryClient: QueryClient, id: string, changes: Partia
 }
 
 // Edits show at once and are undone if the server refuses them. The edit is sent with the
-// ticket's version (If-Match), so a stale change fails with a 409 instead of overwriting
+// ticket's version (X-Ticket-Version), so a stale change fails with a 409 instead of overwriting
 // someone else's work; in that case the screen goes back to what it showed before and then
 // reloads what the server has now.
 export function useUpdateTicket() {

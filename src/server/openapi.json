@@ -426,6 +426,9 @@
         "parameters": [
           {
             "$ref": "#/components/parameters/IfMatch"
+          },
+          {
+            "$ref": "#/components/parameters/TicketVersion"
           }
         ],
         "requestBody": {
@@ -1096,7 +1099,7 @@
         "name": "If-Match",
         "in": "header",
         "required": false,
-        "description": "The ticket version the caller last saw (`__v`), as `\"3\"`, `W/\"3\"` or `3`. If the ticket has changed since, the update is refused with 409 and nothing is written. Without it the update is applied to the latest version.",
+        "description": "The ticket version the caller last saw (`__v`), as `\"3\"`, `W/\"3\"` or `3`. If the ticket has changed since, the update is refused with 409 and nothing is written. Without it the update is applied to the latest version. Prefer `X-Ticket-Version` when the API is behind Vercel or another CDN that evaluates `If-Match` itself.",
         "schema": {
           "type": "string",
           "example": "\"3\""
@@ -1188,6 +1191,16 @@
         "schema": {
           "type": "string",
           "maxLength": 100
+        }
+      },
+      "TicketVersion": {
+        "name": "X-Ticket-Version",
+        "in": "header",
+        "required": false,
+        "description": "The ticket version the caller last saw (`__v`), as `3`. The same as `If-Match`, and what the web app sends. If the ticket has changed since, the update is refused with 409 and nothing is written. Use this instead of `If-Match` behind a CDN that answers `If-Match` itself (Vercel returns 412 after the edit was saved, because it compares the header with the response's `ETag`). If both are sent, this one is used.",
+        "schema": {
+          "type": "string",
+          "example": "3"
         }
       }
     },
