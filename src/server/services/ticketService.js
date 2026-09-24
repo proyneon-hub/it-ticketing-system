@@ -7,6 +7,7 @@ const {
   terminalStatuses,
 } = require('../../shared/ticket-constants.json');
 const { HttpError, badRequest, forbidden } = require('../errors');
+const { assertTransition, isReopen } = require('../domain/ticketWorkflow');
 
 const HOUR_MS = 60 * 60 * 1000;
 const DUE_SOON_WINDOW_MS = 24 * HOUR_MS;
@@ -175,9 +176,15 @@ function activityEntriesForPatch(user, existing, payload) {
       activityEntry(user, { action, from: existing[field], to: payload[field] })
     );
 
-  if (payload.status === 'resolved')
-    entries.push(activityEntry(user, { action: 'ticket_resolved' }));
-  if (payload.status === 'closed') entries.push(activityEntry(user, { action: 'ticket_closed' }));
+  // Milestones are logged when the status actually changes, not every time a
+  // client re-sends the current one.
+  if (payload.status && payload.status !== existing.status) {
+    if (payload.status === 'resolved')
+      entries.push(activityEntry(user, { action: 'ticket_resolved' }));
+    if (payload.status === 'closed') entries.push(activityEntry(user, { action: 'ticket_closed' }));
+    if (isReopen(existing.status, payload.status))
+      entries.push(activityEntry(user, { action: 'ticket_reopened' }));
+  }
 
   if (entries.length === 0) {
     entries.push(
@@ -260,29 +267,62 @@ function deriveTimestampChanges(existing, payload) {
   return { set, unset };
 }
 
-async function updateTicket(user, id, payload) {
+// A version filter that also matches documents written before versioning existed.
+const versionFilter = (version) => (version === undefined ? { $exists: false } : version);
+
+const versionConflict = () =>
+  new HttpError(409, 'This ticket changed since you loaded it. Reload it and try again.');
+
+// Without If-Match the caller has not seen a specific version, so a lost race is
+// retried against the fresh ticket instead of failing.
+const MAX_UNCONDITIONAL_ATTEMPTS = 3;
+
+// Every update is one atomic findOneAndUpdate guarded by the version it was
+// computed from. If another write got in first the guard matches nothing, so a
+// change (and the `from` values in its activity entries) is never built from a
+// stale copy. `expectedVersion` is the caller's If-Match: when it does not match
+// the current version the update is refused with 409.
+async function updateTicket(user, id, payload, { expectedVersion } = {}) {
   assertValidObjectId(id);
   if (Object.keys(payload).length === 0) {
     throw badRequest('No supported ticket fields were provided.');
   }
 
-  const existing = await Ticket.findById(id);
-  if (!existing) throw notFound();
+  for (let attempt = 1; ; attempt += 1) {
+    const existing = await Ticket.findById(id).lean();
+    if (!existing) throw notFound();
 
-  assertCanMutateTicket(user, existing, payload);
+    assertCanMutateTicket(user, existing, payload);
+    if (expectedVersion !== undefined && expectedVersion !== (existing.__v ?? 0)) {
+      throw versionConflict();
+    }
+    if (payload.status) assertTransition(existing.status, payload.status, user.role);
 
-  if (payload.status === 'assigned' && (payload.assignee || existing.assignee) === 'Unassigned') {
-    throw badRequest('Assigned tickets need an assignee.');
+    if (payload.status === 'assigned' && (payload.assignee || existing.assignee) === 'Unassigned') {
+      throw badRequest('Assigned tickets need an assignee.');
+    }
+
+    const { set, unset } = deriveTimestampChanges(existing, payload);
+    const update = {
+      $set: { ...payload, ...set },
+      $push: { activity: { $each: activityEntriesForPatch(user, existing, payload) } },
+      $inc: { __v: 1 },
+      ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+    };
+
+    const updated = await Ticket.findOneAndUpdate(
+      { _id: id, __v: versionFilter(existing.__v) },
+      update,
+      { new: true, runValidators: true }
+    );
+    if (updated) return updated;
+
+    // Lost the race: someone changed or deleted the ticket after we read it.
+    if (!(await Ticket.exists({ _id: id }))) throw notFound();
+    if (expectedVersion !== undefined || attempt >= MAX_UNCONDITIONAL_ATTEMPTS) {
+      throw versionConflict();
+    }
   }
-
-  const { set, unset } = deriveTimestampChanges(existing, payload);
-  const update = {
-    $set: { ...payload, ...set },
-    $push: { activity: { $each: activityEntriesForPatch(user, existing, payload) } },
-    ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
-  };
-
-  return Ticket.findByIdAndUpdate(id, update, { new: true, runValidators: true });
 }
 
 async function deleteTicket(id) {

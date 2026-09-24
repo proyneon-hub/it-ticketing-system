@@ -1,4 +1,5 @@
 const { isDatabaseConnectivityError } = require('../db');
+const { HttpError } = require('../errors');
 const { logger } = require('../logger');
 
 // Turns anything thrown by a route into { status, message, errors? }. Anything
@@ -38,8 +39,10 @@ function describeError(error) {
     return { status: 409, message: 'A record with that unique value already exists.' };
   }
 
+  // An HttpError is thrown on purpose with a message written for the client, so
+  // it keeps its status even for 5xx. Any other 5xx may leak internals.
   const status = error.statusCode || error.status || 500;
-  if (status < 500) {
+  if (status < 500 || error instanceof HttpError) {
     return { status, message: error.message, ...(error.errors ? { errors: error.errors } : {}) };
   }
 

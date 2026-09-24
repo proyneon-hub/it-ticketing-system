@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createTicket,
   deleteTicket,
@@ -46,12 +46,15 @@ export function useTickets({ user, onError, onSuccess }) {
   const requestKey = `${userId}#${filtersKey}#${reloadKey}`;
 
   const refresh = useCallback(() => setReloadKey((key) => key + 1), []);
+  // A reload started to recover from an error must not clear that error's message.
+  const keepErrorOnReload = useRef(false);
 
   useEffect(() => {
     if (!userId) return undefined;
 
     const controller = new AbortController();
-    onError(null);
+    if (keepErrorOnReload.current) keepErrorOnReload.current = false;
+    else onError(null);
 
     fetchTickets(activeFilters, { signal: controller.signal })
       .then((data) => {
@@ -93,6 +96,13 @@ export function useTickets({ user, onError, onSuccess }) {
   const loading = Boolean(userId) && settled.key !== requestKey;
   const { tickets, pagination } = settled;
 
+  // Edits are sent against the version the user is looking at. A ref keeps
+  // `patch` stable instead of rebuilding it whenever the table reloads.
+  const ticketsRef = useRef(tickets);
+  useEffect(() => {
+    ticketsRef.current = tickets;
+  }, [tickets]);
+
   const updateFilter = useCallback((field, value) => {
     setFilters((current) => ({ ...current, [field]: value, page: 1 }));
   }, []);
@@ -133,12 +143,20 @@ export function useTickets({ user, onError, onSuccess }) {
       onError(null);
       onSuccess('');
 
+      const version = ticketsRef.current.find((ticket) => ticket._id === id)?.__v;
+
       try {
-        await updateTicket(id, changes);
+        await updateTicket(id, changes, { version });
         onSuccess('Ticket updated.');
         refresh();
       } catch (error) {
         onError(error);
+        // 409: the ticket changed since it was loaded (or the move is no longer
+        // allowed from its current state). Show it as it is now.
+        if (error.status === 409) {
+          keepErrorOnReload.current = true;
+          refresh();
+        }
       }
     },
     [onError, onSuccess, refresh]

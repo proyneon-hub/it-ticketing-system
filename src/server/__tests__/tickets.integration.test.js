@@ -370,17 +370,159 @@ describe('ticket lifecycle', () => {
 
   test('sets resolvedAt on resolution, keeps it on close, and clears it on reopen', async () => {
     const ticket = await seedTicket({ status: 'in-progress' });
-    const patch = (body) =>
-      request(app).patch(`/api/tickets/${ticket.id}`).set(as('tech')).send(body).expect(200);
+    const patch = (role, body) =>
+      request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body).expect(200);
 
-    const resolved = (await patch({ status: 'resolved' })).body.ticket;
+    const resolved = (await patch('tech', { status: 'resolved' })).body.ticket;
     expect(resolved.resolvedAt).toBeDefined();
 
-    const closed = (await patch({ status: 'closed' })).body.ticket;
+    const closed = (await patch('tech', { status: 'closed' })).body.ticket;
     expect(closed.resolvedAt).toBe(resolved.resolvedAt);
 
-    const reopened = (await patch({ status: 'in-progress' })).body.ticket;
+    // Reopening a closed ticket is an admin action.
+    const reopened = (await patch('admin', { status: 'in-progress' })).body.ticket;
     expect(reopened.resolvedAt).toBeUndefined();
+  });
+
+  describe('workflow', () => {
+    const patchAs = (role, ticket, body) =>
+      request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body);
+
+    test('rejects a transition the workflow does not allow with 409 and changes nothing', async () => {
+      const ticket = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
+
+      const response = await patchAs('tech', ticket, { status: 'resolved' }).expect(409);
+
+      expect(response.body.message).toBe('Cannot move a ticket from open to resolved.');
+      const stored = await Ticket.findById(ticket.id);
+      expect(stored.status).toBe('open');
+      expect(stored.activity).toHaveLength(0);
+    });
+
+    test('only an admin can reopen a closed ticket', async () => {
+      const ticket = await seedTicket({ status: 'closed' });
+
+      const denied = await patchAs('tech', ticket, { status: 'in-progress' }).expect(403);
+      expect(denied.body.message).toMatch(/admin/i);
+      expect((await Ticket.findById(ticket.id)).status).toBe('closed');
+
+      await patchAs('admin', ticket, { status: 'in-progress' }).expect(200);
+    });
+
+    test('reopening a resolved ticket clears resolvedAt and logs ticket_reopened', async () => {
+      const ticket = await seedTicket({ status: 'in-progress' });
+      await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
+
+      const response = await patchAs('tech', ticket, { status: 'in-progress' }).expect(200);
+
+      expect(response.body.ticket.resolvedAt).toBeUndefined();
+      const actions = response.body.ticket.activity.map((entry) => entry.action);
+      expect(actions).toEqual([
+        'status_changed',
+        'ticket_resolved',
+        'status_changed',
+        'ticket_reopened',
+      ]);
+    });
+
+    test('re-sending the current status is accepted and does not log a second resolution', async () => {
+      const ticket = await seedTicket({ status: 'in-progress' });
+      await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
+
+      const response = await patchAs('tech', ticket, { status: 'resolved' }).expect(200);
+
+      const resolutions = response.body.ticket.activity.filter(
+        (entry) => entry.action === 'ticket_resolved'
+      );
+      expect(resolutions).toHaveLength(1);
+    });
+  });
+
+  describe('concurrent edits', () => {
+    const patchWith = (ticket, body, ifMatch, role = 'tech') => {
+      const req = request(app).patch(`/api/tickets/${ticket.id}`).set(as(role)).send(body);
+      return ifMatch === undefined ? req : req.set('If-Match', ifMatch);
+    };
+
+    test('exposes the ticket version and bumps it on every update', async () => {
+      const ticket = await seedTicket({ status: 'open' });
+
+      const fetched = await request(app)
+        .get(`/api/tickets/${ticket.id}`)
+        .set(as('tech'))
+        .expect(200);
+      expect(fetched.body.ticket.__v).toBe(0);
+
+      const updated = await patchWith(ticket, { priority: 'high' }, '"0"').expect(200);
+      expect(updated.body.ticket.__v).toBe(1);
+      expect(updated.headers.etag).toBe('"1"');
+    });
+
+    test('rejects an edit made against a stale version with 409 and applies nothing', async () => {
+      const ticket = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
+      await patchWith(ticket, { priority: 'high' }, '"0"').expect(200);
+
+      const stale = await patchWith(ticket, { status: 'in-progress' }, '"0"').expect(409);
+
+      expect(stale.body.message).toMatch(/changed since you loaded/i);
+      const stored = await Ticket.findById(ticket.id);
+      expect(stored.status).toBe('open');
+      expect(stored.activity.map((entry) => entry.action)).toEqual(['priority_changed']);
+    });
+
+    test('accepts strong, weak and bare version forms and rejects garbage', async () => {
+      const ticket = await seedTicket();
+
+      await patchWith(ticket, { priority: 'high' }, '"0"').expect(200);
+      await patchWith(ticket, { priority: 'low' }, 'W/"1"').expect(200);
+      await patchWith(ticket, { priority: 'urgent' }, '2').expect(200);
+      await patchWith(ticket, { priority: 'medium' }, 'not-a-version').expect(400);
+      // `*` means "any current version", the same as not sending the header.
+      await patchWith(ticket, { priority: 'medium' }, '*').expect(200);
+    });
+
+    test('two edits from the same version: exactly one wins, and the log has one entry', async () => {
+      const ticket = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
+
+      const responses = await Promise.all([
+        patchWith(ticket, { status: 'in-progress' }, '"0"'),
+        patchWith(ticket, { status: 'assigned' }, '"0"'),
+      ]);
+
+      expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+      const stored = await Ticket.findById(ticket.id);
+      expect(stored.__v).toBe(1);
+      expect(stored.activity).toHaveLength(1);
+      expect(stored.activity[0].from).toBe('open');
+    });
+
+    test('without If-Match a lost race is retried, so activity always records the real previous value', async () => {
+      const ticket = await seedTicket({ status: 'in-progress', assignee: 'Theo Technician' });
+
+      const responses = await Promise.all([
+        patchWith(ticket, { priority: 'high' }),
+        patchWith(ticket, { priority: 'urgent' }),
+        patchWith(ticket, { assignee: 'Una Support' }, undefined, 'admin'),
+      ]);
+
+      expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+      const stored = await Ticket.findById(ticket.id);
+      expect(stored.__v).toBe(3);
+      // Each change starts from what the previous one produced: no two entries share a `from`.
+      const priorityChanges = stored.activity.filter(
+        (entry) => entry.action === 'priority_changed'
+      );
+      expect(priorityChanges).toHaveLength(2);
+      expect(priorityChanges[1].from).toBe(priorityChanges[0].to);
+      expect(priorityChanges[0].from).toBe('medium');
+    });
+
+    test('a ticket deleted during the update is 404, not a conflict', async () => {
+      const ticket = await seedTicket();
+      await Ticket.deleteOne({ _id: ticket.id });
+
+      await patchWith(ticket, { priority: 'high' }, '"0"').expect(404);
+    });
   });
 
   test('recalculates the SLA due date when priority changes', async () => {

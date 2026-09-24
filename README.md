@@ -4,7 +4,7 @@
 [![Playwright Regression](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered Node.js/Express API on MongoDB, a React client, an OpenAPI contract, 216 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered Node.js/Express API on MongoDB, a React client, an OpenAPI contract, 306 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
 
 **[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
 
@@ -14,7 +14,7 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 
 | Building software                                                                                       | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
 | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| API split into routes, Zod validation, services and models, so business rules are testable on their own | 216 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own | 306 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
 | React client split into hooks and small components; debounced search that cancels stale requests        | 12 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
 | OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                             | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
 | Role-based access enforced in the API and in the database query, not just the UI                        | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
@@ -53,8 +53,9 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 
 ## Engineering highlights
 
-- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-012](docs/DEFECT_LOG.md)).
+- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-015](docs/DEFECT_LOG.md)).
 - **A bug every mock missed.** The real-stack smoke test caught a regression that all 66 mocked browser runs and 88 unit tests passed: sign-in returns the user as `id`, `/auth/me` returns `sub`, and the mocks had used `sub` for both. The fix, and the fidelity rule that came out of it, are in [ADR 002](docs/adr/002-layered-test-strategy.md).
+- **A workflow the API enforces.** Status moves follow an explicit transition table shared by the API and the UI; an illegal move is a `409`. Edits are atomic and versioned: `If-Match` refuses a stale edit, and a lost race can never write an activity entry built from out-of-date data ([API notes](docs/API.md#editing-a-ticket-safely)).
 - **Docs that cannot drift.** A contract test validates every real API response against the OpenAPI schemas, and fails if an operation is added without being exercised.
 - **Support-friendly by design.** A user sees `Reference: <id>`; `grep <id>` finds the request and, for a failure, its stack ([ADR 003](docs/adr/003-operability-and-request-tracing.md), [runbook](docs/RUNBOOK.md#tracing-a-user-reported-error)).
 - **Security that fits a demo honestly.** Helmet and a strict CSP, failed-login rate limiting that never locks out demo visitors, CSV formula neutralisation, and a plain list of what is not production-grade ([Security notes](docs/SECURITY_NOTES.md)).
@@ -77,12 +78,12 @@ Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](d
 
 | Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
 | --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
-| API unit and integration    | Jest, Supertest, in-memory MongoDB       | 84                 | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
-| Frontend unit and component | Vitest, Testing Library                  | 94                 | Hooks (debounce, stale responses, session), components and the whole `App`      | `npm run test:unit`                  |
+| API unit and integration    | Jest, Supertest, in-memory MongoDB       | 160                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
+| Frontend unit and component | Vitest, Testing Library                  | 104                | Hooks (debounce, stale responses, session), components and the whole `App`      | `npm run test:unit`                  |
 | Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
-| Mocked browser regression   | Playwright, page objects, typed fixtures | 19 (57 runs)       | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
+| Mocked browser regression   | Playwright, page objects, typed fixtures | 22 (66 runs)       | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
 | Accessibility               | Playwright and Axe                       | 3 (9 runs)         | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
-| Real-stack smoke            | Playwright against Docker Compose        | 7                  | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
+| Real-stack smoke            | Playwright against Docker Compose        | 8                  | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
 | Support monitoring          | pytest                                   | 9                  | The Python health, sign-in and report tooling                                   | `pytest` in `Support-Ops-Automation` |
 
 `npm test` runs the API and frontend suites; `npm run test:coverage` adds coverage thresholds. The strategy, and why each layer exists, is in [ADR 002](docs/adr/002-layered-test-strategy.md); the map from requirement to test is in the [Test plan](docs/TEST_PLAN.md).
@@ -134,7 +135,7 @@ docs/             Architecture, decisions, test plan, runbook, security notes, d
 
 ## Security and limitations
 
-This is a portfolio demo with in-code demo accounts, not a production identity system: there is no user database or password hashing, and the token lives in `localStorage`. [Security notes](docs/SECURITY_NOTES.md) lists what is implemented, what is not, and what a production version would add.
+This is a portfolio demo with in-code demo accounts, not a production identity system: there is no user database or password hashing, and the token lives in `localStorage`. In production the API refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters, so a missing secret cannot leave the demo forgeable. [Security notes](docs/SECURITY_NOTES.md) lists what is implemented, what is not, and what a production version would add.
 
 ## Roadmap
 

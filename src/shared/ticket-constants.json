@@ -3,6 +3,14 @@
   "statuses": ["open", "assigned", "in-progress", "resolved", "closed"],
   "priorities": ["low", "medium", "high", "urgent"],
   "terminalStatuses": ["resolved", "closed"],
+  "statusTransitions": {
+    "open": ["assigned", "in-progress", "closed"],
+    "assigned": ["in-progress", "open"],
+    "in-progress": ["resolved", "assigned"],
+    "resolved": ["closed", "in-progress"],
+    "closed": ["in-progress"]
+  },
+  "adminOnlyTransitions": [["closed", "in-progress"]],
   "slaHoursByPriority": {
     "low": 72,
     "medium": 48,

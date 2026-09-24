@@ -25,6 +25,31 @@ function renderRow({ ticket = makeTicket(), role = 'admin', expanded = false, ..
   return props;
 }
 
+describe('status workflow', () => {
+  const statusValues = () =>
+    Array.from(screen.getByLabelText('Status for TKT-0001').querySelectorAll('option')).map(
+      (option) => option.value
+    );
+
+  it('offers only the moves the workflow allows from the current status', () => {
+    renderRow({ role: 'technician', ticket: makeTicket({ status: 'open' }) });
+
+    expect(statusValues()).toEqual(['open', 'assigned', 'in-progress', 'closed']);
+  });
+
+  it('hides reopening a closed ticket from technicians', () => {
+    renderRow({ role: 'technician', ticket: makeTicket({ status: 'closed' }) });
+
+    expect(statusValues()).toEqual(['closed']);
+  });
+
+  it('lets admins reopen a closed ticket', () => {
+    renderRow({ role: 'admin', ticket: makeTicket({ status: 'closed' }) });
+
+    expect(statusValues()).toEqual(['closed', 'in-progress']);
+  });
+});
+
 describe('role-based controls', () => {
   it('gives admins full control including delete', () => {
     renderRow({ role: 'admin' });
@@ -57,10 +82,12 @@ describe('editing', () => {
     const { onPatch } = renderRow();
     const user = userEvent.setup();
 
-    await user.selectOptions(screen.getByLabelText('Status for TKT-0001'), 'resolved');
+    await user.selectOptions(screen.getByLabelText('Status for TKT-0001'), 'in-progress');
     await user.selectOptions(screen.getByLabelText('Priority for TKT-0001'), 'urgent');
 
-    expect(onPatch).toHaveBeenNthCalledWith(1, '665f0f40d5d4f541f8ef1001', { status: 'resolved' });
+    expect(onPatch).toHaveBeenNthCalledWith(1, '665f0f40d5d4f541f8ef1001', {
+      status: 'in-progress',
+    });
     expect(onPatch).toHaveBeenNthCalledWith(2, '665f0f40d5d4f541f8ef1001', { priority: 'urgent' });
   });
 

@@ -35,6 +35,7 @@ const activityLabels = {
   assignee_changed: 'Assignee changed',
   ticket_resolved: 'Ticket resolved',
   ticket_closed: 'Ticket closed',
+  ticket_reopened: 'Ticket reopened',
 };
 
 export function activityLabel(activity) {

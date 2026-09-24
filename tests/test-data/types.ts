@@ -49,6 +49,8 @@ export interface MockTicket {
   createdAt: string;
   updatedAt: string;
   activity: MockActivity[];
+  // Ticket version, as the real API returns it; sent back as If-Match on edits.
+  __v: number;
 }
 
 export interface MockDashboardStats {

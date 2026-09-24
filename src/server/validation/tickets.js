@@ -107,7 +107,18 @@ function parseOrThrow(schema, input) {
   return Object.fromEntries(Object.entries(result.data).filter(([, value]) => value !== undefined));
 }
 
+// If-Match carries the ticket version the client last saw: "3", W/"3" or a bare 3.
+// `*` (any current version) and a missing header both mean "no precondition".
+function parseIfMatch(header) {
+  if (header === undefined || header.trim() === '*') return undefined;
+
+  const match = /^(?:W\/)?"?(\d+)"?$/.exec(header.trim());
+  if (!match) throw badRequest('If-Match must be a ticket version such as "3".');
+  return Number(match[1]);
+}
+
 module.exports = {
+  parseIfMatch,
   parseListQuery: (query) => parseOrThrow(listQuerySchema, query),
   parseExportQuery: (query) => parseOrThrow(exportQuerySchema, query),
   parseCreateTicket: (body) => parseOrThrow(createTicketSchema, body),

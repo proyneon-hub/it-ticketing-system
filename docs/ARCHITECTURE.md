@@ -67,9 +67,22 @@ Demo credentials are checked against in-code demo users. A successful sign-in re
 
 ## Ticket workflow
 
-```text
-open -> assigned -> in-progress -> resolved -> closed
+```mermaid
+stateDiagram-v2
+    [*] --> open
+    open --> assigned
+    open --> in_progress: in-progress
+    open --> closed
+    assigned --> in_progress
+    assigned --> open
+    in_progress --> resolved
+    in_progress --> assigned
+    resolved --> closed
+    resolved --> in_progress: reopen
+    closed --> in_progress: reopen (admin only)
 ```
+
+The transition table is `statusTransitions` in [`src/shared/ticket-constants.json`](../src/shared/ticket-constants.json). The API enforces it ([`ticketWorkflow.js`](../src/server/domain/ticketWorkflow.js)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
 Resolved and closed tickets are terminal: they stop the SLA clock. Each priority has an SLA window (urgent 4h, high 24h, medium 48h, low 72h) that sets the due date.
 

@@ -139,8 +139,14 @@ export function createTicket(ticket) {
   return request('/tickets', { method: 'POST', body: JSON.stringify(ticket) });
 }
 
-export function updateTicket(id, patch) {
-  return request(`/tickets/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+// `version` is the ticket's `__v` as last loaded. Sent as If-Match, it makes the
+// API refuse the edit (409) if someone else changed the ticket in the meantime.
+export function updateTicket(id, patch, { version } = {}) {
+  return request(`/tickets/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+    ...(Number.isInteger(version) ? { headers: { 'If-Match': `"${version}"` } } : {}),
+  });
 }
 
 export function deleteTicket(id) {

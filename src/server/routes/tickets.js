@@ -5,6 +5,7 @@ const tickets = require('../services/ticketService');
 const {
   parseCreateTicket,
   parseExportQuery,
+  parseIfMatch,
   parseListQuery,
   parsePatchTicket,
 } = require('../validation/tickets');
@@ -62,7 +63,11 @@ router.post(
 router.patch(
   '/tickets/:id',
   asyncHandler(async (req, res) => {
-    const ticket = await tickets.updateTicket(req.user, req.params.id, parsePatchTicket(req.body));
+    const ticket = await tickets.updateTicket(req.user, req.params.id, parsePatchTicket(req.body), {
+      expectedVersion: parseIfMatch(req.get('if-match')),
+    });
+    // The version to send back as If-Match on the next edit.
+    res.set('ETag', `"${ticket.__v}"`);
     res.json({ ticket });
   })
 );

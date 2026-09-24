@@ -62,6 +62,7 @@ const baseTickets: MockTicket[] = [
     dueAt: new Date(Date.now() + 20 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    __v: 0,
     activity: [
       {
         action: 'ticket_created',
@@ -86,6 +87,7 @@ const baseTickets: MockTicket[] = [
     dueAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    __v: 0,
     activity: [
       {
         action: 'ticket_created',
@@ -295,6 +297,7 @@ export async function installApiMocks(page: Page): Promise<void> {
         ...baseTickets[0],
         _id: '665f0f40d5d4f541f8ef1999',
         ticketNumber: 'TKT-0009',
+        __v: 0,
         title: stringFromPayload(body, 'title') ?? '',
         description: stringFromPayload(body, 'description') ?? '',
         requesterName: activeUser.name,
@@ -319,6 +322,15 @@ export async function installApiMocks(page: Page): Promise<void> {
       const assignee = stringFromPayload(patch, 'assignee');
       const nextStatus = status && isTicketStatus(status) ? status : undefined;
       const nextPriority = priority && isTicketPriority(priority) ? priority : undefined;
+      // Like the API: an edit made against an out-of-date version is refused.
+      const current = tickets.find((ticket) => ticket._id === id);
+      const ifMatch = request.headers()['if-match'];
+      if (current && ifMatch !== undefined && ifMatch !== `"${current.__v}"`) {
+        return route.fulfill({
+          status: 409,
+          json: { message: 'This ticket changed since you loaded it. Reload it and try again.' },
+        });
+      }
       tickets = tickets.map((ticket) =>
         ticket._id === id
           ? {
@@ -326,6 +338,7 @@ export async function installApiMocks(page: Page): Promise<void> {
               ...(nextStatus ? { status: nextStatus } : {}),
               ...(nextPriority ? { priority: nextPriority } : {}),
               ...(assignee !== undefined ? { assignee } : {}),
+              __v: ticket.__v + 1,
               activity: [
                 ...ticket.activity,
                 {
@@ -340,7 +353,11 @@ export async function installApiMocks(page: Page): Promise<void> {
             }
           : ticket
       );
-      return route.fulfill({ json: { ticket: tickets.find((ticket) => ticket._id === id) } });
+      const updated = tickets.find((ticket) => ticket._id === id);
+      return route.fulfill({
+        headers: { etag: `"${updated?.__v}"` },
+        json: { ticket: updated },
+      });
     }
 
     if (path.startsWith('/api/tickets/') && method === 'DELETE') {
