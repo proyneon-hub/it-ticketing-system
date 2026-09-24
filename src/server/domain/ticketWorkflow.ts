@@ -5,7 +5,7 @@ import {
   type Role,
   type Status,
 } from '../../shared/ticket-constants';
-import { HttpError } from '../errors';
+import { ConflictError, ForbiddenError } from '../errors';
 
 // The ticket workflow as pure rules: no Express, no Mongoose. The transition
 // table lives in shared/ticket-constants.ts so the UI offers exactly the moves
@@ -27,10 +27,10 @@ export function assertTransition(from: string, to: string, role: Role): void {
   if (from === to) return;
 
   if (!movesFrom(from).includes(to)) {
-    throw new HttpError(409, `Cannot move a ticket from ${from} to ${to}.`);
+    throw new ConflictError('INVALID_TRANSITION', `Cannot move a ticket from ${from} to ${to}.`);
   }
   if (!isAllowed(from, to, role)) {
-    throw new HttpError(403, `Only an admin can move a ticket from ${from} to ${to}.`);
+    throw new ForbiddenError(`Only an admin can move a ticket from ${from} to ${to}.`);
   }
 }
 

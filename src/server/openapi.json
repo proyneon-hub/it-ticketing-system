@@ -463,9 +463,27 @@
       },
       "Error": {
         "type": "object",
-        "required": ["message"],
+        "required": ["message", "code"],
         "properties": {
-          "message": { "type": "string" },
+          "message": { "type": "string", "description": "For people; wording may change." },
+          "code": {
+            "type": "string",
+            "description": "Stable identifier clients should branch on.",
+            "enum": [
+              "VALIDATION_FAILED",
+              "UNAUTHORIZED",
+              "AUTH_NOT_CONFIGURED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "INVALID_TRANSITION",
+              "VERSION_CONFLICT",
+              "DUPLICATE",
+              "RATE_LIMITED",
+              "DATABASE_NOT_CONFIGURED",
+              "DATABASE_UNAVAILABLE",
+              "INTERNAL_ERROR"
+            ]
+          },
           "requestId": {
             "type": "string",
             "description": "Matches the `x-request-id` response header and the server log line."

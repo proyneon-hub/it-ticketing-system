@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { roles, type Role } from '../shared/ticket-constants';
 import { MIN_AUTH_SECRET_LENGTH, hasStrongAuthSecret } from './config';
-import { forbidden, serviceUnavailable, unauthorized } from './errors';
+import { ForbiddenError, ServiceUnavailableError, UnauthorizedError } from './errors';
 import { logger } from './logger';
 
 export interface PublicUser {
@@ -62,7 +62,10 @@ function getAuthSecret(): string {
     logger.error(
       `AUTH_SECRET is missing or shorter than ${MIN_AUTH_SECRET_LENGTH} characters; authentication is disabled.`
     );
-    throw serviceUnavailable('Server authentication is not configured.');
+    throw new ServiceUnavailableError(
+      'AUTH_NOT_CONFIGURED',
+      'Server authentication is not configured.'
+    );
   }
 
   return process.env.AUTH_SECRET as string;
@@ -138,7 +141,7 @@ function getTokenFromRequest(req: Request): string {
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
   const user = verifyToken(getTokenFromRequest(req));
   if (!user) {
-    return next(unauthorized('Authentication required.'));
+    return next(new UnauthorizedError('Authentication required.'));
   }
   req.user = user;
   next();
@@ -147,7 +150,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
 export function requireRole(...allowedRoles: Role[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return next(forbidden('You do not have permission to perform this action.'));
+      return next(new ForbiddenError('You do not have permission to perform this action.'));
     }
     next();
   };

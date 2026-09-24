@@ -577,6 +577,64 @@ describe('ticket lifecycle', () => {
   });
 });
 
+describe('error codes', () => {
+  // Clients branch on `code`, not on the wording of `message`.
+  test('every kind of failure carries a stable machine-readable code', async () => {
+    const mine = await seedTicket({ requesterEmail: 'user@demo.local' });
+    const open = await seedTicket({ status: 'open', assignee: 'Theo Technician' });
+    const missing = '665f0f40d5d4f541f8ef1234';
+
+    const cases: [string, { status: number; body: { code: string } }, string][] = [
+      ['no token', await request(app).get('/api/tickets'), 'UNAUTHORIZED'],
+      [
+        'bad query',
+        await request(app).get('/api/tickets?limit=1000').set(as('admin')),
+        'VALIDATION_FAILED',
+      ],
+      [
+        'bad id',
+        await request(app).get('/api/tickets/not-an-id').set(as('admin')),
+        'VALIDATION_FAILED',
+      ],
+      [
+        'requester deleting',
+        await request(app).delete(`/api/tickets/${mine.id}`).set(as('user')),
+        'FORBIDDEN',
+      ],
+      [
+        'unknown ticket',
+        await request(app).get(`/api/tickets/${missing}`).set(as('admin')),
+        'NOT_FOUND',
+      ],
+      ['unknown route', await request(app).get('/api/nope').set(as('admin')), 'NOT_FOUND'],
+      [
+        'illegal status move',
+        await request(app)
+          .patch(`/api/tickets/${open.id}`)
+          .set(as('tech'))
+          .send({ status: 'resolved' }),
+        'INVALID_TRANSITION',
+      ],
+      [
+        'stale version',
+        await request(app)
+          .patch(`/api/tickets/${open.id}`)
+          .set(as('tech'))
+          .set('If-Match', '"9"')
+          .send({ priority: 'high' }),
+        'VERSION_CONFLICT',
+      ],
+    ];
+
+    for (const [label, response, code] of cases) {
+      expect({ label, code: response.body.code }).toEqual({ label, code });
+    }
+    expect(cases.map(([, response]) => response.status)).toEqual([
+      401, 400, 400, 403, 404, 404, 409, 409,
+    ]);
+  });
+});
+
 describe('validation', () => {
   test('rejects an over-long title with a field-level 400', async () => {
     const response = await request(app)

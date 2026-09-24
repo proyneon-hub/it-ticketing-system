@@ -34,13 +34,15 @@ export function onUnauthorized(handler) {
   unauthorizedHandler = handler;
 }
 
-// Carries the HTTP status and the request id the server logged, so an error
-// shown to a user can be matched to a log line by support.
+// Carries the HTTP status, the API's machine-readable `code` (branch on that, not
+// on the wording of the message) and the request id the server logged, so an
+// error shown to a user can be matched to a log line by support.
 export class ApiError extends Error {
-  constructor(message, { status, requestId } = {}) {
+  constructor(message, { status, code, requestId } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code || '';
     this.requestId = requestId || '';
   }
 }
@@ -91,6 +93,7 @@ async function send(path, { headers, ...options } = {}) {
 
   throw new ApiError(message.slice(0, 300) || `Request failed with status ${response.status}.`, {
     status: response.status,
+    code: typeof data.code === 'string' ? data.code : '',
     requestId: data.requestId || response.headers.get('x-request-id'),
   });
 }

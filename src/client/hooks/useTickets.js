@@ -10,6 +10,9 @@ import {
 import { SEARCH_DEBOUNCE_MS, defaultFilters } from '../constants.js';
 import { useDebouncedValue } from './useDebouncedValue.js';
 
+// Error codes after which the list is stale and worth reloading.
+const RELOAD_ON = new Set(['VERSION_CONFLICT', 'INVALID_TRANSITION']);
+
 const emptyPagination = { page: 1, limit: defaultFilters.limit, total: 0, totalPages: 1 };
 
 // Everything the dashboard needs: the filtered ticket page, dashboard stats, and
@@ -151,9 +154,9 @@ export function useTickets({ user, onError, onSuccess }) {
         refresh();
       } catch (error) {
         onError(error);
-        // 409: the ticket changed since it was loaded (or the move is no longer
-        // allowed from its current state). Show it as it is now.
-        if (error.status === 409) {
+        // The ticket changed since it was loaded, or the move is no longer allowed
+        // from its current state. Show it as it is now.
+        if (RELOAD_ON.has(error.code)) {
           keepErrorOnReload.current = true;
           refresh();
         }

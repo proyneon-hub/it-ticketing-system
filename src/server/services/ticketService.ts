@@ -7,7 +7,7 @@ import { assertCanMutateTicket, requesterOverrides, requesterScope } from '../do
 import { deriveTimestampChanges } from '../domain/sla';
 import type { TicketCriteria } from '../domain/ticketCriteria';
 import { assertTransition } from '../domain/ticketWorkflow';
-import { HttpError, badRequest } from '../errors';
+import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import * as repository from '../repositories/ticketRepository';
 import type { TicketDocument, TicketRecord } from '../repositories/ticketRepository';
 import type {
@@ -24,11 +24,11 @@ import type {
 // Exports stream the whole filtered set; the cap keeps a huge queue from exhausting memory.
 const EXPORT_ROW_LIMIT = 10000;
 
-const notFound = () => new HttpError(404, 'Ticket not found.');
+const notFound = () => new NotFoundError('Ticket not found.');
 
 function assertValidObjectId(id: string): void {
   if (!/^[a-f\d]{24}$/i.test(String(id))) {
-    throw badRequest('Invalid ticket id.');
+    throw new ValidationError('Invalid ticket id.');
   }
 }
 
@@ -109,7 +109,10 @@ export async function createTicket(
 }
 
 const versionConflict = () =>
-  new HttpError(409, 'This ticket changed since you loaded it. Reload it and try again.');
+  new ConflictError(
+    'VERSION_CONFLICT',
+    'This ticket changed since you loaded it. Reload it and try again.'
+  );
 
 // Without If-Match the caller has not seen a specific version, so a lost race is
 // retried against the fresh ticket instead of failing.
@@ -128,7 +131,7 @@ export async function updateTicket(
 ): Promise<TicketDocument> {
   assertValidObjectId(id);
   if (Object.keys(payload).length === 0) {
-    throw badRequest('No supported ticket fields were provided.');
+    throw new ValidationError('No supported ticket fields were provided.');
   }
 
   for (let attempt = 1; ; attempt += 1) {
@@ -142,7 +145,7 @@ export async function updateTicket(
     if (payload.status) assertTransition(existing.status, payload.status, user.role);
 
     if (payload.status === 'assigned' && (payload.assignee || existing.assignee) === 'Unassigned') {
-      throw badRequest('Assigned tickets need an assignee.');
+      throw new ValidationError('Assigned tickets need an assignee.');
     }
 
     const { set, unset } = deriveTimestampChanges(existing, payload);

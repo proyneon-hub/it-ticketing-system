@@ -57,6 +57,7 @@ describe('signing secret', () => {
       .expect(503);
 
     expect(response.body.message).toMatch(/not configured/);
+    expect(response.body.code).toBe('AUTH_NOT_CONFIGURED');
     expect(response.body.requestId).toBeDefined();
   });
 

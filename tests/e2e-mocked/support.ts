@@ -212,7 +212,10 @@ export async function installApiMocks(page: Page): Promise<void> {
 
     if (path === '/api/auth/me') {
       if (!currentUser)
-        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
       return route.fulfill({ json: { user: currentUser } });
     }
 
@@ -225,7 +228,10 @@ export async function installApiMocks(page: Page): Promise<void> {
         ) ?? null;
 
       if (!matchedUser) {
-        return route.fulfill({ status: 401, json: { message: 'Invalid demo credentials.' } });
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Invalid demo credentials.', code: 'UNAUTHORIZED' },
+        });
       }
 
       currentUser = matchedUser;
@@ -247,7 +253,10 @@ export async function installApiMocks(page: Page): Promise<void> {
 
     if (path === '/api/tickets/export') {
       if (!currentUser) {
-        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
       }
 
       const visibleTickets = filterTickets(
@@ -265,7 +274,10 @@ export async function installApiMocks(page: Page): Promise<void> {
 
     if (path === '/api/tickets' && method === 'GET') {
       if (!currentUser) {
-        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
       }
 
       const visibleTickets = filterTickets(
@@ -289,7 +301,10 @@ export async function installApiMocks(page: Page): Promise<void> {
     if (path === '/api/tickets' && method === 'POST') {
       const activeUser = currentUser;
       if (!activeUser) {
-        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
       }
 
       const body = request.postDataJSON() as unknown;
@@ -312,7 +327,10 @@ export async function installApiMocks(page: Page): Promise<void> {
     if (path.startsWith('/api/tickets/') && method === 'PATCH') {
       const activeUser = currentUser;
       if (!activeUser) {
-        return route.fulfill({ status: 401, json: { message: 'Authentication required.' } });
+        return route.fulfill({
+          status: 401,
+          json: { message: 'Authentication required.', code: 'UNAUTHORIZED' },
+        });
       }
 
       const id = path.split('/').pop();
@@ -328,7 +346,10 @@ export async function installApiMocks(page: Page): Promise<void> {
       if (current && ifMatch !== undefined && ifMatch !== `"${current.__v}"`) {
         return route.fulfill({
           status: 409,
-          json: { message: 'This ticket changed since you loaded it. Reload it and try again.' },
+          json: {
+            message: 'This ticket changed since you loaded it. Reload it and try again.',
+            code: 'VERSION_CONFLICT',
+          },
         });
       }
       tickets = tickets.map((ticket) =>

@@ -1,6 +1,6 @@
 import type { TokenPayload } from '../auth';
 import type { TicketAttrs } from '../../shared/ticket-types';
-import { forbidden } from '../errors';
+import { ForbiddenError } from '../errors';
 
 // Requesters may only touch descriptive fields. Workflow, assignment, SLA and
 // requester identity fields stay with staff, otherwise a requester could hand
@@ -26,14 +26,14 @@ export function assertCanMutateTicket(
   if (user.role !== 'user') return;
 
   if (String(ticket.requesterEmail || '').toLowerCase() !== user.email.toLowerCase()) {
-    throw forbidden('Users can only manage tickets they created.');
+    throw new ForbiddenError('Users can only manage tickets they created.');
   }
 
   const disallowed = Object.keys(patch).filter(
     (field) => !REQUESTER_EDITABLE_FIELDS.includes(field)
   );
   if (disallowed.length > 0) {
-    throw forbidden('Users cannot update workflow, assignment, requester, or SLA fields.');
+    throw new ForbiddenError('Users cannot update workflow, assignment, requester, or SLA fields.');
   }
 }
 

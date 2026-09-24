@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticateDemoUser, demoUsers, issueToken, requireAuth } from '../auth';
-import { unauthorized } from '../errors';
+import { UnauthorizedError } from '../errors';
 import { loginRateLimiter } from '../middleware/security';
 
 const router = Router();
@@ -10,7 +10,7 @@ router.post('/auth/login', loginRateLimiter(), (req, res) => {
   const user = authenticateDemoUser(email, password);
 
   if (!user) {
-    throw unauthorized('Invalid email or password.');
+    throw new UnauthorizedError('Invalid email or password.');
   }
 
   res.json({ token: issueToken(user), user });

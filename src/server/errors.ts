@@ -1,25 +1,80 @@
-// Errors that carry an HTTP status so the central handler can turn them into
-// consistent JSON responses.
+// Every failure the API reports on purpose is an AppError: an HTTP status for
+// transport, a stable `code` for clients to branch on (the message is for people
+// and may change), and optional field-level detail.
+
+export type ErrorCode =
+  | 'VALIDATION_FAILED'
+  | 'UNAUTHORIZED'
+  | 'AUTH_NOT_CONFIGURED'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'INVALID_TRANSITION'
+  | 'VERSION_CONFLICT'
+  | 'DUPLICATE'
+  | 'RATE_LIMITED'
+  | 'DATABASE_NOT_CONFIGURED'
+  | 'DATABASE_UNAVAILABLE'
+  | 'INTERNAL_ERROR';
 
 export interface FieldError {
   field?: string | undefined;
   message: string;
 }
 
-export class HttpError extends Error {
+export class AppError extends Error {
   readonly statusCode: number;
+  readonly code: ErrorCode;
   readonly errors?: FieldError[];
 
-  constructor(statusCode: number, message: string, errors?: FieldError[]) {
+  constructor(statusCode: number, code: ErrorCode, message: string, errors?: FieldError[]) {
     super(message);
-    this.name = 'HttpError';
+    this.name = new.target.name;
     this.statusCode = statusCode;
+    this.code = code;
     if (errors) this.errors = errors;
   }
 }
 
-export const badRequest = (message: string, errors?: FieldError[]) =>
-  new HttpError(400, message, errors);
-export const unauthorized = (message: string) => new HttpError(401, message);
-export const forbidden = (message: string) => new HttpError(403, message);
-export const serviceUnavailable = (message: string) => new HttpError(503, message);
+// The request is malformed or breaks a rule. `errors` names the offending fields.
+export class ValidationError extends AppError {
+  constructor(message: string, errors?: FieldError[]) {
+    super(400, 'VALIDATION_FAILED', message, errors);
+  }
+}
+
+// No valid credentials.
+export class UnauthorizedError extends AppError {
+  constructor(message: string) {
+    super(401, 'UNAUTHORIZED', message);
+  }
+}
+
+// Signed in, but not allowed to do this.
+export class ForbiddenError extends AppError {
+  constructor(message: string) {
+    super(403, 'FORBIDDEN', message);
+  }
+}
+
+export class NotFoundError extends AppError {
+  constructor(message: string) {
+    super(404, 'NOT_FOUND', message);
+  }
+}
+
+// The request is fine, but the resource's current state does not allow it.
+export class ConflictError extends AppError {
+  constructor(code: 'INVALID_TRANSITION' | 'VERSION_CONFLICT' | 'DUPLICATE', message: string) {
+    super(409, code, message);
+  }
+}
+
+// The service cannot do this right now (missing configuration, database down).
+export class ServiceUnavailableError extends AppError {
+  constructor(
+    code: 'AUTH_NOT_CONFIGURED' | 'DATABASE_NOT_CONFIGURED' | 'DATABASE_UNAVAILABLE',
+    message: string
+  ) {
+    super(503, code, message);
+  }
+}

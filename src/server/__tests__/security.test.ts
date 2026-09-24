@@ -3,6 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import app from '../app';
 import { assertProductionConfig, resolveTrustProxy } from '../config';
+import { ConflictError, ValidationError } from '../errors';
 import { describeError } from '../middleware/errorHandler';
 import { corsPolicy } from '../middleware/security';
 
@@ -65,6 +66,7 @@ describe('login rate limiting', () => {
 
     const blocked = await login('wrong-password').expect(429);
     expect(blocked.body.message).toMatch(/too many/i);
+    expect(blocked.body.code).toBe('RATE_LIMITED');
     expect(blocked.body.requestId).toBeDefined();
     expect(blocked.headers['ratelimit']).toBeDefined();
   });
@@ -185,6 +187,7 @@ describe('error mapping', () => {
   test('hides the details of unexpected errors', () => {
     expect(describeError(new Error('connection string mongodb://user:pw@host'))).toEqual({
       status: 500,
+      code: 'INTERNAL_ERROR',
       message: 'Internal server error.',
     });
   });
@@ -197,6 +200,7 @@ describe('error mapping', () => {
 
     expect(describeError(error)).toEqual({
       status: 400,
+      code: 'VALIDATION_FAILED',
       message: 'Ticket title is required',
       errors: [{ field: 'title', message: 'Ticket title is required' }],
     });
@@ -207,12 +211,41 @@ describe('error mapping', () => {
       describeError(Object.assign(new Error('x'), { name: 'CastError', path: 'dueAt' }))
     ).toEqual({
       status: 400,
+      code: 'VALIDATION_FAILED',
       message: 'Invalid value for dueAt.',
     });
-    expect(describeError(Object.assign(new Error('dup'), { code: 11000 })).status).toBe(409);
+    expect(describeError(Object.assign(new Error('dup'), { code: 11000 }))).toMatchObject({
+      status: 409,
+      code: 'DUPLICATE',
+    });
   });
 
   test('reports a missing database configuration as 503', () => {
-    expect(describeError(new Error('MONGODB_URI is missing. Add it.')).status).toBe(503);
+    expect(describeError(new Error('MONGODB_URI is missing. Add it.'))).toMatchObject({
+      status: 503,
+      code: 'DATABASE_NOT_CONFIGURED',
+    });
+  });
+
+  test('reports an unreachable database as 503 with its own code', () => {
+    const error = Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' });
+    expect(describeError(error)).toMatchObject({ status: 503, code: 'DATABASE_UNAVAILABLE' });
+  });
+
+  test('keeps the status, code and field details of an error thrown on purpose', () => {
+    const error = new ConflictError('VERSION_CONFLICT', 'This ticket changed.');
+    expect(describeError(error)).toEqual({
+      status: 409,
+      code: 'VERSION_CONFLICT',
+      message: 'This ticket changed.',
+    });
+    expect(describeError(new ValidationError('Bad', [{ field: 'title', message: 'Bad' }]))).toEqual(
+      {
+        status: 400,
+        code: 'VALIDATION_FAILED',
+        message: 'Bad',
+        errors: [{ field: 'title', message: 'Bad' }],
+      }
+    );
   });
 });

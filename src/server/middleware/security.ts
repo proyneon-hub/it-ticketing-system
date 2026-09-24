@@ -44,6 +44,7 @@ export function loginRateLimiter(): RequestHandler {
     handler: (req, res) => {
       res.status(429).json({
         message: 'Too many failed sign-in attempts. Try again later.',
+        code: 'RATE_LIMITED',
         requestId: req.id,
       });
     },

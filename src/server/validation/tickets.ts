@@ -1,4 +1,4 @@
-import { badRequest } from '../errors';
+import { ValidationError } from '../errors';
 import {
   createTicketSchema,
   exportQuerySchema,
@@ -22,7 +22,7 @@ function parseOrThrow<S extends z.ZodType>(schema: S, input: unknown): z.output<
       field: issue.path.join('.') || undefined,
       message: issue.message,
     }));
-    throw badRequest(errors[0]?.message ?? 'Invalid request.', errors);
+    throw new ValidationError(errors[0]?.message ?? 'Invalid request.', errors);
   }
 
   // Optional fields that were not sent come back as undefined; drop them so the
@@ -46,6 +46,6 @@ export function parseIfMatch(header: string | undefined): number | undefined {
   if (header === undefined || header.trim() === '*') return undefined;
 
   const match = /^(?:W\/)?"?(\d+)"?$/.exec(header.trim());
-  if (!match) throw badRequest('If-Match must be a ticket version such as "3".');
+  if (!match) throw new ValidationError('If-Match must be a ticket version such as "3".');
   return Number(match[1]);
 }

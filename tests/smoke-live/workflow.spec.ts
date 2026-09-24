@@ -32,7 +32,9 @@ test(
       // An open ticket cannot jump straight to resolved, and nothing is written.
       const illegal = await request.patch(url, { headers, data: { status: 'resolved' } });
       expect(illegal.status()).toBe(409);
-      expect((await illegal.json()).message).toBe('Cannot move a ticket from open to resolved.');
+      const illegalBody = await illegal.json();
+      expect(illegalBody.code).toBe('INVALID_TRANSITION');
+      expect(illegalBody.message).toBe('Cannot move a ticket from open to resolved.');
 
       // A legal move succeeds and returns the new version.
       const moved = await request.patch(url, {
@@ -48,6 +50,7 @@ test(
         data: { priority: 'urgent' },
       });
       expect(stale.status()).toBe(409);
+      expect((await stale.json()).code).toBe('VERSION_CONFLICT');
 
       const current = (await (await request.get(url, { headers })).json()).ticket;
       expect(current.status).toBe('in-progress');
