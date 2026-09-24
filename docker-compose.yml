@@ -5,16 +5,26 @@ services:
   mongo:
     image: mongo:8
     restart: unless-stopped
+    # A one-node replica set, because the API uses multi-document transactions and
+    # MongoDB only supports those on a replica set (Atlas already is one).
+    command: ['--replSet', 'rs0', '--bind_ip_all']
     # Published on localhost only; the app reaches it over the compose network.
     ports:
       - '127.0.0.1:27017:27017'
     volumes:
       - mongo-data:/data/db
     healthcheck:
-      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      # Healthy only once this node is the elected primary. The first run also
+      # initiates the replica set, which is why the check does more than ping.
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "let ok = false; try { ok = rs.status().myState === 1; } catch (e) { try { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongo:27017' }] }); } catch (e2) {} } quit(ok ? 0 : 1);"
       interval: 5s
-      timeout: 5s
-      retries: 12
+      timeout: 10s
+      retries: 20
       start_period: 10s
 
   app:
@@ -30,10 +40,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
+      # The refresh cookie is Secure by default in production, and browsers only send a
+      # Secure cookie over https. This stack is plain http://localhost, so it opts out.
+      COOKIE_SECURE: 'false'
       # Demo default (32+ characters, which production mode requires) so compose works
       # out of the box. Set AUTH_SECRET for anything shared.
       AUTH_SECRET: ${AUTH_SECRET:-local-compose-demo-secret-do-not-reuse}
-      MONGODB_URI: mongodb://mongo:27017/it_ticketing
+      MONGODB_URI: mongodb://mongo:27017/it_ticketing?replicaSet=rs0
     ports:
       - '5000:5000'
     # Health is defined by the image's HEALTHCHECK (/api/ready).
@@ -46,7 +59,7 @@ services:
       mongo:
         condition: service_healthy
     environment:
-      MONGODB_URI: mongodb://mongo:27017/it_ticketing
+      MONGODB_URI: mongodb://mongo:27017/it_ticketing?replicaSet=rs0
     command: ['node', 'dist-server/scripts/seed.js']
 
 volumes:

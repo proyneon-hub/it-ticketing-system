@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { priorities, slaFilters, sortFields, statuses } from './ticket-constants';
+import {
+  auditTypes,
+  priorities,
+  roles,
+  slaFilters,
+  sortFields,
+  statuses,
+} from './ticket-constants';
 
 // Query-string and JSON values arrive untrusted. These schemas are the single
 // place where they are trimmed, coerced, bounded, and rejected with a 400. They live
@@ -98,3 +105,18 @@ export type ListQuery = z.output<typeof listQuerySchema>;
 export type ExportQuery = z.output<typeof exportQuerySchema>;
 export type CreateTicketInput = z.output<typeof createTicketSchema>;
 export type PatchTicketInput = z.output<typeof patchTicketSchema>;
+
+// --- Administration -------------------------------------------------------------
+
+// Changing a user's role: the only thing an admin can change about a user.
+export const patchUserSchema = z.object({
+  role: z.enum(roles, { error: 'Invalid role.' }),
+});
+export type PatchUserInput = z.output<typeof patchUserSchema>;
+
+export const listAuditQuerySchema = z.object({
+  type: optionalFilter(z.enum(auditTypes, { error: 'Invalid audit event type.' })),
+  page: integerParam('page', { defaultValue: 1, min: 1, max: 100000 }),
+  limit: integerParam('limit', { defaultValue: 25, min: 1, max: 100 }),
+});
+export type ListAuditQuery = z.output<typeof listAuditQuerySchema>;

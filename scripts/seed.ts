@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { connectToDatabase } from '../src/server/db';
 import Counter from '../src/server/models/Counter';
 import Ticket, { type TicketAttrs } from '../src/server/models/Ticket';
+import { ensureDemoUsers } from '../src/server/services/userService';
 import { generateTickets } from './sampleData';
 
 // Small set of sample tickets for local demos and portfolio screenshots.
@@ -159,7 +160,10 @@ async function seed(): Promise<void> {
   }
   await Counter.updateOne({ _id: 'ticket' }, { $set: { seq: all.length } }, { upsert: true });
 
-  console.log(`Seeded ${all.length} tickets.`);
+  // The demo sign-in accounts (created only if missing, so nothing an admin changed is reset).
+  await ensureDemoUsers();
+
+  console.log(`Seeded ${all.length} tickets and the demo users.`);
   process.exit(0);
 }
 

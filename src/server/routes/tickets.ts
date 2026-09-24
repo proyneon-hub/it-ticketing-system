@@ -1,8 +1,10 @@
-import { Router, type Request } from 'express';
+import { Router } from 'express';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import asyncHandler from '../asyncHandler';
-import { requireAuth, requireRole, type TokenPayload } from '../auth';
+import { requireAuth, requireRole } from '../auth';
+import { actorOf as actor, auditContext } from '../http';
+import { recordAudit } from '../services/auditService';
 import * as tickets from '../services/ticketService';
 import {
   parseCreateTicket,
@@ -17,9 +19,6 @@ import {
 const router = Router();
 
 router.use('/tickets', requireAuth);
-
-// requireAuth has run for every route below, so a user is always present.
-const actor = (req: Request): TokenPayload => req.user as TokenPayload;
 
 router.get(
   '/tickets',
@@ -104,7 +103,17 @@ router.delete(
   '/tickets/:id',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    await tickets.deleteTicket(String(req.params.id));
+    const id = String(req.params.id);
+    const ticketNumber = await tickets.deleteTicket(id);
+    await recordAudit(
+      {
+        type: 'ticket_deleted',
+        outcome: 'success',
+        actor: actor(req),
+        target: { type: 'ticket', id, label: ticketNumber },
+      },
+      auditContext(req)
+    );
     res.status(204).send();
   })
 );

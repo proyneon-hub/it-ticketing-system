@@ -3,7 +3,6 @@
 // this suite fails, which keeps the documentation honest.
 import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
-import type { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import { priorities, roles, slaFilters, sortFields, statuses } from '../../shared/ticket-constants';
@@ -11,7 +10,15 @@ import app from '../app';
 import { connectToDatabase } from '../db';
 import Ticket from '../models/Ticket';
 import spec from '../openapi.json';
-import { bearer, signInAll, startTestDatabase, type Account, type Tokens } from './helpers';
+import {
+  bearer,
+  cookieValue,
+  signInAll,
+  startTestDatabase,
+  type Account,
+  type TestDatabase,
+  type Tokens,
+} from './helpers';
 
 // A loose view of the document: enough structure to walk it, without modelling OpenAPI.
 interface Operation {
@@ -53,7 +60,7 @@ const documentedOperations = Object.values(doc.paths)
 const exercised = new Set<string>();
 const used = (operationId: string) => exercised.add(operationId);
 
-let mongod: MongoMemoryServer;
+let mongod: TestDatabase;
 let tokens: Tokens;
 const as = (role: Account) => bearer(tokens, role);
 
@@ -204,6 +211,14 @@ describe('responses match their documented schemas', () => {
         .set('If-Match', '"99"')
         .send({ priority: 'high' })
         .expect(409),
+      // The only admin cannot be demoted.
+      await request(app)
+        .patch(
+          `/api/users/${(await request(app).get('/api/users').set(as('admin'))).body.users[0].id}`
+        )
+        .set(as('admin'))
+        .send({ role: 'technician' })
+        .expect(409),
       // An open ticket cannot jump straight to resolved.
       await request(app)
         .patch(`/api/tickets/${open.body.ticket._id}`)
@@ -218,6 +233,49 @@ describe('responses match their documented schemas', () => {
     }
     expect(responses[1].body.errors[0]).toMatchObject({ field: 'title' });
     expect(responses[6].body.message).toMatch(/changed since you loaded/i);
+  });
+
+  test('sessions, administration and the audit log match their schemas', async () => {
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'tech@demo.local', password: 'TechPass123!' })
+      .expect(200);
+    conforms('LoginResponse', login.body);
+
+    const refreshed = await request(app)
+      .post('/api/auth/refresh')
+      .set('Cookie', `rt=${cookieValue(login)}`)
+      .expect(200);
+    conforms('LoginResponse', refreshed.body);
+    used('refreshSession');
+
+    await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', `rt=${cookieValue(refreshed)}`)
+      .expect(204);
+    used('logout');
+
+    const users = await request(app).get('/api/users').set(as('admin')).expect(200);
+    conforms('UserList', users.body);
+    used('listUsers');
+
+    const una = users.body.users.find(
+      (user: { email: string }) => user.email === 'user@demo.local'
+    );
+    for (const role of ['technician', 'user']) {
+      const changed = await request(app)
+        .patch(`/api/users/${una.id}`)
+        .set(as('admin'))
+        .send({ role })
+        .expect(200);
+      conforms('PublicUser', changed.body.user);
+    }
+    used('changeUserRole');
+
+    const audit = await request(app).get('/api/audit?limit=5').set(as('admin')).expect(200);
+    conforms('AuditList', audit.body);
+    expect(audit.body.events.length).toBeGreaterThan(0);
+    used('listAudit');
   });
 
   test('every documented operation is exercised above', () => {
