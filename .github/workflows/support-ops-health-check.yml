@@ -1,13 +1,32 @@
 name: Support Ops Scheduled Health Check
 
+# Every hour, checks the deployed site (health, database readiness, sign-in and the ticket API).
+# A failure opens an `incident` issue written from docs/INCIDENT_RESPONSE.md; while it keeps
+# failing each run adds a comment to that issue, and the first run that passes says so and closes
+# it. Nothing runs until the BASE_URL secret exists.
+
 on:
   schedule:
-    - cron: '0 13 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch:
+
+permissions:
+  contents: read
+  # To open, comment on and close the incident issue.
+  issues: write
+
+# Two runs at once could each open an issue for the same outage.
+concurrency:
+  group: support-ops-health-check
+  cancel-in-progress: false
 
 jobs:
   health-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     defaults:
       run:
         working-directory: Support-Ops-Automation
@@ -17,7 +36,9 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - name: Generate status report
+
+      - name: Run the checks and prepare the incident text
+        id: checks
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
@@ -29,11 +50,51 @@ jobs:
         run: |
           if [ -z "$BASE_URL" ]; then
             echo "BASE_URL secret is not set; skipping live scheduled check."
+            echo "status=skipped" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          python -m support_ops.report_generator
+          # A failed check must not stop the steps that report it, so its exit code is kept for the end.
+          status=0
+          python -m support_ops.monitor --output-dir reports --run-url "$RUN_URL" || status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Make sure the incident label exists
+        if: steps.checks.outputs.status == 'fail'
+        run: gh label create incident --color B60205 --description "Opened by the scheduled health check" --force
+
+      # An open incident issue means an outage is already being tracked, so add to it rather than open another.
+      - name: Open or update the incident issue
+        if: steps.checks.outputs.status == 'fail'
+        env:
+          TITLE: ${{ steps.checks.outputs.title }}
+        run: |
+          existing=$(gh issue list --label incident --state open --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file reports/incident-update.md
+            echo "Updated incident #$existing"
+          else
+            gh issue create --title "$TITLE" --label incident --body-file reports/incident-issue.md
+          fi
+
+      - name: Close the incident issue when the checks pass again
+        if: steps.checks.outputs.status == 'pass'
+        run: |
+          for number in $(gh issue list --label incident --state open --json number --jq '.[].number'); do
+            gh issue comment "$number" --body-file reports/incident-recovery.md
+            gh issue close "$number" --reason completed
+            echo "Closed incident #$number"
+          done
+
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: support-ops-reports
           path: Support-Ops-Automation/reports/
+          if-no-files-found: ignore
+
+      # Leave the run red while the site is failing, so it is visible in the Actions tab too.
+      - name: Fail the run if a check failed
+        if: steps.checks.outputs.exit_code != '' && steps.checks.outputs.exit_code != '0'
+        env:
+          EXIT_CODE: ${{ steps.checks.outputs.exit_code }}
+        run: exit "$EXIT_CODE"

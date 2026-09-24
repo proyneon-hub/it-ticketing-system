@@ -351,6 +351,25 @@ describe('responses match their documented schemas', () => {
     }
   });
 
+  test('metrics are served as Prometheus text only with the token', async () => {
+    process.env.METRICS_TOKEN = 'contract-test-metrics-token-of-32-plus-characters';
+    try {
+      const metrics = await request(app)
+        .get('/api/metrics')
+        .set('Authorization', `Bearer ${process.env.METRICS_TOKEN}`)
+        .expect(200);
+      expect(metrics.headers['content-type']).toContain('text/plain');
+      expect(metrics.text).toContain('http_requests_total');
+      used('getMetrics');
+
+      const refused = await request(app).get('/api/metrics').expect(401);
+      conforms('Error', refused.body);
+    } finally {
+      delete process.env.METRICS_TOKEN;
+    }
+    conforms('Error', (await request(app).get('/api/metrics').expect(404)).body);
+  });
+
   test('a ticket the SLA job has touched still conforms', async () => {
     const created = await request(app)
       .post('/api/tickets')

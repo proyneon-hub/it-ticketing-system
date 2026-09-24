@@ -14,6 +14,9 @@ const BASE_URL = __ENV.BASE_URL || 'http://127.0.0.1:5000';
 const LABEL = __ENV.RESULT_LABEL || 'latest';
 const VUS = Number(__ENV.VUS) || 10;
 const DURATION = __ENV.DURATION || '30s';
+// Share of iterations that sign in (default 5%). Sign-in hashes a password with argon2id, which is
+// deliberately slow, so setting this to 0 shows what the rest of the API costs without it.
+const LOGIN_SHARE = __ENV.LOGIN_SHARE === undefined ? 0.05 : Number(__ENV.LOGIN_SHARE);
 
 const ACTIONS = ['login', 'list', 'filter', 'search', 'stats', 'create'];
 
@@ -56,7 +59,9 @@ const pick = (items) => items[Math.floor(Math.random() * items.length)];
 
 export default function (data) {
   const auth = { headers: { ...json, Authorization: `Bearer ${data.token}` } };
-  const roll = Math.random();
+  // The other calls keep their relative mix whatever the sign-in share is.
+  const draw = Math.random();
+  const roll = draw < LOGIN_SHARE ? 0 : 0.05 + ((draw - LOGIN_SHARE) / (1 - LOGIN_SHARE)) * 0.95;
   let response;
   let name;
 

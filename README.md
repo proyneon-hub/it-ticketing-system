@@ -1,11 +1,10 @@
 # IT Ticketing System
 
 [![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml)
-[![Playwright Regression](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/e2e.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fproyneon-hub.github.io%2Fit-ticketing-system%2Fcoverage.json)](https://proyneon-hub.github.io/it-ticketing-system/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 689 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 722 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
 
 **[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
 
@@ -15,7 +14,7 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 
 | Building software                                                                                          | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
 | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 689 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 722 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
 | Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 18 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
 | OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
 | Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
@@ -83,25 +82,25 @@ Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](d
 
 | Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
 | --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
-| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 422                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
+| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 443                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
 | Frontend unit and component | Vitest, Testing Library                  | 192                | Route guards, session restore, optimistic edits and rollback, components, `App` | `npm run test:unit`                  |
 | Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
 | Mocked browser regression   | Playwright, page objects, typed fixtures | 42 (126 runs)      | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
 | Accessibility               | Playwright and Axe                       | 8 (24 runs)        | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
 | Real-stack smoke            | Playwright against Docker Compose        | 16                 | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
-| Support monitoring          | pytest                                   | 9                  | The Python health, sign-in and report tooling                                   | `pytest` in `Support-Ops-Automation` |
+| Support monitoring          | pytest                                   | 21                 | The Python health, sign-in, report and incident-issue tooling                   | `pytest` in `Support-Ops-Automation` |
 
 `npm test` runs the API and frontend suites; `npm run test:coverage` adds coverage thresholds. The strategy, and why each layer exists, is in [ADR 002](docs/adr/002-layered-test-strategy.md); the map from requirement to test is in the [Test plan](docs/TEST_PLAN.md).
 
 ## CI/CD
 
-| Workflow            | What it does                                                                                                                                         |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`            | Format check, lint, tests with coverage thresholds, production build, dependency audit; builds the Docker image and publishes it to GHCR from `main` |
-| `e2e.yml`           | Mocked regression and Axe in three browsers, plus the real-stack smoke job against Docker Compose                                                    |
-| `reports.yml`       | Publishes the Playwright report and coverage to GitHub Pages                                                                                         |
-| `live-smoke.yml`    | Manual smoke run against a deployed environment, inert until its secrets exist                                                                       |
-| `support-ops-*.yml` | Tests the Python tooling and runs a scheduled health check                                                                                           |
+| Workflow             | What it does                                                                                                                                                                                                                                                                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`             | One staged pipeline: lint, type-check and actionlint; unit; integration (coverage thresholds); build and audit; then mocked regression and Axe in three browsers, the real-stack smoke and the Prometheus/Grafana stack; then the Docker image (published to GHCR from `main`); then a smoke test of the live site behind a reviewer approval |
+| `reports.yml`        | Publishes the Playwright report and coverage to GitHub Pages                                                                                                                                                                                                                                                                                  |
+| `support-ops-*.yml`  | Tests the Python tooling, and every hour checks the live site, opening (then closing) an `incident` issue when it fails                                                                                                                                                                                                                       |
+| `codeql.yml`         | GitHub code scanning for JavaScript, TypeScript and Python                                                                                                                                                                                                                                                                                    |
+| `scheduled-jobs.yml` | Every 30 minutes calls the SLA escalation and notification jobs                                                                                                                                                                                                                                                                               |
 
 Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 

@@ -1,10 +1,20 @@
 name: CI
 
+# One pipeline, in stages that each need the one before, so a failure shows up at the earliest and
+# cheapest stage:
+#
+#   lint -> unit -> integration -> build -> e2e, real-stack and observability -> docker -> live-smoke
+#
+# Pull requests stop at the docker stage (which builds the image without publishing it). A push to
+# main also publishes the image and then smoke-tests the deployed site, once a reviewer approves the
+# `production-smoke` environment.
+
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 # A newer push to the same branch makes the older run pointless.
 concurrency:
@@ -15,9 +25,10 @@ permissions:
   contents: read
 
 jobs:
-  test-and-build:
+  lint:
+    name: Lint and type-check
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -37,17 +48,77 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Type-check (API and Playwright)
+      - name: Type-check (API, client and Playwright)
         run: npm run typecheck
 
-      # Database-free API tests first, so a logic failure shows up in seconds.
+      # Lints every workflow in this repository (syntax, expressions, and the shell in run steps).
+      - name: Lint the workflows (actionlint)
+        run: docker run --rm --volume "$PWD:/repo" --workdir /repo rhysd/actionlint:1.7.12 -color
+
+  unit:
+    name: Unit tests
+    needs: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # No database: workflow rules, SLA and escalation rules, auth, security, config.
       - name: API unit tests
         run: npm run test:api:unit
 
-      # Integration and contract tests run against an in-memory MongoDB. Every
-      # suite fails the build if coverage drops below its threshold.
-      - name: Tests with coverage (API and frontend)
-        run: npm run test:coverage
+      - name: Client tests with coverage
+        run: npm run test:unit:coverage
+
+      - name: Upload client coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-client
+          path: coverage/client/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  integration:
+    name: Integration tests
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The real app and models against an in-memory MongoDB replica set, plus the OpenAPI
+      # contract test. Fails the build if coverage drops below its threshold.
+      - name: API tests with coverage
+        run: npm run test:api:coverage
+
+      - name: Download client coverage
+        if: always()
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-client
+          path: coverage/client
+        continue-on-error: true
 
       - name: Summarize coverage
         if: always()
@@ -62,15 +133,219 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Build frontend
+  build:
+    name: Build and audit
+    needs: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the client and the API
         run: npm run build
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      # Catches a typo in either Compose file before a stage that needs Docker does.
+      - name: Validate the Compose files
+        run: |
+          docker compose config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.observability.yml config --quiet
+
+  # Fast and deterministic: the browser talks to controlled API responses.
+  playwright:
+    name: Mocked UI regression and accessibility
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Run mocked regression tests
+        run: npm run test:e2e
+
+      - name: Run accessibility tests
+        run: npm run test:a11y
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload Playwright failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-results
+          path: test-results/
+          if-no-files-found: ignore
+
+  # Nothing is mocked: the production Docker image, a real MongoDB and a real
+  # browser. Catches what mocks cannot, such as a broken image, database wiring
+  # or a Content-Security-Policy that blocks the built frontend.
+  real-stack:
+    name: Real stack smoke (Docker Compose)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The demo accounts are public and seeded by the app; they are not secrets.
+      LIVE_SMOKE_ENABLED: 'true'
+      LIVE_BASE_URL: http://127.0.0.1:5000
+      E2E_ADMIN_EMAIL: admin@demo.local
+      E2E_ADMIN_PASSWORD: AdminPass123!
+      E2E_USER_EMAIL: user@demo.local
+      E2E_USER_PASSWORD: UserPass123!
+      # A throwaway secret for the scheduled-job endpoints of this disposable stack; the smoke
+      # test presents it. Not a real credential.
+      CRON_SECRET: ci-only-cron-secret-for-the-throwaway-stack-0123
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # --wait blocks until MongoDB and the app report healthy (/api/ready).
+      - name: Start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 180
+        env:
+          GIT_COMMIT: ${{ github.sha }}
+
+      - name: Seed demo data
+        run: docker compose run --rm seed
+
+      - name: Run smoke tests against the stack
+        run: npm run test:smoke:live
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-real-stack
+          path: playwright-report-live/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload smoke failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-real-stack-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down --volumes
+
+  # The monitoring stack is configuration nobody runs by hand in CI, so this proves it still
+  # works: Prometheus reaches the API with its token, the API's own metrics arrive, and Grafana
+  # has loaded the dashboard and can reach Prometheus.
+  observability:
+    name: Metrics stack (Prometheus and Grafana)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE: docker compose -f docker-compose.yml -f docker-compose.observability.yml
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Start the stack with Prometheus and Grafana
+        run: $COMPOSE up --build --detach --wait --wait-timeout 240
+        env:
+          GIT_COMMIT: ${{ github.sha }}
+
+      - name: The metrics endpoint answers with the token, and not without it
+        run: |
+          token=local-observability-metrics-token-0123456789
+          curl --fail --silent --show-error -H "Authorization: Bearer $token" http://127.0.0.1:5000/api/metrics | grep -q '^http_requests_total'
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:5000/api/metrics)" = 401
+
+      - name: Prometheus scrapes the API successfully
+        run: |
+          for attempt in $(seq 1 30); do
+            up=$(curl --silent --get http://127.0.0.1:9090/api/v1/query --data-urlencode 'query=up{job="it-ticketing-api"}' | jq -r '.data.result[0].value[1] // "none"')
+            if [ "$up" = "1" ]; then echo "target is up"; exit 0; fi
+            echo "attempt $attempt: target is $up"; sleep 5
+          done
+          curl --silent http://127.0.0.1:9090/api/v1/targets | jq '.data.activeTargets'
+          exit 1
+
+      - name: The API's own metrics reach Prometheus
+        run: |
+          for attempt in $(seq 1 30); do
+            count=$(curl --silent --get http://127.0.0.1:9090/api/v1/query --data-urlencode 'query=count(http_requests_total)' | jq -r '.data.result[0].value[1] // "0"')
+            if [ "$count" != "0" ]; then echo "$count series"; exit 0; fi
+            echo "attempt $attempt: no series yet"; curl --silent --output /dev/null http://127.0.0.1:5000/api/ready; sleep 5
+          done
+          exit 1
+
+      - name: Grafana loaded the dashboard and can reach Prometheus
+        run: |
+          for attempt in $(seq 1 24); do
+            found=$(curl --silent --user admin:admin --get http://127.0.0.1:3000/api/search --data-urlencode 'query=IT Ticketing' | jq 'length' 2>/dev/null || echo 0)
+            if [ "$found" -ge 1 ]; then break; fi
+            echo "attempt $attempt: dashboard not loaded yet"; sleep 5
+          done
+          test "$found" -ge 1
+          curl --fail --silent --user admin:admin http://127.0.0.1:3000/api/datasources/uid/prometheus/health | jq -e '.status == "OK"'
+
+      - name: Show container logs on failure
+        if: failure()
+        run: $COMPOSE logs --no-color --tail 200
+
+      - name: Stop the stack
+        if: always()
+        run: $COMPOSE down --volumes
+
   docker:
     name: Docker image
-    needs: test-and-build
+    needs: [playwright, real-stack, observability]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -114,3 +389,83 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Smoke-tests the real, deployed site (and so needs its secrets). It waits for the deployment to
+  # be running this commit, then runs the live suite. The environment is where a required reviewer
+  # is set (Settings > Environments > production-smoke), so a person confirms the deploy first.
+  live-smoke:
+    name: Live smoke test (production)
+    needs: docker
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production-smoke
+    env:
+      LIVE_BASE_URL: ${{ secrets.LIVE_BASE_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      LIVE_SMOKE_ENABLED: 'true'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Check the live-smoke secrets
+        id: config
+        run: |
+          if [ -z "$LIVE_BASE_URL" ] || [ -z "$E2E_ADMIN_EMAIL" ] || [ -z "$E2E_ADMIN_PASSWORD" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipped: add the LIVE_BASE_URL, E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD repository secrets to smoke-test the live site."
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # /api/ready reports the commit the deployment was built from, so this waits for the deploy of
+      # this push instead of testing the previous version (and says so if it never arrives).
+      - name: Wait for the deployment to run this commit
+        if: steps.config.outputs.configured == 'true'
+        run: |
+          for attempt in $(seq 1 60); do
+            commit=$(curl --silent --max-time 10 "${LIVE_BASE_URL%/}/api/ready" | jq -r '.commit // "unknown"' 2>/dev/null || echo unknown)
+            if [ "$commit" = "$GITHUB_SHA" ]; then echo "deployed: $commit"; exit 0; fi
+            echo "attempt $attempt: the site is running $commit, waiting for $GITHUB_SHA"
+            sleep 10
+          done
+          echo "::error::The site did not start running $GITHUB_SHA within 10 minutes, so it was not smoke-tested. Check the deployment."
+          exit 1
+
+      - name: Set up Node
+        if: steps.config.outputs.configured == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.config.outputs.configured == 'true'
+        run: npm ci
+
+      - name: Install Chromium
+        if: steps.config.outputs.configured == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run live smoke tests
+        if: steps.config.outputs.configured == 'true'
+        run: npm run test:smoke:live
+
+      - name: Upload live Playwright report
+        if: ${{ always() && steps.config.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-live
+          path: playwright-report-live/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload live failure diagnostics
+        if: ${{ failure() && steps.config.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-live-test-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14

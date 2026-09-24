@@ -30,32 +30,33 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 
 ## Endpoints
 
-| Method | Endpoint                | Auth         | Purpose                                                           |
-| ------ | ----------------------- | ------------ | ----------------------------------------------------------------- |
-| GET    | `/health`               | Public       | Liveness: the process is up (no database)                         |
-| GET    | `/ready`                | Public       | Readiness: the database answers; version and commit               |
-| POST   | `/auth/login`           | Public       | Sign in; returns an access token and sets the `rt` cookie         |
-| POST   | `/auth/refresh`         | Cookie       | Trade the refresh cookie for a new access token                   |
-| POST   | `/auth/logout`          | Cookie       | End the session and clear the cookie                              |
-| GET    | `/auth/me`              | Bearer token | Return the current session                                        |
-| GET    | `/auth/demo-users`      | Public       | List seeded demo accounts                                         |
-| GET    | `/tickets`              | Bearer token | List tickets with filters, sorting and pagination                 |
-| GET    | `/tickets/export`       | Bearer token | Export visible tickets as CSV                                     |
-| GET    | `/tickets/stats`        | Bearer token | Dashboard, priority and SLA stats                                 |
-| GET    | `/tickets/stats/trends` | Bearer token | Opened and resolved per day, mean time to resolve, SLA compliance |
-| GET    | `/tickets/:id`          | Bearer token | Fetch one visible ticket                                          |
-| POST   | `/tickets`              | Bearer token | Create a ticket                                                   |
-| PATCH  | `/tickets/:id`          | Bearer token | Update ticket fields                                              |
-| DELETE | `/tickets/:id`          | Admin only   | Delete a ticket (and its comments)                                |
-| GET    | `/tickets/:id/comments` | Bearer token | A ticket's comments, oldest first                                 |
-| POST   | `/tickets/:id/comments` | Bearer token | Add a comment, or an internal note (staff only)                   |
-| GET    | `/users`                | Admin only   | List users (never their password hashes)                          |
-| PATCH  | `/users/:id`            | Admin only   | Change a user's role                                              |
-| GET    | `/audit`                | Admin only   | Read the security audit log                                       |
-| GET    | `/outbox`               | Admin only   | List events waiting to be sent to the webhook                     |
-| POST   | `/outbox/:id/retry`     | Admin only   | Put a dead event back in the queue                                |
-| POST   | `/jobs/sla-escalation`  | Job secret   | Mark tickets that reached an SLA milestone                        |
-| POST   | `/jobs/outbox-delivery` | Job secret   | Send due events to the webhook                                    |
+| Method | Endpoint                | Auth          | Purpose                                                           |
+| ------ | ----------------------- | ------------- | ----------------------------------------------------------------- |
+| GET    | `/health`               | Public        | Liveness: the process is up (no database)                         |
+| GET    | `/ready`                | Public        | Readiness: the database answers; version and commit               |
+| GET    | `/metrics`              | Metrics token | Prometheus metrics (off unless `METRICS_TOKEN` is set)            |
+| POST   | `/auth/login`           | Public        | Sign in; returns an access token and sets the `rt` cookie         |
+| POST   | `/auth/refresh`         | Cookie        | Trade the refresh cookie for a new access token                   |
+| POST   | `/auth/logout`          | Cookie        | End the session and clear the cookie                              |
+| GET    | `/auth/me`              | Bearer token  | Return the current session                                        |
+| GET    | `/auth/demo-users`      | Public        | List seeded demo accounts                                         |
+| GET    | `/tickets`              | Bearer token  | List tickets with filters, sorting and pagination                 |
+| GET    | `/tickets/export`       | Bearer token  | Export visible tickets as CSV                                     |
+| GET    | `/tickets/stats`        | Bearer token  | Dashboard, priority and SLA stats                                 |
+| GET    | `/tickets/stats/trends` | Bearer token  | Opened and resolved per day, mean time to resolve, SLA compliance |
+| GET    | `/tickets/:id`          | Bearer token  | Fetch one visible ticket                                          |
+| POST   | `/tickets`              | Bearer token  | Create a ticket                                                   |
+| PATCH  | `/tickets/:id`          | Bearer token  | Update ticket fields                                              |
+| DELETE | `/tickets/:id`          | Admin only    | Delete a ticket (and its comments)                                |
+| GET    | `/tickets/:id/comments` | Bearer token  | A ticket's comments, oldest first                                 |
+| POST   | `/tickets/:id/comments` | Bearer token  | Add a comment, or an internal note (staff only)                   |
+| GET    | `/users`                | Admin only    | List users (never their password hashes)                          |
+| PATCH  | `/users/:id`            | Admin only    | Change a user's role                                              |
+| GET    | `/audit`                | Admin only    | Read the security audit log                                       |
+| GET    | `/outbox`               | Admin only    | List events waiting to be sent to the webhook                     |
+| POST   | `/outbox/:id/retry`     | Admin only    | Put a dead event back in the queue                                |
+| POST   | `/jobs/sla-escalation`  | Job secret    | Mark tickets that reached an SLA milestone                        |
+| POST   | `/jobs/outbox-delivery` | Job secret    | Send due events to the webhook                                    |
 
 ## Administration
 

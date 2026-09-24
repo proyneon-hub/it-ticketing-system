@@ -20,6 +20,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../errors';
 import * as commentRepository from '../repositories/commentRepository';
 import * as repository from '../repositories/ticketRepository';
 import { transaction } from '../repositories/transaction';
+import { ticketsCreated } from '../metrics';
 import * as outbox from './outboxService';
 import type { TicketDocument, TicketRecord } from '../repositories/ticketRepository';
 import type {
@@ -151,11 +152,13 @@ export async function createTicket(
   };
 
   // The ticket and the event that announces it commit together, or neither does.
-  return transaction(async (tx) => {
+  const created = await transaction(async (tx) => {
     const ticket = await repository.create(data, tx);
     await outbox.record([createdEvent(ticket, user)], tx);
     return present(ticket, user);
   });
+  ticketsCreated.inc();
+  return created;
 }
 
 const versionConflict = () =>

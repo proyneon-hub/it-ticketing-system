@@ -64,7 +64,10 @@ python -m support_ops.synthetic_login
 python -m support_ops.ticket_api_check
 python -m support_ops.report_generator
 python -m support_ops.incident_generator --severity high --summary "API health check failed"
+python -m support_ops.monitor           # run every check; prepare an incident issue if one fails
 ```
+
+`monitor` is what the scheduled workflow runs: it writes the status report, and on a failure the issue text (`reports/incident-issue.md`, and a shorter update for an issue that is already open); when everything passes it writes a recovery note. The workflow opens, comments on and closes the GitHub issue (see the [runbook](../docs/RUNBOOK.md#incident-issues)).
 
 ## Sample Reports
 

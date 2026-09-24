@@ -1,0 +1,63 @@
+# Adds Prometheus and Grafana to the local stack. Use it together with the main file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build --detach --wait
+#
+# Grafana:    http://localhost:3000   (user admin, password admin; local use only)
+# Prometheus: http://localhost:9090
+#
+# The API only serves /api/metrics when METRICS_TOKEN is set, so this file sets one for the app
+# and gives the same value to Prometheus. Both are for this local stack only: set your own
+# METRICS_TOKEN (32+ characters) for anything shared.
+#
+# Metrics are per instance. They describe this container; on Vercel each warm function is its own
+# small process, so they are not meaningful there (see docs/RUNBOOK.md).
+services:
+  app:
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:-local-observability-metrics-token-0123456789}
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      METRICS_TOKEN: ${METRICS_TOKEN:-local-observability-metrics-token-0123456789}
+    # Prometheus reads a bearer token from a file, not from the environment, so write it first.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        printf '%s' "$$METRICS_TOKEN" > /tmp/metrics_token &&
+        exec /bin/prometheus
+        --config.file=/etc/prometheus/prometheus.yml
+        --storage.tsdb.path=/prometheus
+        --storage.tsdb.retention.time=7d
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - '127.0.0.1:9090:9090'
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - '127.0.0.1:3000:3000'
+
+volumes:
+  prometheus-data:
+  grafana-data:

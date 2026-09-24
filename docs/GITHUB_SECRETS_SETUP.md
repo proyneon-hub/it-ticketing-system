@@ -1,6 +1,6 @@
 # GitHub Actions Live-Smoke Secrets
 
-The live-smoke workflow is manual-only. Configure it only with a resettable demo or non-production account; never use production credentials or production data.
+Several workflows do nothing until their secrets exist, so a fork or a fresh clone never fails on a missing value. Configure the live-smoke account only with a dedicated demo or test account; never reuse a personal or real production credential.
 
 ## Repository Setup
 
@@ -13,7 +13,19 @@ The live-smoke workflow is manual-only. Configure it only with a resettable demo
    - `E2E_ADMIN_EMAIL`
    - `E2E_ADMIN_PASSWORD`
 
-5. Use **Actions** → **Live Smoke** → **Run workflow** to trigger the check after a deployment.
+5. The `live-smoke` job in `CI` now runs after every push to `main` (see below). To run it by hand, use **Actions** → **CI** → **Run workflow**.
+
+### All the secrets, and what uses them
+
+| Secret                                                                                                    | Used by                              | Purpose                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `LIVE_BASE_URL`, `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`                                                  | `CI` (`live-smoke` job)              | Smoke-test the deployed site after each push to `main`                                                                   |
+| `BASE_URL`, `CRON_SECRET`                                                                                 | `Scheduled jobs`                     | Call the SLA escalation and notification jobs every 30 minutes. `CRON_SECRET` must equal the value set in the deployment |
+| `BASE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `TECH_EMAIL`, `TECH_PASSWORD`, `USER_EMAIL`, `USER_PASSWORD` | `Support Ops Scheduled Health Check` | Check the live site every hour and open an `incident` issue if it fails                                                  |
+
+### Require an approval before the live smoke test
+
+The `live-smoke` job runs in an environment called `production-smoke`, which GitHub creates the first time the job runs. To make a person confirm that the deployment finished before the site is tested: **Settings** → **Environments** → **production-smoke** → tick **Required reviewers** and add yourself. Without a reviewer the job starts on its own (it still waits for the new commit to be live).
 
 ## Safety Requirements
 

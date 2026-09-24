@@ -2,6 +2,7 @@ import { slaEvent } from '../domain/outbox';
 import { escalationDue, planEscalation } from '../domain/slaEscalation';
 import * as repository from '../repositories/ticketRepository';
 import { transaction } from '../repositories/transaction';
+import { slaEscalations } from '../metrics';
 import * as outbox from './outboxService';
 
 export interface EscalationResult {
@@ -61,6 +62,7 @@ export async function escalate(now: Date = new Date()): Promise<EscalationResult
         progressed = true;
         if (kind === 'breached') result.breached += 1;
         else result.atRisk += 1;
+        slaEscalations.inc({ kind });
       }
     }
 
