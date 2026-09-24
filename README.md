@@ -1,35 +1,64 @@
 # IT Ticketing System
 
 [![CI](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/codeql.yml/badge.svg)](https://github.com/proyneon-hub/it-ticketing-system/actions/workflows/codeql.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fproyneon-hub.github.io%2Fit-ticketing-system%2Fcoverage.json)](https://proyneon-hub.github.io/it-ticketing-system/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 722 automated tests across six layers, a Dockerised stack, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 723 automated tests across six layers, a Dockerised stack with metrics, and the operational tooling a support team needs to trace a user's error to a log line.
 
-**[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)**
+**[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)** · **[Decision records](docs/adr)**
 
-![Admin dashboard](docs/screenshots/admin-dashboard.png)
+![Creating a ticket, assigning it, working it to resolved and reading its history](docs/screenshots/demo.gif)
 
-## What this project demonstrates
+## What it does
 
-| Building software                                                                                          | Testing and quality                                                                                                           | Operating and supporting                                                                                           |
-| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 722 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                      |
-| Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 18 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Separate liveness (`/api/health`) and readiness (`/api/ready`) probes; a non-root Docker image with a health check |
-| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint and audit gate every pull request                                                                   | A runbook, and Python monitoring scripts that check health, sign-in and the ticket API on a schedule               |
-| Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | Structured releases: Docker image to GHCR, Dependabot, reports published to GitHub Pages                           |
+- **Three roles.** Requesters see and edit only their own tickets; technicians work the whole queue; admins also delete tickets, manage roles and read the audit log.
+- **A workflow the API enforces.** `open`, `assigned`, `in-progress`, `resolved`, `closed`, with an explicit table of legal moves, an assignee rule and versioned edits.
+- **SLA tracking and escalation.** Every priority has a deadline. A scheduled job marks tickets that are close to or past it, and raises an overdue ticket's priority once.
+- **Comments and internal notes.** Staff can reply publicly or leave a staff-only note; a requester never receives one.
+- **Trends.** Opened and resolved per day, mean time to resolve and SLA compliance, in the viewer's time zone.
+- **Notifications.** Ticket events go to a Discord, Slack or JSON webhook through a transactional outbox.
+- **Search and export.** Ranked full-text search, filters, sorting, and a CSV export that streams.
+
+| Building software                                                                                          | Testing and quality                                                                                                           | Operating and supporting                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 723 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                                       |
+| Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 19 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Prometheus metrics with a provisioned Grafana dashboard, liveness and readiness probes, a non-root Docker image with a health check |
+| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint, CodeQL and audit gate every pull request                                                           | A runbook, and an hourly check of the live site that opens an incident issue when it fails and closes it on recovery                |
+| Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | A staged pipeline that publishes the image and smoke-tests the deployed site; Dependabot; reports published to GitHub Pages         |
+
+## By the numbers
+
+Every figure comes from a run you can repeat; the source is in the last column.
+
+| What                     | Value                                                                                         | Source                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Automated tests          | 723 (443 API, 193 client, 42 mocked browser, 8 accessibility, 16 real-stack smoke, 21 pytest) | `npm run test:coverage`, `npm run test:e2e`, `pytest`                                         |
+| Browser runs per push    | 150 (126 regression and 24 Axe, in Chromium, Firefox and WebKit)                              | `npx playwright test --list`                                                                  |
+| Coverage (statements)    | 96.7% API, 93.6% client                                                                       | `npm run test:coverage`, thresholds enforced in CI                                            |
+| API operations           | 25, every one exercised against its OpenAPI schema                                            | `src/server/openapi.json`, contract test                                                      |
+| Defects found and fixed  | 19, each with a regression test                                                               | [DEFECT_LOG.md](docs/DEFECT_LOG.md)                                                           |
+| Search on 10,000 tickets | p50 68.5 ms to 9.2 ms, p95 112.6 ms to 14.4 ms after the switch to a text index               | [PERFORMANCE.md](docs/PERFORMANCE.md), raw k6 runs in `perf/`                                 |
+| Sign-in cost             | 85 ms at the median (argon2id), and it lowers overall throughput; not yet fixed               | [PERFORMANCE.md](docs/PERFORMANCE.md#final-run-after-authentication-transactions-and-metrics) |
+| Client bundle            | 676 kB, 193 kB gzipped (React 19, one chunk)                                                  | `npm run build`                                                                               |
+| Decision records         | 8                                                                                             | [docs/adr](docs/adr)                                                                          |
 
 ## Try it
 
 The [live demo](https://it-ticketing-system-pi.vercel.app/) shows the demo accounts on the page. Click one to sign in and compare what each role can do:
 
-| Role       | What to try                                                                |
-| ---------- | -------------------------------------------------------------------------- |
-| Admin      | The whole queue, workflow changes, assignment and **Delete**               |
-| Technician | The whole queue and workflow changes, but no delete                        |
-| Requester  | Only your own tickets; create a ticket, but status and assignee are locked |
+| Role       | What to try                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| Admin      | The whole queue, workflow changes, **Delete**, **Trends**, **Users** and the **Audit log**       |
+| Technician | The queue and workflow changes, comments with **internal notes**, and **Trends**, but no delete  |
+| Requester  | Only your own tickets; create one and comment on it, and see that you never get an internal note |
 
-Things worth poking at: sort by priority (it ranks by severity, not alphabetically), filter by SLA state, open a ticket's **Activity** timeline, **Export CSV**, and trigger an error to see the support reference under it.
+Things worth poking at: open a ticket (its number is a link), leave an internal note and then sign in as the requester to check it is not there, sort by priority (it ranks by severity, not alphabetically), change a status twice in a row, **Export CSV**, and trigger an error to see the support reference under it.
+
+![A ticket with a public reply, an internal note and its history](docs/screenshots/ticket-comments.png)
+
+![Trends: opened and resolved per day](docs/screenshots/trends.png)
 
 ## Run it locally
 
@@ -40,7 +69,13 @@ docker compose up --build --wait
 docker compose run --rm seed        # optional demo tickets
 ```
 
-Open <http://localhost:5000> (API docs at `/api/docs`).
+Open <http://localhost:5000> (API docs at `/api/docs`). To also run Prometheus and Grafana (dashboard at <http://localhost:3000>, admin / admin, local use only):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build --detach --wait
+```
+
+The scheduled jobs and webhook notifications are off until you set `CRON_SECRET` and `WEBHOOK_URL` (see [`.env.example`](.env.example) and the [runbook](docs/RUNBOOK.md#scheduled-jobs-and-notifications)); `docker compose --profile worker up worker` runs them on a timer.
 
 Without Docker (Node.js 24; `.nvmrc` is included):
 
@@ -53,14 +88,15 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 
 ## Engineering highlights
 
-- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-017](docs/DEFECT_LOG.md)).
+- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-019](docs/DEFECT_LOG.md)).
 - **A bug every mock missed.** The real-stack smoke test caught a regression that all 66 mocked browser runs and 88 unit tests passed: sign-in returns the user as `id`, `/auth/me` returns `sub`, and the mocks had used `sub` for both. The fix, and the fidelity rule that came out of it, are in [ADR 002](docs/adr/002-layered-test-strategy.md).
-- **A workflow the API enforces.** Status moves follow an explicit transition table shared by the API and the UI; an illegal move is a `409`. Edits are atomic and versioned: `If-Match` refuses a stale edit, and a lost race can never write an activity entry built from out-of-date data ([API notes](docs/API.md#editing-a-ticket-safely)).
-- **Measured, not claimed.** Replacing a regex search with a text index cut search from 68 ms to 9 ms (p50) and 113 ms to 14 ms (p95) on 10,000 tickets, and the method, the raw k6 runs and the trade-off (whole words, not fragments) are in [PERFORMANCE.md](docs/PERFORMANCE.md).
+- **A workflow the API enforces.** Status moves follow an explicit transition table shared by the API and the UI; an illegal move is a `409`. Edits are atomic and versioned: `If-Match` refuses a stale edit, and a lost race can never write an activity entry built from out-of-date data ([ADR 005](docs/adr/005-workflow-state-machine-and-optimistic-concurrency.md), [API notes](docs/API.md#editing-a-ticket-safely)).
+- **Measured, not claimed.** Replacing a regex search with a text index cut search from 68 ms to 9 ms (p50) and 113 ms to 14 ms (p95) on 10,000 tickets. The same document also records what got slower afterwards (real password hashing, transactions) and that the sign-in cost is not yet fixed ([PERFORMANCE.md](docs/PERFORMANCE.md), [ADR 007](docs/adr/007-text-search.md)).
 - **Layers that are enforced.** Routes, services, a pure domain layer and a repository each have one job, and a test fails the build if a route touches the database or the domain imports a framework ([Architecture](docs/ARCHITECTURE.md#backend)).
-- **Sessions that survive theft attempts.** Refresh tokens are single use and rotate, so replaying a used one ends the whole session and is audited; two admins demoting each other at the same instant cannot leave the system with none (a test reproduces the failure when the guard is removed). The [threat model](docs/SECURITY_NOTES.md#threat-model) lists what is and is not covered.
-- **Notifications that cannot get out of step with the data.** A ticket change and the event announcing it are written in one MongoDB transaction and sent later by a worker that claims events atomically, retries with backoff and marks an event dead after six attempts; tests force each failure, including two workers racing and a rolled-back change ([Architecture](docs/ARCHITECTURE.md#backend), [Security notes](docs/SECURITY_NOTES.md#scheduled-jobs-and-notifications)).
-- **Docs that cannot drift.** A contract test validates every real API response against the OpenAPI schemas and fails if an operation is added without being exercised; another compares the documented request bodies with the Zod schemas the API enforces.
+- **Sessions that survive theft attempts.** Refresh tokens are single use and rotate, so replaying a used one ends the whole session and is audited; two admins demoting each other at the same instant cannot leave the system with none (a test reproduces the failure when the guard is removed). The [threat model](docs/SECURITY_NOTES.md#threat-model) lists what is and is not covered ([ADR 004](docs/adr/004-authentication-and-sessions.md)).
+- **Notifications that cannot get out of step with the data.** A ticket change and the event announcing it are written in one MongoDB transaction and sent later by a worker that claims events atomically, retries with backoff and marks an event dead after six attempts; tests force each failure, including two workers racing and a rolled-back change ([ADR 006](docs/adr/006-transactional-outbox.md)).
+- **Confidentiality tested from the outside.** A requester never receives an internal note from any endpoint (list, ticket, edit response, export), and the test was checked to fail when the filtering is removed. Notification messages carry no comment text or description, and a hostile ticket title cannot ping a channel.
+- **Docs that cannot drift.** A contract test validates every real API response against the OpenAPI schemas and fails if an operation is added without being exercised; another compares the documented request bodies with the Zod schemas the API enforces; a third checks that the Grafana dashboard only queries metrics the API exports.
 - **Support-friendly by design.** A user sees `Reference: <id>`; `grep <id>` finds the request and, for a failure, its stack ([ADR 003](docs/adr/003-operability-and-request-tracing.md), [runbook](docs/RUNBOOK.md#tracing-a-user-reported-error)).
 - **Security that fits a demo honestly.** Helmet and a strict CSP, failed-login rate limiting that never locks out demo visitors, CSV formula neutralisation, and a plain list of what is not production-grade ([Security notes](docs/SECURITY_NOTES.md)).
 
@@ -69,14 +105,29 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 ```mermaid
 flowchart LR
   Browser --> Client[React client<br/>router, queries, components]
-  Client -->|/api| Edge[Request id, logs,<br/>helmet, CORS]
+  Client -->|/api| Edge[Request id, logs, metrics,<br/>helmet, CORS]
   Edge --> Routes[Routes and Zod validation]
-  Routes --> Services[Ticket service<br/>roles, SLA, activity]
-  Services --> DB[(MongoDB)]
-  Edge --> Ops["/health, /ready, /docs"]
+  Routes --> Services[Services<br/>roles, workflow, SLA, activity]
+  Services --> DB[(MongoDB<br/>replica set)]
+  Services -->|same transaction| Outbox[(Outbox)]
+  Cron[Scheduler or worker<br/>every 30 min] -->|CRON_SECRET| Jobs[Jobs: SLA escalation,<br/>outbox delivery]
+  Jobs --> DB
+  Jobs -->|retries with backoff| Hook[Discord, Slack or JSON webhook]
+  Edge --> Ops["/health, /ready, /docs, /metrics"]
+  Ops --> Prom[Prometheus and Grafana]
+  Health[Hourly health check] -->|opens or closes| Issue[GitHub incident issue]
 ```
 
-Details: [Architecture](docs/ARCHITECTURE.md) and the three [decision records](docs/adr).
+```mermaid
+flowchart LR
+  Push[Pull request or push] --> Lint[Lint, types, actionlint] --> Unit --> Integration --> Build
+  Build --> Browser[Browser tests, real-stack smoke, metrics stack]
+  Browser --> Image[Docker image to GHCR]
+  Image --> Live[Live smoke of the deployed site<br/>after approval]
+  Push --> CodeQL
+```
+
+Details: [Architecture](docs/ARCHITECTURE.md) and the eight [decision records](docs/adr).
 
 ## Test strategy
 
@@ -130,7 +181,7 @@ docs/             Architecture, decisions, test plan, runbook, security notes, d
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) and [decision records](docs/adr)
+- [Architecture](docs/ARCHITECTURE.md) and the [decision records](docs/adr): [001 document model](docs/adr/001-ticket-document-model.md), [002 test strategy](docs/adr/002-layered-test-strategy.md), [003 operability](docs/adr/003-operability-and-request-tracing.md), [004 authentication](docs/adr/004-authentication-and-sessions.md), [005 workflow and concurrency](docs/adr/005-workflow-state-machine-and-optimistic-concurrency.md), [006 outbox](docs/adr/006-transactional-outbox.md), [007 text search](docs/adr/007-text-search.md), [008 TypeScript build and Vitest](docs/adr/008-typescript-build-and-vitest.md)
 - [API reference](docs/API.md) (interactive version at `/api/docs`)
 - [Test plan](docs/TEST_PLAN.md), [automated cases](docs/TEST_CASES.md), [QA architecture](docs/QA_ARCHITECTURE.md), [live smoke testing](docs/LIVE_SMOKE_TESTING.md), [accessibility testing](docs/ACCESSIBILITY_TESTING.md)
 - [Defect log](docs/DEFECT_LOG.md) and [performance](docs/PERFORMANCE.md)
@@ -139,10 +190,11 @@ docs/             Architecture, decisions, test plan, runbook, security notes, d
 
 ## Security and limitations
 
-Users are stored with argon2id password hashes, sessions use 15-minute access tokens plus single-use refresh tokens in an `HttpOnly` cookie, and security events are audited. It is still a demo: the three demo accounts' passwords are public, and there is no registration, password reset or MFA. In production the API refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters. [Security notes](docs/SECURITY_NOTES.md) lists what is implemented, what is not, and what a production version would add.
+Users are stored with argon2id password hashes, sessions use 15-minute access tokens plus single-use refresh tokens in an `HttpOnly` cookie, and security events are audited. It is still a demo: the three demo accounts' passwords are public, and there is no registration, password reset or MFA. In production the API refuses to sign or accept tokens unless `AUTH_SECRET` is at least 32 characters. Known gaps that matter: password hashing runs on the main thread and slows other requests during a burst of sign-ins ([measured](docs/PERFORMANCE.md)), the sign-in rate limit is per instance, and metrics describe one process, so they are meaningful for the container deployment, not for serverless. [Security notes](docs/SECURITY_NOTES.md) lists what is implemented, what is not, and what a production version would add.
 
 ## Roadmap
 
+- Move password hashing off the event loop (a worker thread or a native binding), verified with the same k6 script
 - An OIDC provider and MFA in place of the demo accounts
 - Saved filters and reporting views
 - A shared rate-limit store for multi-instance deployments
