@@ -30,25 +30,28 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 
 ## Endpoints
 
-| Method | Endpoint           | Auth         | Purpose                                                   |
-| ------ | ------------------ | ------------ | --------------------------------------------------------- |
-| GET    | `/health`          | Public       | Liveness: the process is up (no database)                 |
-| GET    | `/ready`           | Public       | Readiness: the database answers; version and commit       |
-| POST   | `/auth/login`      | Public       | Sign in; returns an access token and sets the `rt` cookie |
-| POST   | `/auth/refresh`    | Cookie       | Trade the refresh cookie for a new access token           |
-| POST   | `/auth/logout`     | Cookie       | End the session and clear the cookie                      |
-| GET    | `/auth/me`         | Bearer token | Return the current session                                |
-| GET    | `/auth/demo-users` | Public       | List seeded demo accounts                                 |
-| GET    | `/tickets`         | Bearer token | List tickets with filters, sorting and pagination         |
-| GET    | `/tickets/export`  | Bearer token | Export visible tickets as CSV                             |
-| GET    | `/tickets/stats`   | Bearer token | Dashboard, priority and SLA stats                         |
-| GET    | `/tickets/:id`     | Bearer token | Fetch one visible ticket                                  |
-| POST   | `/tickets`         | Bearer token | Create a ticket                                           |
-| PATCH  | `/tickets/:id`     | Bearer token | Update ticket fields                                      |
-| DELETE | `/tickets/:id`     | Admin only   | Delete a ticket                                           |
-| GET    | `/users`           | Admin only   | List users (never their password hashes)                  |
-| PATCH  | `/users/:id`       | Admin only   | Change a user's role                                      |
-| GET    | `/audit`           | Admin only   | Read the security audit log                               |
+| Method | Endpoint                | Auth         | Purpose                                                           |
+| ------ | ----------------------- | ------------ | ----------------------------------------------------------------- |
+| GET    | `/health`               | Public       | Liveness: the process is up (no database)                         |
+| GET    | `/ready`                | Public       | Readiness: the database answers; version and commit               |
+| POST   | `/auth/login`           | Public       | Sign in; returns an access token and sets the `rt` cookie         |
+| POST   | `/auth/refresh`         | Cookie       | Trade the refresh cookie for a new access token                   |
+| POST   | `/auth/logout`          | Cookie       | End the session and clear the cookie                              |
+| GET    | `/auth/me`              | Bearer token | Return the current session                                        |
+| GET    | `/auth/demo-users`      | Public       | List seeded demo accounts                                         |
+| GET    | `/tickets`              | Bearer token | List tickets with filters, sorting and pagination                 |
+| GET    | `/tickets/export`       | Bearer token | Export visible tickets as CSV                                     |
+| GET    | `/tickets/stats`        | Bearer token | Dashboard, priority and SLA stats                                 |
+| GET    | `/tickets/stats/trends` | Bearer token | Opened and resolved per day, mean time to resolve, SLA compliance |
+| GET    | `/tickets/:id`          | Bearer token | Fetch one visible ticket                                          |
+| POST   | `/tickets`              | Bearer token | Create a ticket                                                   |
+| PATCH  | `/tickets/:id`          | Bearer token | Update ticket fields                                              |
+| DELETE | `/tickets/:id`          | Admin only   | Delete a ticket (and its comments)                                |
+| GET    | `/tickets/:id/comments` | Bearer token | A ticket's comments, oldest first                                 |
+| POST   | `/tickets/:id/comments` | Bearer token | Add a comment, or an internal note (staff only)                   |
+| GET    | `/users`                | Admin only   | List users (never their password hashes)                          |
+| PATCH  | `/users/:id`            | Admin only   | Change a user's role                                              |
+| GET    | `/audit`                | Admin only   | Read the security audit log                                       |
 
 ## Administration
 
@@ -134,6 +137,22 @@ Every ticket carries a version, `__v`, that increases by one on each update. `PA
 - **Without `If-Match`** the update is applied to the latest version. Each update is a single atomic write guarded by the version it was computed from; if another write lands first, the update is recomputed against the new state (up to three attempts), so the `from` value in the activity log is always the real previous value.
 - `If-Match` accepts `"3"`, `W/"3"` or `3`. `*` means any current version. Anything else is a `400`.
 
+## Comments and internal notes
+
+`POST /tickets/:id/comments` takes `{ "body": "...", "visibility": "public" | "internal" }` (visibility defaults to `public`; the body is 1 to 2,000 characters). Staff can post either kind; a requester who sends `internal` gets `403`. `GET /tickets/:id/comments` returns the thread oldest first.
+
+**A requester never receives an internal note.** The server applies the rule: the comments query only asks the database for the visibilities the caller may read, and the history entry recorded for a note (`comment_added`, marked `internal`) is removed from every ticket a requester is sent (the list, one ticket, and the response to their own edit or create). The entry never repeats the note's text. The CSV export contains no comments. Comments live in their own collection, so a busy thread cannot grow a ticket document, and adding one does not change the ticket's version (it will not make someone else's edit fail with a `409`).
+
+## Trends
+
+`GET /tickets/stats/trends?days=30&tz=America/Toronto` returns, for the tickets the caller may see:
+
+- `series`: one entry per calendar day, oldest first, with `opened` (tickets created that day) and `resolved` (tickets resolved or closed that day). Days with nothing are zeros.
+- `resolution.meanHours`: the mean time from creation to resolution over tickets resolved in the window, to one decimal place. `null` when nothing was resolved.
+- `sla.compliancePercent`: the share of those tickets resolved on or before their SLA deadline. `null` when nothing was resolved.
+
+`days` is 1 to 90 (default 30). `tz` is an IANA time zone name (default `UTC`) and decides where a day ends; an unknown name is a `400`. A ticket that is reopened and resolved again counts on the day of its latest resolution.
+
 ## Who can do what
 
 | Action                                        | Admin | Technician | Requester        |
@@ -143,6 +162,8 @@ Every ticket carries a version, `__v`, that increases by one on each update. `PA
 | Change status, assignee, due date             | Yes   | Yes        | No               |
 | Change title, description, priority, category | Yes   | Yes        | Own tickets only |
 | Delete a ticket                               | Yes   | No         | No               |
+| Read and write public comments                | Yes   | Yes        | Own tickets only |
+| Read and write internal notes                 | Yes   | Yes        | No               |
 
 A requester asking for someone else's ticket gets `404`, not `403`, so ids cannot be probed. Tickets a requester creates always carry their identity, `open` status and `Unassigned` owner, whatever the request says.
 
