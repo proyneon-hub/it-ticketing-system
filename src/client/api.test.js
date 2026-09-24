@@ -66,17 +66,18 @@ describe('requests', () => {
     expect(options.signal).toBe(controller.signal);
   });
 
-  it('sends the saved bearer token and persists it across page loads', async () => {
+  it('sends the access token as a bearer token, and holds it in memory only', async () => {
     let api = await loadApi();
     api.setAuthToken('abc.def');
-    expect(localStorage.getItem('it_ticketing_token')).toBe('abc.def');
-
-    api = await loadApi(); // A fresh page load reads the token back.
-    expect(api.hasAuthToken()).toBe(true);
     fetchMock.mockResolvedValue(json({ total: 0 }));
     await api.fetchStats();
 
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer abc.def');
+    // Script-readable storage is exactly what an injected script could steal.
+    expect(JSON.stringify({ ...localStorage })).not.toContain('abc.def');
+
+    api = await loadApi(); // A fresh page load has no token until the session is restored.
+    expect(api.hasAuthToken()).toBe(false);
   });
 
   it('sends JSON bodies with a content type, and none on plain reads', async () => {
@@ -107,14 +108,20 @@ describe('requests', () => {
     expect(await blob.text()).toBe('Ticket ID,Title');
   });
 
-  it('works when browser storage is unavailable', async () => {
-    const api = await loadApi();
+  it('remembers only a hint that a session may exist, and works when storage is blocked', async () => {
+    let api = await loadApi();
+    expect(api.sessionMayExist()).toBe(false);
+    api.setSessionHint(true);
+
+    api = await loadApi(); // A page reload.
+    expect(api.sessionMayExist()).toBe(true);
+    api.setSessionHint(false);
+    expect(api.sessionMayExist()).toBe(false);
+
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-
-    expect(() => api.setAuthToken('token')).not.toThrow();
-    expect(api.hasAuthToken()).toBe(true);
+    expect(() => api.setSessionHint(true)).not.toThrow();
   });
 });
 
@@ -189,7 +196,6 @@ describe('expired sessions', () => {
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(api.hasAuthToken()).toBe(false);
-    expect(localStorage.getItem('it_ticketing_token')).toBeNull();
   });
 
   it('does not treat a failed sign-in as an expired session', async () => {
@@ -201,5 +207,196 @@ describe('expired sessions', () => {
     await expect(api.login({ email: 'a', password: 'b' })).rejects.toThrow('Invalid email');
 
     expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+describe('refreshing an expired access token', () => {
+  const unauthorized = () =>
+    json({ message: 'Authentication required.', code: 'UNAUTHORIZED' }, { status: 401 });
+
+  const refreshed = (token) =>
+    json({ token, user: { id: 'usr_1', name: 'A', email: 'a@b.c', role: 'admin' } });
+
+  // Answers each call by its URL, so the order requests happen in does not matter.
+
+  function route(handlers) {
+    fetchMock.mockImplementation(async (url, options) => {
+      const handler = handlers[`${options?.method || 'GET'} ${url}`];
+
+      if (!handler) throw new Error(`Unexpected request ${options?.method || 'GET'} ${url}`);
+
+      return handler(options);
+    });
+  }
+
+  it('silently refreshes on a 401 and repeats the request with the new token', async () => {
+    const api = await loadApi();
+
+    const handler = vi.fn();
+
+    api.onUnauthorized(handler);
+
+    api.setAuthToken('expired');
+
+    const seen = [];
+
+    route({
+      'GET /api/tickets/stats': (options) => {
+        seen.push(options.headers.Authorization);
+
+        return seen.length === 1 ? unauthorized() : json({ total: 7 });
+      },
+
+      'POST /api/auth/refresh': () => refreshed('fresh'),
+    });
+
+    await expect(api.fetchStats()).resolves.toEqual({ total: 7 });
+
+    expect(seen).toEqual(['Bearer expired', 'Bearer fresh']);
+
+    expect(handler).not.toHaveBeenCalled();
+
+    expect(api.hasAuthToken()).toBe(true);
+  });
+
+  it('shares one refresh between requests that expire together', async () => {
+    const api = await loadApi();
+
+    api.setAuthToken('expired');
+
+    let refreshes = 0;
+
+    route({
+      'GET /api/tickets/stats': (options) =>
+        options.headers.Authorization === 'Bearer fresh' ? json({ ok: 1 }) : unauthorized(),
+
+      'GET /api/tickets?page=1': (options) =>
+        options.headers.Authorization === 'Bearer fresh' ? json({ ok: 2 }) : unauthorized(),
+
+      'POST /api/auth/refresh': () => {
+        refreshes += 1;
+
+        return refreshed('fresh');
+      },
+    });
+
+    // A refresh token works once; two concurrent refreshes would end the session.
+
+    const results = await Promise.all([api.fetchStats(), api.fetchTickets({ page: 1 })]);
+
+    expect(results).toEqual([{ ok: 1 }, { ok: 2 }]);
+
+    expect(refreshes).toBe(1);
+  });
+
+  it('signs out and reports the original error when the refresh is refused', async () => {
+    const api = await loadApi();
+
+    const handler = vi.fn();
+
+    api.onUnauthorized(handler);
+
+    api.setAuthToken('expired');
+
+    route({
+      'GET /api/tickets/stats': unauthorized,
+
+      'POST /api/auth/refresh': () => json({ message: 'Session expired.' }, { status: 401 }),
+    });
+
+    const error = await api.fetchStats().catch((caught) => caught);
+
+    expect(error).toMatchObject({ status: 401 });
+    // The app already told the user their session ended; the failing request must not
+    // announce a second, less helpful "Authentication required." over it.
+    expect(error.sessionEnded).toBe(true);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    expect(api.hasAuthToken()).toBe(false);
+  });
+
+  it('retries only once: a second 401 after a good refresh ends the session', async () => {
+    const api = await loadApi();
+
+    const handler = vi.fn();
+
+    api.onUnauthorized(handler);
+
+    api.setAuthToken('expired');
+
+    let attempts = 0;
+
+    route({
+      'GET /api/tickets/stats': () => {
+        attempts += 1;
+
+        return unauthorized();
+      },
+
+      'POST /api/auth/refresh': () => refreshed('fresh'),
+    });
+
+    await expect(api.fetchStats()).rejects.toMatchObject({ status: 401 });
+
+    expect(attempts).toBe(2);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not try to refresh when there was no session, and never refreshes a refresh', async () => {
+    const api = await loadApi();
+
+    route({
+      'GET /api/tickets/stats': unauthorized,
+
+      'POST /api/auth/refresh': unauthorized,
+    });
+
+    await expect(api.fetchStats()).rejects.toMatchObject({ status: 401 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1); // No token held, so no refresh attempt.
+
+    await expect(api.refreshSession()).rejects.toMatchObject({ status: 401 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2); // The failed refresh was not itself retried.
+  });
+
+  it('refreshSession stores the new access token and returns the user', async () => {
+    const api = await loadApi();
+
+    route({ 'POST /api/auth/refresh': () => refreshed('restored') });
+
+    const data = await api.refreshSession();
+
+    expect(data.user.role).toBe('admin');
+
+    expect(api.hasAuthToken()).toBe(true);
+
+    fetchMock.mockResolvedValue(json({ total: 0 }));
+
+    await api.fetchStats();
+
+    expect(fetchMock.mock.calls.at(-1)[1].headers.Authorization).toBe('Bearer restored');
+  });
+
+  it('logout tells the server, and forgets the token even if the server cannot be reached', async () => {
+    const api = await loadApi();
+
+    api.setAuthToken('abc');
+
+    route({ 'POST /api/auth/logout': () => new Response(null, { status: 204 }) });
+
+    await api.logout();
+
+    expect(api.hasAuthToken()).toBe(false);
+
+    api.setAuthToken('abc');
+
+    fetchMock.mockRejectedValue(new TypeError('offline'));
+
+    await expect(api.logout()).rejects.toThrow();
+
+    expect(api.hasAuthToken()).toBe(false);
   });
 });

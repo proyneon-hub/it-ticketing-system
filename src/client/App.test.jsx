@@ -3,27 +3,22 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 import * as api from './api.js';
-import {
-  demoUsers,
-  emptyStats,
-  makeTicket,
-  sessionUser,
-  ticketPage,
-  users,
-} from './test/fixtures.js';
+import { demoUsers, emptyStats, makeTicket, deferred, ticketPage, users } from './test/fixtures.js';
 
 vi.mock('./api.js', () => ({
   createTicket: vi.fn(),
   deleteTicket: vi.fn(),
   exportTickets: vi.fn(),
   fetchDemoUsers: vi.fn(),
-  fetchMe: vi.fn(),
   fetchStats: vi.fn(),
   fetchTickets: vi.fn(),
-  hasAuthToken: vi.fn(),
   login: vi.fn(),
+  logout: vi.fn(),
   onUnauthorized: vi.fn(),
+  refreshSession: vi.fn(),
+  sessionMayExist: vi.fn(),
   setAuthToken: vi.fn(),
+  setSessionHint: vi.fn(),
   updateTicket: vi.fn(),
 }));
 
@@ -35,7 +30,8 @@ beforeEach(() => {
   api.onUnauthorized.mockImplementation((handler) => {
     expireSession = handler;
   });
-  api.hasAuthToken.mockReturnValue(false);
+  api.sessionMayExist.mockReturnValue(false);
+  api.logout.mockResolvedValue(null);
   api.fetchDemoUsers.mockResolvedValue({ users: demoUsers });
   api.fetchTickets.mockResolvedValue(ticketPage([makeTicket()]));
   api.fetchStats.mockResolvedValue({ ...emptyStats, total: 1, byStatus: { open: 1 } });
@@ -60,7 +56,7 @@ describe('signed out', () => {
 
     expect(screen.getByText('Sign in to open the service desk.')).toBeInTheDocument();
     expect(await screen.findByTestId('demo-login-admin')).toBeInTheDocument();
-    expect(api.fetchMe).not.toHaveBeenCalled(); // No saved session to restore.
+    expect(api.refreshSession).not.toHaveBeenCalled(); // No saved session to restore.
     expect(api.fetchTickets).not.toHaveBeenCalled();
   });
 
@@ -89,9 +85,9 @@ describe('signed out', () => {
     expect(screen.getByText('Sign in to open the service desk.')).toBeInTheDocument();
   });
 
-  it('restores a saved session without asking to sign in again', async () => {
-    api.hasAuthToken.mockReturnValue(true);
-    api.fetchMe.mockResolvedValue({ user: sessionUser(users.technician) });
+  it('restores a session through the refresh cookie without asking to sign in again', async () => {
+    api.sessionMayExist.mockReturnValue(true);
+    api.refreshSession.mockResolvedValue({ token: 't', user: users.technician });
 
     render(<App />);
 
@@ -99,14 +95,28 @@ describe('signed out', () => {
     expect(screen.getByText('Theo Technician')).toBeInTheDocument();
   });
 
-  it('falls back to signed out when the saved session is no longer valid', async () => {
-    api.hasAuthToken.mockReturnValue(true);
-    api.fetchMe.mockRejectedValue(new Error('Authentication required.'));
+  it('says it is restoring, instead of flashing the sign-in prompt, while it checks', async () => {
+    api.sessionMayExist.mockReturnValue(true);
+    const pending = deferred();
+    api.refreshSession.mockReturnValue(pending.promise);
 
     render(<App />);
 
-    await waitFor(() => expect(api.setAuthToken).toHaveBeenCalledWith(''));
-    expect(screen.getByText('Sign in to open the service desk.')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Restoring your session');
+    expect(screen.queryByText('Sign in to open the service desk.')).not.toBeInTheDocument();
+
+    pending.resolve({ token: 't', user: users.technician });
+    expect(await screen.findByText('Ticket Dashboard')).toBeInTheDocument();
+  });
+
+  it('falls back to signed out, quietly, when the saved session has ended', async () => {
+    api.sessionMayExist.mockReturnValue(true);
+    api.refreshSession.mockRejectedValue(new Error('Session expired. Sign in again.'));
+
+    render(<App />);
+
+    expect(await screen.findByText('Sign in to open the service desk.')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
 
@@ -225,7 +235,7 @@ describe('signed in', () => {
 
     expect(screen.getByText('Sign in to open the service desk.')).toBeInTheDocument();
     expect(screen.queryByText('Laptop cannot connect to Wi-Fi')).not.toBeInTheDocument();
-    expect(api.setAuthToken).toHaveBeenLastCalledWith('');
+    expect(api.logout).toHaveBeenCalledTimes(1);
   });
 
   it('returns to sign-in with an explanation when the session expires', async () => {
