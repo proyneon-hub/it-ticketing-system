@@ -15,6 +15,10 @@ updates:
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
     groups:
+      # react, react-dom and their types must move together: a bump of only some of them
+      # leaves a peer-dependency conflict that fails `npm ci`.
+      react:
+        patterns: ['react', 'react-dom', '@types/react', '@types/react-dom']
       production:
         dependency-type: production
         update-types: [minor, patch]
