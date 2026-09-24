@@ -41,11 +41,11 @@ flowchart TD
 
 | Suite                     | Tests | Executions          |
 | ------------------------- | ----- | ------------------- |
-| API (Vitest)              | 84    | 84                  |
-| Frontend (Vitest)         | 94    | 94                  |
-| Mocked browser regression | 19    | 57 (three browsers) |
+| API (Vitest)              | 227   | 227                 |
+| Frontend (Vitest)         | 105   | 105                 |
+| Mocked browser regression | 22    | 66 (three browsers) |
 | Accessibility (Axe)       | 3     | 9 (three browsers)  |
-| Real-stack smoke          | 7     | 7 (Chromium)        |
+| Real-stack smoke          | 8     | 8 (Chromium)        |
 | Support-Ops (pytest)      | 9     | 9                   |
 
 Coverage is enforced by thresholds (API 88% statements / 78% branches, frontend 85% / 80%) and published with the Playwright report on GitHub Pages.

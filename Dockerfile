@@ -9,7 +9,7 @@ RUN npm ci
 COPY index.html vite.config.mjs tsconfig.server.json ./
 COPY server.ts ./
 COPY src ./src
-COPY scripts/seed.ts ./scripts/seed.ts
+COPY scripts/seed.ts scripts/sampleData.ts scripts/sync-indexes.ts ./scripts/
 # Builds the React app to dist/ and compiles the API to dist-server/.
 RUN npm run build
 

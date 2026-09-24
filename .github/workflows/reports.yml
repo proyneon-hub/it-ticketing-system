@@ -52,6 +52,8 @@ jobs:
           cp -r playwright-report site/playwright-report
           cp -r coverage/server/lcov-report site/coverage-api
           cp -r coverage/client/lcov-report site/coverage-frontend
+          # The README coverage badge reads this (shields.io endpoint format).
+          node scripts/coverage-badge.js > site/coverage.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
