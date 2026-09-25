@@ -51,6 +51,8 @@ services:
       CRON_SECRET: ${CRON_SECRET:-}
       # Notifications (Discord, Slack or any JSON endpoint). Unset, nothing is recorded or sent.
       WEBHOOK_URL: ${WEBHOOK_URL:-}
+      # The service desk agent. Off unless AGENT_ENABLED=true; the app only records events for it.
+      AGENT_ENABLED: ${AGENT_ENABLED:-}
     ports:
       - '5000:5000'
     # Health is defined by the image's HEALTHCHECK (/api/ready).
@@ -80,6 +82,16 @@ services:
       MONGODB_URI: mongodb://mongo:27017/it_ticketing?replicaSet=rs0
       # Notifications are off unless a webhook is set: WEBHOOK_URL=https://discord.com/api/webhooks/...
       WEBHOOK_URL: ${WEBHOOK_URL:-}
+      # The service desk agent runs here. Off unless AGENT_ENABLED=true (also set on the app, which
+      # records the events). It mints a token for each run, so it needs the app's AUTH_SECRET, and it
+      # reaches the ticketing API at the app's address. Needs a real ANTHROPIC_API_KEY.
+      AGENT_ENABLED: ${AGENT_ENABLED:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AGENT_MODEL: ${AGENT_MODEL:-}
+      AGENT_DEFAULT_MODE: ${AGENT_DEFAULT_MODE:-}
+      AGENT_DAILY_COST_CAP_USD: ${AGENT_DAILY_COST_CAP_USD:-}
+      AGENT_API_BASE_URL: http://app:5000
+      AUTH_SECRET: ${AUTH_SECRET:-local-compose-demo-secret-do-not-reuse}
       WORKER_INTERVAL_MS: ${WORKER_INTERVAL_MS:-30000}
     command: ['node', '--enable-source-maps', 'dist-server/scripts/worker.js']
 

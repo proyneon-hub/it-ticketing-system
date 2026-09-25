@@ -888,6 +888,44 @@
         }
       }
     },
+    "/jobs/agent-runs": {
+      "post": {
+        "tags": ["Jobs"],
+        "summary": "Run the service desk agent",
+        "description": "Works through the events the agent is listening for (new tickets), oldest first, one run each, until its limit or time budget. Each ticket version is run at most once; a failed run is retried later with backoff and marked dead after the last attempt. Does nothing, and says why, unless `AGENT_ENABLED` is `true` and the model can be used. Called by the ticket-create nudge on Vercel, by the worker on a timer, and by the scheduled workflow as a backstop.",
+        "operationId": "runAgentRuns",
+        "security": [
+          {
+            "cronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the run did.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunsResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "503": {
+            "description": "`JOBS_NOT_CONFIGURED`: CRON_SECRET is missing or shorter than 32 characters, so the jobs are off.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/jobs/outbox-delivery": {
       "post": {
         "tags": ["Jobs"],
@@ -2415,6 +2453,37 @@
           "more": {
             "type": "boolean",
             "description": "True when the run stopped at its limit with more still to do; the next run continues."
+          }
+        }
+      },
+      "AgentRunsResult": {
+        "type": "object",
+        "required": ["configured", "ran", "skipped", "failed", "more"],
+        "properties": {
+          "configured": {
+            "type": "boolean",
+            "description": "False when the agent is off or cannot run; nothing was claimed, and `reason` says why."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["disabled", "no_api_key", "bad_model"],
+            "description": "Why the agent did not run: `disabled` (AGENT_ENABLED is not true), `no_api_key`, or `bad_model` (AGENT_MODEL is not a model the agent is priced for). Only present when `configured` is false."
+          },
+          "ran": {
+            "type": "integer",
+            "description": "Runs that finished, whatever their outcome."
+          },
+          "skipped": {
+            "type": "integer",
+            "description": "Events with nothing to do: already handled, the ticket is gone, the agent is off for it, or the day's cost cap has been reached."
+          },
+          "failed": {
+            "type": "integer",
+            "description": "Runs that failed. Each is retried later, or marked dead after the last attempt."
+          },
+          "more": {
+            "type": "boolean",
+            "description": "True when the call stopped at its limit or time budget, so events may still be waiting."
           }
         }
       },

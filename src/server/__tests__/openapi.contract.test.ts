@@ -353,6 +353,12 @@ describe('responses match their documented schemas', () => {
       expect(delivery.body.configured).toBe(false);
       used('runOutboxDelivery');
 
+      // With the agent off (the default) the job reports that and does nothing.
+      const agentJob = await request(app).post('/api/jobs/agent-runs').set(auth).expect(200);
+      conforms('AgentRunsResult', agentJob.body);
+      expect(agentJob.body).toMatchObject({ configured: false, reason: 'disabled' });
+      used('runAgentRuns');
+
       const unauthorised = await request(app).post('/api/jobs/sla-escalation').expect(401);
       conforms('Error', unauthorised.body);
     } finally {
