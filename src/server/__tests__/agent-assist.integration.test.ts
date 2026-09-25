@@ -22,6 +22,7 @@ import KbArticle from '../models/KbArticle';
 import OutboxEvent from '../models/OutboxEvent';
 import Ticket from '../models/Ticket';
 import { issueServiceToken } from '../security/accessToken';
+import { escalateTicket } from '../services/agentEscalationService';
 import { updateSettings } from '../services/agentSettingsService';
 import { processAgentEvents } from '../services/agentWorkerService';
 import { importArticles } from '../services/kbService';
@@ -238,11 +239,17 @@ describe('a new ticket in assist mode', () => {
     expect(note?.body).toContain('Why escalating: A phishing report.');
     expect(await AgentRun.findOne()).toMatchObject({ mode: 'assist', outcome: 'escalated' });
 
-    // The requester cannot read the note, or see that it exists.
+    // The requester cannot read the note, or see that it exists, in the thread or in the history.
     const asRequester = await request(app)
       .get(`/api/tickets/${created._id}/comments`)
       .set(bearer(tokens, 'user'));
     expect(asRequester.body.comments).toEqual([]);
+    const theirTicket = await request(app)
+      .get(`/api/tickets/${created._id}`)
+      .set(bearer(tokens, 'user'));
+    expect(
+      theirTicket.body.ticket.activity.map((entry: { action: string }) => entry.action)
+    ).not.toContain('agent_escalated');
     const asStaff = await request(app)
       .get(`/api/tickets/${created._id}/comments`)
       .set(bearer(tokens, 'tech'));
@@ -350,6 +357,16 @@ describe('reading the proposal', () => {
     expect(response.status).toBe(403);
   });
 
+  test('a ticket whose last run escalated, so proposed nothing, has no proposal', async () => {
+    const created = await createTicket();
+    await work(escalating(created._id));
+    expect((await ticketOf(created._id))?.agent?.lastRunId).toBeDefined();
+    expect(
+      (await request(app).get(`/api/tickets/${created._id}/proposal`).set(bearer(tokens, 'tech')))
+        .status
+    ).toBe(404);
+  });
+
   test('a ticket the agent never proposed anything for, or one that does not exist, is not found', async () => {
     const plain = await createTicket();
     expect(
@@ -372,12 +389,15 @@ describe('reading the proposal', () => {
 describe('approving a proposal', () => {
   test('posts the reply as the agent, approved by the person, and waits for the requester', async () => {
     const created = await proposed();
+    const before = await ticketOf(created._id);
     const response = await decide(created._id, 'approve', 'tech');
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: 'approved' });
 
     const ticket = await ticketOf(created._id);
     expect(ticket).toMatchObject({ status: 'pending-user' });
+    // The move is an edit, so anyone holding the old version is told to reload.
+    expect(ticket?.__v).toBe((before?.__v ?? 0) + 1);
     expect(ticket?.agent?.proposalStatus).toBe('approved');
     expect(ticket?.activity.map((entry) => entry.action)).toEqual(
       expect.arrayContaining(['proposal_approved', 'status_changed', 'comment_added'])
@@ -425,6 +445,23 @@ describe('approving a proposal', () => {
     const created = await proposed();
     const response = await decide(created._id, 'approve', 'tech', {
       replyMarkdown: '  Try the numbered steps in the VPN article and reconnect.  ',
+    });
+    expect(response.body).toEqual({ status: 'approved' });
+  });
+
+  test('a draft that ends in a newline is not "edited" by sending it back trimmed', async () => {
+    const created = await proposed();
+    const run = await AgentRun.findOne({ ticketId: created._id });
+    await AgentRun.updateOne(
+      { _id: run?._id },
+      {
+        $set: {
+          'proposal.replyMarkdown': 'Try the numbered steps in the VPN article and reconnect.\n\n',
+        },
+      }
+    );
+    const response = await decide(created._id, 'approve', 'tech', {
+      replyMarkdown: 'Try the numbered steps in the VPN article and reconnect.',
     });
     expect(response.body).toEqual({ status: 'approved' });
   });
@@ -651,6 +688,71 @@ describe('POST /agent/escalations', () => {
   });
 });
 
+describe('the escalation service', () => {
+  const input = (ticketId: string) => ({
+    ticketId,
+    assigneeGroup: 'Network Support' as const,
+    reason: 'out_of_kb_scope' as const,
+    summary: 'Reported: nothing covers this.',
+  });
+  const agentUser = async (ticketId: string) => {
+    const runId = String(new mongoose.Types.ObjectId());
+    const token = await issueServiceToken({ ticketId, runId });
+    return {
+      sub: 'service-desk-agent',
+      name: 'Service Desk Agent',
+      email: 'agent@service.local',
+      role: 'agent' as const,
+      exp: 0,
+      ticketId,
+      runId,
+      token,
+    };
+  };
+
+  test.each([['technician'], ['admin'], ['user']] as const)(
+    'refuses %s even if a route let them through',
+    async (role) => {
+      const created = await createTicket();
+      await expect(
+        escalateTicket(
+          { sub: 'u', name: 'U', email: 'u@example.com', role, exp: 0 },
+          input(created._id)
+        )
+      ).rejects.toThrow(/Only the service desk agent/);
+      expect((await ticketOf(created._id))?.assignee).toBe('Unassigned');
+    }
+  );
+
+  test('tries again when it loses a race with an edit, and gives up after three', async () => {
+    const created = await createTicket();
+    const user = await agentUser(created._id);
+
+    const spy = vi.spyOn(Ticket, 'findOneAndUpdate').mockResolvedValueOnce(null);
+    try {
+      const ticket = await escalateTicket(user, input(created._id));
+      expect(ticket.assignee).toBe('Network Support');
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally {
+      spy.mockRestore();
+    }
+
+    const other = await createTicket({ title: 'Second' });
+    const otherUser = await agentUser(other._id);
+    const losing = vi.spyOn(Ticket, 'findOneAndUpdate').mockResolvedValue(null);
+    try {
+      await expect(escalateTicket(otherUser, input(other._id))).rejects.toMatchObject({
+        code: 'VERSION_CONFLICT',
+      });
+      expect(losing).toHaveBeenCalledTimes(3);
+    } finally {
+      losing.mockRestore();
+    }
+    expect((await ticketOf(other._id))?.assignee).toBe('Unassigned');
+    expect(await commentsOf(other._id)).toEqual([]);
+  });
+});
+
 // --- A person editing while the agent works ------------------------------------------------
 
 describe('a person editing the ticket while the agent works', () => {
@@ -694,6 +796,8 @@ describe('a person editing the ticket while the agent works', () => {
       outcomeReason: 'ticket_changed',
     });
     expect(await commentsOf(created._id)).toEqual([]);
+    // The rest of that turn (the draft it asked for after the triage) is not run.
+    expect(await AgentStep.countDocuments({ toolName: 'propose_resolution' })).toBe(0);
   });
 });
 
@@ -767,7 +871,7 @@ describe('the per-requester limit', () => {
     expect(await AgentRun.findOne()).toMatchObject({ outcomeReason: 'requester_rate_limited' });
   });
 
-  test('older runs do not count: only the last hour does', async () => {
+  test('older runs do not count: only the last hour does (a run 90 minutes ago is not held against them)', async () => {
     await updateSettings({ perRequesterHourlyLimit: 1 }, 'admin@demo.local');
     await AgentRun.create({
       ticketId: new mongoose.Types.ObjectId(),
@@ -778,7 +882,7 @@ describe('the per-requester limit', () => {
       promptVersion: 'triage.v1',
       outcome: 'proposed',
       requesterEmail: 'user@demo.local',
-      startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      startedAt: new Date(Date.now() - 90 * 60 * 1000),
     });
     const created = await createTicket();
     const result = await work(proposing(created._id));
