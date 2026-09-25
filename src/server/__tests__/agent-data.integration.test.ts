@@ -347,6 +347,7 @@ describe('the settings', () => {
       modeByCategory: {},
       autoAllowlist: [],
       dailyCostCapUsd: 1,
+      perRequesterHourlyLimit: 5,
     });
   });
 
@@ -381,6 +382,7 @@ describe('the settings', () => {
       modeByCategory: { Email: 'auto' },
       autoAllowlist: ['Email'],
       dailyCostCapUsd: 2.5,
+      perRequesterHourlyLimit: 5,
     });
     expect((await AgentSettings.findById('agent'))?.updatedBy).toBe('admin@demo.local');
   });
@@ -391,6 +393,24 @@ describe('the settings', () => {
     expect((await getSettings({})).killSwitch).toBe(true);
     await updateSettings({ killSwitch: false }, 'admin@demo.local');
     expect((await getSettings({})).killSwitch).toBe(false);
+  });
+
+  test('the per-requester limit is stored, validated, and falls back when the stored value is not a whole number', async () => {
+    await updateSettings({ perRequesterHourlyLimit: 2 }, 'admin@demo.local');
+    expect((await getSettings({})).perRequesterHourlyLimit).toBe(2);
+    await updateSettings({ perRequesterHourlyLimit: 0 }, 'admin@demo.local');
+    expect((await getSettings({})).perRequesterHourlyLimit).toBe(0);
+
+    for (const bad of [-1, 1.5, Number.NaN]) {
+      await expect(
+        updateSettings({ perRequesterHourlyLimit: bad }, 'admin@demo.local')
+      ).rejects.toThrow(/whole number/);
+    }
+    await AgentSettings.collection.updateOne(
+      { _id: 'agent' as never },
+      { $set: { perRequesterHourlyLimit: 2.5 } }
+    );
+    expect((await getSettings({})).perRequesterHourlyLimit).toBe(5);
   });
 
   test('anything in the database that is not what it should be is ignored, not obeyed', async () => {
@@ -409,6 +429,7 @@ describe('the settings', () => {
       modeByCategory: { Network: 'auto' },
       autoAllowlist: ['Email', 'Software'],
       dailyCostCapUsd: 1,
+      perRequesterHourlyLimit: 5,
     });
   });
 

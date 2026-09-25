@@ -26,6 +26,8 @@ export interface BeginRunInput {
   model: string;
   promptVersion: string;
   requestId?: string | undefined;
+  ticketNumber?: string | undefined;
+  requesterEmail?: string | undefined;
 }
 
 export type BeginRunResult =
@@ -62,6 +64,8 @@ export async function beginRun(
     intendedActions: [],
     startedAt: now,
     ...(input.requestId ? { requestId: input.requestId } : {}),
+    ...(input.ticketNumber ? { ticketNumber: input.ticketNumber } : {}),
+    ...(input.requesterEmail ? { requesterEmail: input.requesterEmail.toLowerCase() } : {}),
   };
 
   try {
@@ -159,4 +163,37 @@ export async function costSince(since: Date): Promise<number> {
     { $group: { _id: null, total: { $sum: '$costUsd' } } },
   ]);
   return row?.total ?? 0;
+}
+
+// How many runs the tickets of one requester have had since `since`. Counted whatever the outcome,
+// so a person who raises a lot of tickets cannot run up the bill by raising them quickly.
+export const countForRequesterSince = (requesterEmail: string, since: Date): Promise<number> =>
+  AgentRun.countDocuments({
+    requesterEmail: requesterEmail.toLowerCase(),
+    startedAt: { $gte: since },
+  });
+
+export interface RunFilter {
+  outcome?: AgentOutcome | undefined;
+  ticketId?: string | undefined;
+}
+
+// Runs, newest first, for the admin view.
+export async function listRuns(
+  filter: RunFilter,
+  { skip, limit }: { skip: number; limit: number }
+): Promise<{ runs: AgentRunRecord[]; total: number }> {
+  const query = {
+    ...(filter.outcome ? { outcome: filter.outcome } : {}),
+    ...(filter.ticketId ? { ticketId: filter.ticketId } : {}),
+  };
+  const [runs, total] = await Promise.all([
+    AgentRun.find(query)
+      .sort({ startedAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean<AgentRunRecord[]>(),
+    AgentRun.countDocuments(query),
+  ]);
+  return { runs, total };
 }

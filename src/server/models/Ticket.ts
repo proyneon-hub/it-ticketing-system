@@ -1,4 +1,5 @@
 import mongoose, { type HydratedDocument, type Model, type Types } from 'mongoose';
+import { proposalStatuses, triageSources } from '../../shared/agent-constants';
 import {
   actorRoles,
   priorities,
@@ -152,6 +153,16 @@ const ticketSchema = new mongoose.Schema<TicketAttrs>(
       type: String,
       enum: roles,
       default: 'user',
+    },
+    // What the service desk agent has done with this ticket; absent if it never ran.
+    agent: {
+      type: {
+        lastRunId: { type: mongoose.Schema.Types.ObjectId },
+        triageSource: { type: String, enum: triageSources },
+        proposalStatus: { type: String, enum: proposalStatuses },
+      },
+      _id: false,
+      default: undefined,
     },
   },
   { timestamps: true }

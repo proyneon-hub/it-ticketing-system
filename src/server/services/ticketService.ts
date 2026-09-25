@@ -2,6 +2,7 @@ import { priorities, statuses } from '../../shared/ticket-constants';
 import type { TicketAttrs } from '../../shared/ticket-types';
 import type { TokenPayload } from '../auth';
 import { activityEntriesForPatch, activityEntry } from '../domain/activity';
+import { nextAgentState } from '../domain/agentTicket';
 import { visibleActivity } from '../domain/comments';
 import { csvHeaderLine, ticketToCsvLine } from '../domain/csv';
 import {
@@ -50,9 +51,16 @@ const notFound = () => new NotFoundError('Ticket not found.');
 // A ticket as the caller may see it: plain data, and without the history entries about
 // internal notes when the caller is a requester. Every response that carries a ticket
 // goes through here, so a note cannot leak through the list, an edit or a create.
-function present(ticket: TicketRecord | TicketDocument, user: TokenPayload): TicketRecord {
-  const plain = ('toObject' in ticket ? ticket.toObject() : ticket) as TicketRecord;
-  return { ...plain, activity: visibleActivity(plain.activity, user.role) };
+export function present(ticket: TicketRecord | TicketDocument, user: TokenPayload): TicketRecord {
+  const { agent, ...plain } = ('toObject' in ticket ? ticket.toObject() : ticket) as TicketRecord;
+  return {
+    ...plain,
+    activity: visibleActivity(plain.activity, user.role),
+    // What the agent did with a ticket is for staff (and the agent itself), not the requester.
+    ...(agent && user.role !== 'user'
+      ? { agent: { ...agent, ...(agent.lastRunId ? { lastRunId: String(agent.lastRunId) } : {}) } }
+      : {}),
+  };
 }
 
 function assertValidObjectId(id: string): void {
@@ -216,8 +224,10 @@ export async function updateTicket(
     }
 
     const { set, unset } = deriveTimestampChanges(existing, payload);
+    // Who triaged it last (the agent, or a person who changed what the agent set).
+    const agent = nextAgentState(existing.agent, payload, user);
     const change = {
-      set: { ...payload, ...set },
+      set: { ...payload, ...set, ...(agent ? { agent } : {}) },
       clearResolvedAt: unset.resolvedAt === 1,
       activity: activityEntriesForPatch(user, existing, payload),
     };

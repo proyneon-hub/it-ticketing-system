@@ -1,4 +1,5 @@
 import mongoose, { type Model, type Types } from 'mongoose';
+import { commentSources, type CommentSource } from '../../shared/agent-constants';
 import {
   actorRoles,
   commentVisibilities,
@@ -11,6 +12,9 @@ export interface CommentAttrs {
   body: string;
   visibility: CommentVisibility;
   author: { id: string; name: string; email: string; role: ActorRole };
+  // A reply the service desk agent drafted, and the person who approved it.
+  source?: CommentSource;
+  approvedBy?: { id: string; name: string; email: string };
   createdAt: Date;
 }
 
@@ -27,6 +31,16 @@ const commentSchema = new mongoose.Schema<CommentAttrs>({
     name: { type: String, required: true, maxlength: 80 },
     email: { type: String, required: true, lowercase: true, maxlength: 254 },
     role: { type: String, enum: actorRoles, required: true },
+  },
+  source: { type: String, enum: commentSources },
+  approvedBy: {
+    type: {
+      id: String,
+      name: { type: String, maxlength: 80 },
+      email: { type: String, maxlength: 254 },
+    },
+    _id: false,
+    default: undefined,
   },
   createdAt: { type: Date, default: Date.now, required: true },
 });

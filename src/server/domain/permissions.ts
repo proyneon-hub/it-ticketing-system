@@ -34,6 +34,19 @@ export function assertHuman(user: TokenPayload): asserts user is TokenPayload & 
   }
 }
 
+// Deciding on the agent's proposals, and everything else about the agent that is for the team, is for
+// staff: not requesters, and not the agent itself.
+export function assertStaff(user: TokenPayload): void {
+  if (user.role !== 'admin' && user.role !== 'technician') {
+    throw new ForbiddenError('Only staff can do this.');
+  }
+}
+
+// What only the agent may do: hand its ticket to a person. Nobody else acts as the agent.
+export function assertAgent(user: TokenPayload): asserts user is TokenPayload & { role: 'agent' } {
+  if (user.role !== 'agent') throw new ForbiddenError('Only the service desk agent can do this.');
+}
+
 // Requesters only ever see tickets raised under their own email address. Returns
 // that address for a requester, and undefined for staff, who see everything.
 export const requesterScope = (user: TokenPayload): string | undefined =>

@@ -79,6 +79,7 @@ export const auditTypes = [
   'ticket_deleted',
   'permission_denied',
   'outbox_retried',
+  'agent_settings_changed',
 ] as const;
 export type AuditType = (typeof auditTypes)[number];
 

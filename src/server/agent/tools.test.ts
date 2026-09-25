@@ -113,7 +113,7 @@ describe('what the model is shown', () => {
       );
       expect(schema.properties?.cited_kb_ids?.minItems).toBe(1);
       expect(schema.properties?.cited_kb_ids?.maxItems).toBe(5);
-      expect(schema.properties?.reply_markdown?.maxLength).toBe(4000);
+      expect(schema.properties?.reply_markdown?.maxLength).toBe(2000);
     }
     expect(schemaOf('escalate').properties?.summary?.required).toEqual([
       'reported',

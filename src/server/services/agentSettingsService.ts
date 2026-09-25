@@ -11,7 +11,12 @@ import * as repository from '../repositories/agentSettingsRepository';
 export interface AgentSettingsValues extends AgentPolicySettings {
   // The most the agent may spend in a day, in US dollars. Runs are refused once it is reached.
   dailyCostCapUsd: number;
+  // The most runs one requester's tickets may have in an hour. Past it, the ticket goes to a person.
+  // Zero means none are run.
+  perRequesterHourlyLimit: number;
 }
+
+export const DEFAULT_PER_REQUESTER_HOURLY_LIMIT = 5;
 
 type Env = Record<string, string | undefined>;
 
@@ -31,6 +36,7 @@ export function defaultSettings(env: Env = process.env): AgentSettingsValues {
     autoAllowlist: [],
     dailyCostCapUsd:
       env.AGENT_DAILY_COST_CAP_USD?.trim() && Number.isFinite(cap) && cap >= 0 ? cap : 1,
+    perRequesterHourlyLimit: DEFAULT_PER_REQUESTER_HOURLY_LIMIT,
   };
 }
 
@@ -63,6 +69,12 @@ export async function getSettings(env: Env = process.env): Promise<AgentSettings
       stored.dailyCostCapUsd >= 0
         ? stored.dailyCostCapUsd
         : defaults.dailyCostCapUsd,
+    perRequesterHourlyLimit:
+      typeof stored.perRequesterHourlyLimit === 'number' &&
+      Number.isInteger(stored.perRequesterHourlyLimit) &&
+      stored.perRequesterHourlyLimit >= 0
+        ? stored.perRequesterHourlyLimit
+        : defaults.perRequesterHourlyLimit,
   };
 }
 
@@ -72,6 +84,7 @@ export interface SettingsChanges {
   modeByCategory?: Record<string, AgentMode>;
   autoAllowlist?: string[];
   dailyCostCapUsd?: number;
+  perRequesterHourlyLimit?: number;
 }
 
 // Validates and stores changes to the settings. Only categories the agent can choose from may be
@@ -98,6 +111,12 @@ export async function updateSettings(
     !(Number.isFinite(changes.dailyCostCapUsd) && changes.dailyCostCapUsd >= 0)
   ) {
     throw new ValidationError('dailyCostCapUsd must be zero or more.');
+  }
+  if (
+    changes.perRequesterHourlyLimit !== undefined &&
+    !(Number.isInteger(changes.perRequesterHourlyLimit) && changes.perRequesterHourlyLimit >= 0)
+  ) {
+    throw new ValidationError('perRequesterHourlyLimit must be a whole number, zero or more.');
   }
 
   await repository.write(changes, updatedBy);

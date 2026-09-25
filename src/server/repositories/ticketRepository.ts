@@ -360,3 +360,54 @@ export async function counts(requesterEmail: string | undefined, now: Date): Pro
 
   return { total, byStatus, byPriority, breached, dueSoon };
 }
+
+// Records that the agent has proposed a reply and is waiting for a person. It is metadata about the
+// agent's work, not an edit to the ticket, so it does not change the version: a technician who has
+// the ticket open is not made to reload it because the agent finished.
+export async function setProposalPending(
+  id: unknown,
+  runId: unknown,
+  activity: ActivityEntry
+): Promise<boolean> {
+  const result = await Ticket.updateOne(
+    { _id: id },
+    {
+      $set: { 'agent.lastRunId': runId, 'agent.proposalStatus': 'pending' },
+      $push: { activity },
+    }
+  );
+  return result.matchedCount > 0;
+}
+
+// Records the run that last worked on a ticket, without changing anything else.
+export async function setLastRun(id: unknown, runId: unknown): Promise<void> {
+  await Ticket.updateOne({ _id: id }, { $set: { 'agent.lastRunId': runId } });
+}
+
+// A person's decision on the pending proposal. It only matches while the proposal is still pending
+// (and the ticket is still in the status the decision was made against), so two people deciding at
+// once cannot both win. `status` is set, and the version bumped, only when the decision also moves
+// the ticket. Returns null when there was nothing to decide.
+export function decideProposal(
+  id: unknown,
+  decision: {
+    to: 'approved' | 'edited' | 'rejected';
+    fromStatus: string;
+    status?: string;
+    activity: ActivityEntry[];
+  },
+  tx: Tx
+): Promise<TicketDocument | null> {
+  return Ticket.findOneAndUpdate(
+    { _id: id, 'agent.proposalStatus': 'pending', status: decision.fromStatus },
+    {
+      $set: {
+        'agent.proposalStatus': decision.to,
+        ...(decision.status ? { status: decision.status } : {}),
+      },
+      $push: { activity: { $each: decision.activity } },
+      ...(decision.status ? { $inc: { __v: 1 } } : {}),
+    },
+    { new: true, session: tx }
+  );
+}

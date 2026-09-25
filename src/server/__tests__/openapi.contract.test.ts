@@ -6,7 +6,16 @@ import addFormats from 'ajv-formats';
 import mongoose from 'mongoose';
 import request from 'supertest';
 import {
+  agentEscalationReasons,
+  agentModes,
+  agentOutcomes,
+  proposalStatuses,
+} from '../../shared/agent-constants';
+import {
+  actorRoles,
   agentCategories,
+  assigneeGroups,
+  auditTypes,
   priorities,
   roles,
   slaFilters,
@@ -15,9 +24,12 @@ import {
 } from '../../shared/ticket-constants';
 import app from '../app';
 import { connectToDatabase } from '../db';
+import AgentRun from '../models/AgentRun';
+import AgentStep from '../models/AgentStep';
 import KbArticle from '../models/KbArticle';
 import OutboxEvent from '../models/OutboxEvent';
 import Ticket from '../models/Ticket';
+import { issueServiceToken } from '../security/accessToken';
 import spec from '../openapi.json';
 import {
   bearer,
@@ -37,7 +49,7 @@ interface Operation {
 interface OpenApiDocument {
   paths: Record<string, Record<string, Operation>>;
   components: {
-    schemas: Record<string, { enum?: string[] }>;
+    schemas: Record<string, { enum?: string[]; properties?: Record<string, { enum?: string[] }> }>;
     parameters: Record<string, { schema: { enum: string[] } }>;
   };
 }
@@ -92,6 +104,13 @@ describe('the document stays in step with the code', () => {
     expect(schemas.Status.enum).toEqual([...statuses]);
     expect(schemas.Priority.enum).toEqual([...priorities]);
     expect(schemas.Role.enum).toEqual([...roles]);
+    expect(schemas.ActorRole.enum).toEqual([...actorRoles]);
+    expect(schemas.ProposalStatus.enum).toEqual([...proposalStatuses]);
+    expect(schemas.AgentMode.enum).toEqual([...agentModes]);
+    expect(schemas.AgentOutcome.enum).toEqual([...agentOutcomes]);
+    expect(schemas.AuditType.enum).toEqual([...auditTypes]);
+    expect(schemas.AgentEscalation.properties?.reason?.enum).toEqual([...agentEscalationReasons]);
+    expect(schemas.AgentEscalation.properties?.assigneeGroup?.enum).toEqual([...assigneeGroups]);
     expect(schemas.KbCategory.enum).toEqual([...agentCategories]);
     expect(parameters.SortBy.schema.enum).toEqual([...sortFields]);
     expect(parameters.SlaFilter.schema.enum).toEqual([...slaFilters]);
@@ -437,6 +456,163 @@ describe('responses match their documented schemas', () => {
     conforms('Error', (await request(app).get('/api/kb/nope').set(as('tech')).expect(400)).body);
     conforms('Error', (await request(app).get('/api/kb').set(as('user')).expect(403)).body);
     conforms('Error', (await request(app).get('/api/kb').expect(401)).body);
+  });
+
+  test('the agent endpoints match their schemas', async () => {
+    const newTicket = async (title: string) =>
+      (
+        await request(app)
+          .post('/api/tickets')
+          .set(as('user'))
+          .send({ title, description: 'It keeps dropping.' })
+          .expect(201)
+      ).body.ticket._id as string;
+
+    // A run that ended with a proposal, as the worker leaves it, and a ticket waiting on it.
+    const withProposal = async (title: string) => {
+      const id = await newTicket(title);
+      const run = await AgentRun.create({
+        ticketId: id,
+        ticketVersion: 0,
+        idempotencyKey: `${id}:v0`,
+        mode: 'assist',
+        model: 'claude-sonnet-5',
+        promptVersion: 'triage.v1',
+        outcome: 'proposed',
+        ticketNumber: 'TKT-0001',
+        steps: 2,
+        inputTokens: 3000,
+        outputTokens: 300,
+        costUsd: 0.009,
+        latencyMs: 4200,
+        triage: { category: 'Network', priority: 'high', assigneeGroup: 'Network Support' },
+        proposal: {
+          replyMarkdown: 'Reconnect the VPN, then restart your laptop if it still drops.',
+          citedKbIds: ['KB-006'],
+          confidence: 'high',
+          reasoningSummary: 'The article covers this.',
+        },
+        startedAt: new Date(),
+        finishedAt: new Date(),
+      });
+      await Ticket.updateOne(
+        { _id: id },
+        {
+          $set: {
+            'agent.lastRunId': run._id,
+            'agent.proposalStatus': 'pending',
+            'agent.triageSource': 'agent',
+          },
+        }
+      );
+      return { id, run };
+    };
+    const get = (path: string, who: Account) => request(app).get(path).set(as(who));
+    const post = (path: string, who: Account, body: object = {}) =>
+      request(app).post(path).set(as(who)).send(body);
+
+    // The proposal, and the ticket that carries the agent's state (for staff only).
+    const first = await withProposal('VPN drops');
+    const view = await get(`/api/tickets/${first.id}/proposal`, 'tech').expect(200);
+    conforms('ProposalEnvelope', view.body);
+    used('getProposal');
+    const seen = await get(`/api/tickets/${first.id}`, 'tech').expect(200);
+    conforms('TicketEnvelope', seen.body);
+    expect(seen.body.ticket.agent.proposalStatus).toBe('pending');
+    conforms('Error', (await get(`/api/tickets/${first.id}/proposal`, 'user').expect(403)).body);
+    const plain = await newTicket('No proposal');
+    conforms('Error', (await get(`/api/tickets/${plain}/proposal`, 'tech').expect(404)).body);
+
+    // Rejecting, then trying again.
+    const rejected = await post(`/api/tickets/${first.id}/proposal/reject`, 'tech', {
+      reason: 'Not the right article.',
+    }).expect(200);
+    conforms('ProposalDecision', rejected.body);
+    used('rejectProposal');
+    const twice = await post(`/api/tickets/${first.id}/proposal/reject`, 'tech').expect(409);
+    conforms('Error', twice.body);
+    expect(twice.body.code).toBe('NO_PENDING_PROPOSAL');
+
+    // Approving, and what the requester then reads.
+    const second = await withProposal('Wi-Fi drops');
+    const approved = await post(`/api/tickets/${second.id}/proposal/approve`, 'tech').expect(200);
+    conforms('ProposalDecision', approved.body);
+    used('approveProposal');
+    const thread = await get(`/api/tickets/${second.id}/comments`, 'user').expect(200);
+    conforms('CommentList', thread.body);
+    expect(thread.body.comments[0]).toMatchObject({ source: 'agent', author: { role: 'agent' } });
+    const afterwards = await get(`/api/tickets/${second.id}`, 'tech').expect(200);
+    conforms('TicketEnvelope', afterwards.body);
+    conforms(
+      'Error',
+      (await post(`/api/tickets/${second.id}/proposal/approve`, 'user').expect(403)).body
+    );
+    conforms(
+      'Error',
+      (
+        await post(`/api/tickets/${plain}/proposal/approve`, 'tech', {
+          replyMarkdown: 'no',
+        }).expect(400)
+      ).body
+    );
+
+    // The agent handing a ticket over, with its own token.
+    const target = await newTicket('Suspicious email');
+    const token = await issueServiceToken({ ticketId: target, runId: String(first.run._id) });
+    const handed = await request(app)
+      .post('/api/agent/escalations')
+      .set({ Authorization: `Bearer ${token}` })
+      .send({
+        ticketId: target,
+        assigneeGroup: 'Security Team',
+        reason: 'security_incident',
+        summary: 'Reported: a phishing email.',
+      })
+      .expect(201);
+    conforms('TicketEnvelope', handed.body);
+    used('agentEscalate');
+    conforms('Error', (await post('/api/agent/escalations', 'tech').expect(403)).body);
+
+    // Settings and runs.
+    const settings = await get('/api/agent/settings', 'tech').expect(200);
+    conforms('AgentSettingsEnvelope', settings.body);
+    used('getAgentSettings');
+    const changed = await request(app)
+      .put('/api/agent/settings')
+      .set(as('admin'))
+      .send({ defaultMode: 'assist', modeByCategory: { Email: 'shadow' }, dailyCostCapUsd: 2 })
+      .expect(200);
+    conforms('AgentSettingsEnvelope', changed.body);
+    used('updateAgentSettings');
+    const forbidden = await request(app)
+      .put('/api/agent/settings')
+      .set(as('tech'))
+      .send({ killSwitch: true });
+    conforms('Error', forbidden.body);
+    expect(forbidden.status).toBe(403);
+    const unknown = await request(app)
+      .put('/api/agent/settings')
+      .set(as('admin'))
+      .send({ nope: 1 });
+    conforms('Error', unknown.body);
+    expect(unknown.status).toBe(400);
+
+    await AgentStep.create({
+      runId: first.run._id,
+      attempt: 1,
+      index: 0,
+      kind: 'model',
+      stopReason: 'tool_use',
+      latencyMs: 800,
+    });
+    const runs = await get('/api/agent/runs?outcome=proposed', 'admin').expect(200);
+    conforms('AgentRunList', runs.body);
+    used('listAgentRuns');
+    const one = await get(`/api/agent/runs/${first.run._id}`, 'admin').expect(200);
+    conforms('AgentRunDetailEnvelope', one.body);
+    used('getAgentRun');
+    conforms('Error', (await get('/api/agent/runs', 'tech').expect(403)).body);
+    conforms('Error', (await get('/api/agent/runs/nope', 'admin').expect(400)).body);
   });
 
   test('every documented operation is exercised above', () => {

@@ -26,6 +26,9 @@ export interface ToolOutcome {
   terminal?: DecisionKind;
   // A short line for the audit trail.
   summary: string;
+  // Set when the run must stop at once, whatever the model would do next: a person is working on
+  // the ticket, so the agent steps back.
+  abort?: string;
 }
 
 const failure = (code: string, message: string): ToolOutcome => ({
@@ -130,6 +133,15 @@ export async function executeTool(
     if (error instanceof ToolRefusal) return failure('refused', error.message);
     if (error instanceof ToolUnavailable) return failure('unavailable', error.message);
     if (error instanceof ApiError) {
+      if (error.status === 409) {
+        return {
+          ...failure(
+            'conflict',
+            'A person changed this ticket while you worked. Stop: it is theirs now.'
+          ),
+          abort: 'ticket_changed',
+        };
+      }
       if (error.status === 404) return failure('not_found', 'That does not exist.');
       if (error.status === 403)
         return failure('not_permitted', 'You are not permitted to do that.');

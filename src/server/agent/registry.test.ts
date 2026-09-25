@@ -162,12 +162,47 @@ describe('set_triage', () => {
     expect(api.calls).toEqual([]);
   });
 
-  test('where writing is not available yet it fails, and the run does not remember it', async () => {
-    const { ctx, state } = setup('assist');
+  test('in assist mode it sets the triage on the ticket, and the run remembers it', async () => {
+    const { ctx, api, state } = setup('assist');
     const outcome = await executeTool('set_triage', triage(), ctx);
-    expect(errorOf(outcome).code).toBe('unavailable');
-    expect(state.triage).toBeUndefined();
+    expect(outcome.isError).toBe(false);
+    expect(outcome.dryRun).toBe(false);
+    expect(api.calls).toContain(`setTriage ${TICKET_ID} Network/high/Network Support`);
+    expect(state.triage).toEqual({
+      category: 'Network',
+      priority: 'high',
+      assigneeGroup: 'Network Support',
+    });
+    // Carried out, so there is nothing "intended" to record.
     expect(state.intended).toEqual([]);
+  });
+
+  test('in assist mode a failed write is not remembered, and the model is told it failed', async () => {
+    const { ctx, api, state } = setup('assist');
+    api.failWith = { method: 'setTriage', error: new ApiError(500, undefined, 'boom') };
+    const outcome = await executeTool('set_triage', triage(), ctx);
+    expect(errorOf(outcome).code).toBe('service_error');
+    expect(state.triage).toBeUndefined();
+    expect(outcome.abort).toBeUndefined();
+  });
+
+  test('a conflict with a person editing the ticket stops the run', async () => {
+    const { ctx, api, state } = setup('assist');
+    api.failWith = {
+      method: 'setTriage',
+      error: new ApiError(409, 'VERSION_CONFLICT', 'conflict'),
+    };
+    const outcome = await executeTool('set_triage', triage(), ctx);
+    expect(errorOf(outcome).code).toBe('conflict');
+    expect(outcome.abort).toBe('ticket_changed');
+    expect(state.triage).toBeUndefined();
+  });
+
+  test('in shadow mode it is only recorded, and nothing is sent', async () => {
+    const { ctx, api } = setup('shadow');
+    const outcome = await executeTool('set_triage', triage(), ctx);
+    expect(outcome.dryRun).toBe(true);
+    expect(api.calls.filter((call) => call.startsWith('setTriage'))).toEqual([]);
   });
 
   test('cannot be called again once the ticket has been decided', async () => {
@@ -402,8 +437,7 @@ describe('propose_resolution', () => {
 });
 
 describe('post_resolution', () => {
-  // Writing is not available yet in assist or auto mode, so set_triage cannot succeed there (and the
-  // registry rightly does not remember a write that failed). The state is set directly instead.
+  // The state is set directly, so each test says only what it is about.
   const allowlisted = async (mode: AgentRunMode, allowlist: string[], category = 'Email') => {
     const s = setup(mode, { autoAllowlist: allowlist });
     s.state.triage = {
@@ -445,7 +479,7 @@ describe('post_resolution', () => {
 
   test('in auto mode, for an allowlisted category with high confidence, it passes every check', async () => {
     const { ctx } = await allowlisted('auto', ['Email']);
-    // It is allowed to run, and only stops where writing is not available yet.
+    // It passes every check and is allowed to run; posting without a person does not exist yet.
     expect(errorOf(await executeTool('post_resolution', resolution(), ctx)).code).toBe(
       'unavailable'
     );
@@ -543,10 +577,29 @@ describe('escalate', () => {
     );
   });
 
-  test('where writing is not available yet it fails, and no decision is remembered', async () => {
-    const { ctx, state } = setup('assist');
+  test('in assist mode it hands the ticket over, with the summary and without the "Why" line', async () => {
+    const { ctx, api, state } = setup('assist');
     state.triage = { category: 'Security', priority: 'urgent', assigneeGroup: 'Security Team' };
-    expect(errorOf(await executeTool('escalate', escalation(), ctx)).code).toBe('unavailable');
+    const outcome = await executeTool('escalate', escalation(), ctx);
+    expect(outcome.isError).toBe(false);
+    expect(outcome.terminal).toBe('escalated');
+    expect(api.calls).toContain(`escalate ${TICKET_ID} Security Team security_incident`);
+    expect(state.decision?.kind).toBe('escalated');
+  });
+
+  test('in assist mode a failed handover is not remembered as a decision', async () => {
+    const { ctx, api, state } = setup('assist');
+    state.triage = { category: 'Security', priority: 'urgent', assigneeGroup: 'Security Team' };
+    api.failWith = { method: 'escalate', error: new ApiError(503, undefined, 'down') };
+    expect(errorOf(await executeTool('escalate', escalation(), ctx)).code).toBe('service_error');
     expect(state.decision).toBeUndefined();
+  });
+
+  test('in shadow mode it is only recorded, and nothing is sent', async () => {
+    const { ctx, api, state } = setup('shadow');
+    state.triage = { category: 'Security', priority: 'urgent', assigneeGroup: 'Security Team' };
+    const outcome = await executeTool('escalate', escalation(), ctx);
+    expect(outcome.dryRun).toBe(true);
+    expect(api.calls.filter((call) => call.startsWith('escalate'))).toEqual([]);
   });
 });

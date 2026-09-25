@@ -15,6 +15,7 @@ import * as runs from '../repositories/agentRunRepository';
 import * as tickets from '../repositories/ticketRepository';
 import { issueServiceToken } from '../security/accessToken';
 import { getSettings } from './agentSettingsService';
+import { recordProposal } from './proposalService';
 
 // Turns outbox events into agent runs. Each `ticket.created` event the agent is listening for
 // becomes at most one run for that version of that ticket. The worker is the trusted side of the
@@ -148,14 +149,17 @@ interface Deps {
 
 type Handled = 'ran' | 'skipped' | 'failed';
 
-// The mode a run actually uses. Only shadow can run until the agent can write to tickets (assist
-// mode): a setting of assist or auto is honoured as shadow, so turning it up early cannot make the
-// agent do more than record what it would do.
+// The mode a run actually uses. Auto (the agent posting replies alone) does not exist yet, so a
+// setting of auto runs as assist: the agent triages and drafts, and a person still approves.
 const runnableMode = (mode: 'shadow' | 'assist' | 'auto'): AgentRunMode => {
-  if (mode !== 'shadow')
-    logger.warn({ requested: mode }, 'Agent mode not available yet; running as shadow');
-  return 'shadow';
+  if (mode === 'auto') {
+    logger.warn({ requested: mode }, 'Agent auto mode is not available yet; running as assist');
+    return 'assist';
+  }
+  return mode;
 };
+
+const HOUR_MS = 60 * 60 * 1000;
 
 async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
   const ticketId = event.payload.ticket.id;
@@ -176,6 +180,8 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
     ticketVersion: version,
     model: deps.model,
     promptVersion: deps.prompt.version,
+    ticketNumber: ticket.ticketNumber,
+    requesterEmail: ticket.requesterEmail,
   };
 
   // Off, by the kill switch or for this category: recorded, so it can be seen, and not run.
@@ -202,6 +208,28 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
         begun.started._id,
         begun.started.attempts,
         emptyResult('daily_cost_cap'),
+        deps.clock()
+      );
+    }
+    await done();
+    return 'skipped';
+  }
+
+  // One requester's tickets may only be run so often, so a person raising a stream of them cannot
+  // run up the bill. Past the limit the ticket goes to a person, as it would without the agent.
+  const recent = ticket.requesterEmail
+    ? await runs.countForRequesterSince(
+        ticket.requesterEmail,
+        new Date(deps.clock().getTime() - HOUR_MS)
+      )
+    : 0;
+  if (recent >= settings.perRequesterHourlyLimit) {
+    const limited = await runs.beginRun({ ...base, mode: 'shadow' }, deps.clock());
+    if ('started' in limited) {
+      await runs.finishRun(
+        limited.started._id,
+        limited.started.attempts,
+        emptyResult('requester_rate_limited'),
         deps.clock()
       );
     }
@@ -254,6 +282,11 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
 
   try {
     const outcome = await runAgent(context);
+    // A reply waiting for a person is marked on the ticket first: if that fails, the run is retried as
+    // a whole, and a proposal is never left on a run that no ticket points to.
+    if (runMode === 'assist' && outcome.outcome === 'proposed') {
+      await recordProposal(ticketId, run._id);
+    }
     await runs.finishRun(run._id, run.attempts, toResult(outcome), new Date());
     await done();
     return 'ran';

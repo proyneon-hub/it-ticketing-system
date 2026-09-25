@@ -1,5 +1,10 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import type { AgentConfidence, AgentOutcome, AgentRunMode } from '../../shared/agent-constants';
+import type {
+  AgentConfidence,
+  AgentEscalationReason,
+  AgentOutcome,
+  AgentRunMode,
+} from '../../shared/agent-constants';
 import type { KbArticle, KbSearchResult } from '../../shared/kb-types';
 import type { AssigneeGroup, AgentCategory, Priority } from '../../shared/ticket-constants';
 import type { Comment, Ticket } from '../../shared/ticket-types';
@@ -50,6 +55,17 @@ export interface AgentApi {
     limit?: number | undefined;
   }): Promise<KbSearchResult[]>;
   getKbArticle(id: string): Promise<KbArticle>;
+  // Applies the triage to the ticket. A ticket someone else has already assigned keeps its owner.
+  // If the ticket changes while this is happening it reads it again and tries once more, and then
+  // gives up with an ApiError that says so (409).
+  setTriage(id: string, triage: Triage): Promise<void>;
+  // Hands the ticket to a group, and leaves the summary for whoever picks it up.
+  escalate(input: {
+    ticketId: string;
+    assigneeGroup: AssigneeGroup;
+    reason: AgentEscalationReason;
+    summary: string;
+  }): Promise<void>;
 }
 
 // --- Recording ------------------------------------------------------------------------------

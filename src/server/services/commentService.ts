@@ -30,6 +30,8 @@ const toComment = (record: comments.CommentRecord): Comment => ({
   body: record.body,
   visibility: record.visibility,
   author: record.author,
+  ...(record.source ? { source: record.source } : {}),
+  ...(record.approvedBy ? { approvedBy: record.approvedBy } : {}),
   createdAt: record.createdAt.toISOString(),
 });
 

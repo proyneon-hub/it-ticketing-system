@@ -1,11 +1,21 @@
 import { ValidationError } from '../errors';
 import {
+  agentEscalationSchema,
+  approveProposalSchema,
+  listAgentRunsQuerySchema,
+  rejectProposalSchema,
+  updateAgentSettingsSchema,
   createCommentSchema,
   createTicketSchema,
   exportQuerySchema,
   listQuerySchema,
   patchTicketSchema,
   trendsQuerySchema,
+  type AgentEscalationInput,
+  type ApproveProposalInput,
+  type ListAgentRunsQuery,
+  type RejectProposalInput,
+  type UpdateAgentSettingsInput,
   type CreateCommentInput,
   type CreateTicketInput,
   type ExportQuery,
@@ -47,6 +57,21 @@ export const parseCreateComment = (body: unknown): CreateCommentInput =>
   parseOrThrow(createCommentSchema, body);
 export const parsePatchTicket = (body: unknown): PatchTicketInput =>
   parseOrThrow(patchTicketSchema, body);
+export const parseApproveProposal = (body: unknown): ApproveProposalInput =>
+  parseOrThrow(approveProposalSchema, body ?? {});
+export const parseRejectProposal = (body: unknown): RejectProposalInput =>
+  parseOrThrow(rejectProposalSchema, body ?? {});
+export const parseAgentEscalation = (body: unknown): AgentEscalationInput =>
+  parseOrThrow(agentEscalationSchema, body);
+export const parseUpdateAgentSettings = (body: unknown): UpdateAgentSettingsInput => {
+  const changes = parseOrThrow(updateAgentSettingsSchema, body);
+  if (Object.keys(changes).length === 0) {
+    throw new ValidationError('No supported settings were provided.');
+  }
+  return changes;
+};
+export const parseListAgentRunsQuery = (query: unknown): ListAgentRunsQuery =>
+  parseOrThrow(listAgentRunsQuerySchema, query);
 
 // The ticket version a header carries: "3", W/"3" or a bare 3. `*` (any current version) and a
 // missing header both mean "no precondition".
