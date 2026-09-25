@@ -162,6 +162,8 @@ export function makeAgentSettings(overrides: Partial<AgentSettings> = {}): Agent
     enabled: true,
     model: 'claude-sonnet-5',
     spentTodayUsd: 0.0234,
+    autoAvailable: true,
+    circuit: { open: false, consecutiveFailures: 0 },
     ...overrides,
   };
 }

@@ -1651,6 +1651,56 @@
           }
         }
       }
+    },
+    "/agent/resolutions": {
+      "post": {
+        "tags": ["Agent"],
+        "summary": "Answer a ticket without a person approving it (the agent only, auto mode)",
+        "description": "Called by the agent with its run token. Posts the reply as a public comment marked `source: agent` with no `approvedBy`, moves the ticket to `pending-user`, and records the proposal as `posted`, in one transaction. The server decides whether that is allowed, whatever the agent believes, and answers `403` unless the kill switch is off, this deployment allows auto mode, the ticket's category (after the agent's own triage) is in auto mode and on the allowlist, it is not Security, and the confidence is `high`. The cited articles must exist (`400`). An answer can be given once (`409` `DUPLICATE`), and not to a finished ticket (`409`). Only the agent may call it, and only for the ticket its token names.",
+        "operationId": "agentResolve",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentResolution"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The ticket as it now is.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2949,8 +2999,8 @@
       },
       "ProposalStatus": {
         "type": "string",
-        "enum": ["none", "pending", "approved", "edited", "rejected"],
-        "description": "Where the agent's drafted reply stands. `pending` waits for a person; `edited` was posted after a person changed it."
+        "enum": ["none", "pending", "approved", "edited", "rejected", "posted"],
+        "description": "Where the agent's drafted reply stands. `pending` waits for a person; `edited` was posted after a person changed it; `posted` was posted by the agent itself, in auto mode, with nobody reviewing it first."
       },
       "AgentMode": {
         "type": "string",
@@ -3103,7 +3153,9 @@
           "perRequesterHourlyLimit",
           "enabled",
           "model",
-          "spentTodayUsd"
+          "spentTodayUsd",
+          "autoAvailable",
+          "circuit"
         ],
         "properties": {
           "killSwitch": {
@@ -3147,6 +3199,29 @@
             "type": "number",
             "minimum": 0,
             "description": "What runs started since 00:00 UTC have cost."
+          },
+          "autoAvailable": {
+            "type": "boolean",
+            "description": "Whether this deployment lets the agent answer without a person. Where it does not (serverless, unless AGENT_ALLOW_AUTO=true), a setting of auto runs as assist."
+          },
+          "circuit": {
+            "type": "object",
+            "required": ["open", "consecutiveFailures"],
+            "description": "The circuit breaker: whether the agent has paused itself because its recent runs keep failing.",
+            "properties": {
+              "open": {
+                "type": "boolean"
+              },
+              "consecutiveFailures": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "reopensAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When it will let a run through again. Only while open."
+              }
+            }
           }
         }
       },
@@ -3492,6 +3567,36 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1800
+          }
+        }
+      },
+      "AgentResolution": {
+        "type": "object",
+        "required": ["ticketId", "replyMarkdown", "citedKbIds", "confidence"],
+        "additionalProperties": false,
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "Must be the ticket the agent's token names."
+          },
+          "replyMarkdown": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 2000
+          },
+          "citedKbIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "pattern": "^KB-\\d{3}$"
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
           }
         }
       }

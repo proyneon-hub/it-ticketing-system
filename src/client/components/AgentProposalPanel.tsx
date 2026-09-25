@@ -13,6 +13,7 @@ const DECIDED_TEXT = {
   approved: 'Approved and posted to the requester as written.',
   edited: 'Approved after editing, and posted to the requester.',
   rejected: 'Rejected. Nothing was posted to the requester.',
+  posted: 'Posted by the agent on its own. Nobody reviewed it before the requester saw it.',
 } as const;
 
 // The agent's drafted reply for a person to approve, edit or reject. Shown to staff only, and only

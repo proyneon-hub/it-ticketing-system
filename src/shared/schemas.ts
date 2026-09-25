@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { agentEscalationReasons, agentModes, agentOutcomes } from './agent-constants';
+import {
+  agentConfidences,
+  agentEscalationReasons,
+  agentModes,
+  agentOutcomes,
+} from './agent-constants';
 import {
   agentCategories,
   assigneeGroups,
@@ -215,6 +220,25 @@ export const agentEscalationSchema = z.object({
     .max(1800, { error: 'The summary must be 1800 characters or fewer.' }),
 });
 export type AgentEscalationInput = z.output<typeof agentEscalationSchema>;
+
+// What the agent sends when it answers a ticket itself (auto mode). The server checks the mode, the
+// category, the confidence and the kill switch again; this only checks the shape.
+export const agentResolutionSchema = z.object({
+  ticketId: z.string({ error: 'ticketId is required.' }).regex(/^[a-f\d]{24}$/i, {
+    error: 'Invalid ticket id.',
+  }),
+  replyMarkdown: z
+    .string({ error: 'A reply is required.' })
+    .trim()
+    .min(20, { error: 'The reply is too short to help.' })
+    .max(2000, { error: 'The reply must be 2000 characters or fewer.' }),
+  citedKbIds: z
+    .array(z.string().regex(/^KB-\d{3}$/, { error: 'A knowledge-base id looks like KB-006.' }))
+    .min(1, { error: 'Cite at least one article.' })
+    .max(5, { error: 'Cite at most five articles.' }),
+  confidence: z.enum(agentConfidences, { error: 'Invalid confidence.' }),
+});
+export type AgentResolutionInput = z.output<typeof agentResolutionSchema>;
 
 // Changing the agent's settings. Only what is sent changes, and nothing else is accepted.
 export const updateAgentSettingsSchema = z

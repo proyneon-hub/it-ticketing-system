@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import { proposalStatuses } from '../shared/agent-constants';
+import { breakerConfig, breakerState } from './domain/agentBreaker';
 import { outboxStatuses } from '../shared/ticket-constants';
 import { logger } from './logger';
 import * as agentRuns from './repositories/agentRunRepository';
@@ -178,6 +179,23 @@ new Gauge({
   collect() {
     return collectFromDatabase('the kill switch', async () => {
       this.set((await agentSettings.read())?.killSwitch === true ? 1 : 0);
+    })();
+  },
+});
+
+new Gauge({
+  name: 'agent_circuit_open',
+  help: '1 while the agent has paused itself because its runs keep failing, otherwise 0.',
+  registers: [registry],
+  collect() {
+    return collectFromDatabase('the circuit breaker', async () => {
+      const config = breakerConfig();
+      const state = breakerState(
+        await agentRuns.recentAttempts(config.failures),
+        new Date(),
+        config
+      );
+      this.set(state.open ? 1 : 0);
     })();
   },
 });

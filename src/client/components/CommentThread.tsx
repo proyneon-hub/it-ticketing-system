@@ -63,7 +63,11 @@ export default function CommentThread({ ticketId, role }: { ticketId: string; ro
                 {comment.source === 'agent' ? (
                   <span className="ai-badge">
                     AI-generated
-                    {comment.approvedBy ? ` · approved by ${comment.approvedBy.name}` : ''}
+                    {comment.approvedBy
+                      ? ` · approved by ${comment.approvedBy.name}`
+                      : comment.visibility === 'public'
+                        ? ' · not reviewed'
+                        : ''}
                   </span>
                 ) : null}
                 {comment.visibility === 'internal' ? (

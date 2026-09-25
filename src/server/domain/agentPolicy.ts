@@ -78,3 +78,33 @@ export function mayPostAlone(
 ): boolean {
   return mode === 'auto' && settings.autoAllowlist.includes(category);
 }
+
+type Env = Record<string, string | undefined>;
+
+// Whether this deployment lets the agent post replies without a person. Serverless (Vercel) does not,
+// unless AGENT_ALLOW_AUTO=true says it should: auto mode is for a local or Docker deployment, where
+// someone is watching, and a public demo should not be able to speak for the service desk alone.
+export const autoModeAvailable = (env: Env = process.env): boolean =>
+  !env.VERCEL || env.AGENT_ALLOW_AUTO === 'true';
+
+// Why a reply may not be posted without a person, or null if it may. Asked by the server for the
+// category the ticket has now (after the agent's triage), whatever the agent believes, so a mistaken
+// or manipulated agent cannot post where the settings do not allow it.
+export function postingRefusal(
+  settings: AgentPolicySettings,
+  category: string,
+  confidence: string,
+  env: Env = process.env
+): string | null {
+  if (settings.killSwitch) return 'The agent is stopped.';
+  if (!autoModeAvailable(env)) return 'Auto mode is not available on this deployment.';
+  if (effectiveMode(settings, category) !== 'auto') {
+    return `Auto mode is not on for the ${category} category.`;
+  }
+  if (!settings.autoAllowlist.includes(category)) {
+    return `The ${category} category is not on the list of categories the agent may answer alone.`;
+  }
+  if (category === 'Security') return 'The agent never answers a Security ticket alone.';
+  if (confidence !== 'high') return 'The agent may only answer alone with high confidence.';
+  return null;
+}

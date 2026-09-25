@@ -33,7 +33,12 @@ let tokens: Tokens;
 let server: Server;
 let baseUrl: string;
 
-const AGENT_ENV_KEYS = ['AGENT_ENABLED', 'AGENT_DEFAULT_MODE', 'AGENT_DAILY_COST_CAP_USD'];
+const AGENT_ENV_KEYS = [
+  'AGENT_ENABLED',
+  'AGENT_DEFAULT_MODE',
+  'AGENT_DAILY_COST_CAP_USD',
+  'VERCEL',
+];
 
 beforeAll(async () => {
   mongod = await startTestDatabase();
@@ -292,7 +297,8 @@ describe('a new ticket in assist mode', () => {
     expect((await ticketOf(second._id))?.agent?.triageSource).toBe('agent');
   });
 
-  test('a setting of auto runs as assist, and posting is refused', async () => {
+  test('on a deployment that does not allow auto, a setting of auto runs as assist, and posting is refused', async () => {
+    process.env.VERCEL = '1';
     await updateSettings({ defaultMode: 'auto', autoAllowlist: ['Network'] }, 'admin@demo.local');
     const created = await createTicket();
     const script: ScriptStep[] = [

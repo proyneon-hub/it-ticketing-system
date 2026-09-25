@@ -479,9 +479,35 @@ describe('post_resolution', () => {
 
   test('in auto mode, for an allowlisted category with high confidence, it passes every check', async () => {
     const { ctx } = await allowlisted('auto', ['Email']);
-    // It passes every check and is allowed to run; posting without a person does not exist yet.
-    expect(errorOf(await executeTool('post_resolution', resolution(), ctx)).code).toBe(
-      'unavailable'
+    const { api } = { api: ctx.api as ReturnType<typeof setup>['api'] };
+    const outcome = await executeTool('post_resolution', resolution(), ctx);
+    expect(outcome.isError).toBe(false);
+    expect(outcome.dryRun).toBe(false);
+    expect(outcome.terminal).toBe('posted');
+    expect(api.calls).toContain(`postResolution ${TICKET_ID} high KB-006`);
+    expect(ctx.state.decision?.kind).toBe('posted');
+  });
+
+  test('when the server refuses it, the model is told, nothing is remembered, and it can propose instead', async () => {
+    const { ctx } = await allowlisted('auto', ['Email']);
+    (ctx.api as ReturnType<typeof setup>['api']).failWith = {
+      method: 'postResolution',
+      error: new ApiError(403, 'FORBIDDEN', 'Auto mode is not on for the Email category.'),
+    };
+    const outcome = await executeTool('post_resolution', resolution(), ctx);
+    expect(errorOf(outcome).code).toBe('not_permitted');
+    expect(ctx.state.decision).toBeUndefined();
+    expect(outcome.abort).toBeUndefined();
+
+    const proposal = await executeTool('propose_resolution', resolution(), ctx);
+    expect(proposal.terminal).toBe('proposed');
+  });
+
+  test('cites each article once, however often the model repeats it', async () => {
+    const { ctx } = await allowlisted('auto', ['Email']);
+    await executeTool('post_resolution', resolution({ cited_kb_ids: ['KB-006', 'KB-006'] }), ctx);
+    expect((ctx.api as ReturnType<typeof setup>['api']).calls).toContain(
+      `postResolution ${TICKET_ID} high KB-006`
     );
   });
 

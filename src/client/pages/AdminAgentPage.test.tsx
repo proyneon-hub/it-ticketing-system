@@ -80,6 +80,48 @@ describe('the status', () => {
   });
 });
 
+describe('auto mode and the circuit breaker', () => {
+  it('says nothing about either when all is well', async () => {
+    await open();
+    await screen.findByText('The agent is running.');
+    expect(screen.queryByTestId('circuit-open')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('auto-unavailable')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('option', {
+        name: 'Auto: may answer alone, for the categories ticked below',
+      })
+    ).toBeInTheDocument();
+  });
+
+  it('says so, in an alert, when the agent has paused itself, and when it will try again', async () => {
+    vi.mocked(api.fetchAgentSettings).mockResolvedValue({
+      settings: makeAgentSettings({
+        circuit: {
+          open: true,
+          consecutiveFailures: 5,
+          reopensAt: '2026-06-02T09:10:00.000Z',
+        },
+      }),
+    });
+    await open();
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('The agent has paused itself.');
+    expect(alert).toHaveTextContent('5 runs failed in a row');
+    expect(alert).toHaveTextContent('Jun 2, 2026');
+  });
+
+  it('says that auto runs as assist where the deployment does not allow it', async () => {
+    vi.mocked(api.fetchAgentSettings).mockResolvedValue({
+      settings: makeAgentSettings({ autoAvailable: false }),
+    });
+    await open();
+    expect(await screen.findByTestId('auto-unavailable')).toHaveTextContent(
+      'a setting of auto runs as assist here'
+    );
+  });
+});
+
 describe('the kill switch', () => {
   it('stops the agent at once, and says so, and can resume it', async () => {
     const { user } = await open();

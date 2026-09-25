@@ -7,7 +7,8 @@ import type { AgentApi, TicketSearch } from './types';
 // validation, permissions and concurrency rules, and the API's token check is what confines the
 // agent to one ticket. The agent has no other route to the data (docs/adr/009). It makes two kinds
 // of write, and only these: it sets a ticket's triage (PATCH /tickets/:id, guarded by the version it
-// read), and it hands the ticket over (POST /agent/escalations).
+// read), it hands the ticket over (POST /agent/escalations), and, in auto mode where the server allows
+// it, it answers the ticket (POST /agent/resolutions).
 
 // The API refused, or failed. Carries the status and the API's own stable error code, never the
 // body, which may hold something a person typed.
@@ -133,6 +134,10 @@ export function createHttpApi({
           if (!conflict || attempt >= 2) throw error;
         }
       }
+    },
+
+    async postResolution(input) {
+      await call('POST', '/agent/resolutions', { body: input });
     },
 
     async escalate(input) {

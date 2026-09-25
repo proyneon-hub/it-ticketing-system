@@ -38,6 +38,10 @@ export interface AgentSettings {
   enabled: boolean;
   model: string;
   spentTodayUsd: number;
+  // Whether this deployment lets the agent answer without a person. Where it does not, auto runs as assist.
+  autoAvailable: boolean;
+  // Whether the agent has paused itself because its runs keep failing.
+  circuit: { open: boolean; consecutiveFailures: number; reopensAt?: string | undefined };
 }
 
 // PUT /agent/settings: only what is sent changes.
