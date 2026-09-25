@@ -1,6 +1,6 @@
 import cors from 'cors';
 import type { RequestHandler } from 'express';
-import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
+import { ipKeyGenerator, rateLimit, type Options } from 'express-rate-limit';
 import helmet from 'helmet';
 
 type Env = Record<string, string | undefined>;
@@ -57,8 +57,10 @@ export function loginRateLimiter(): RequestHandler {
 // the next. It sits after authentication, so an unauthenticated flood is turned away before it
 // reaches this or the database. The default (120 a minute) is far above any real use: a run reads
 // the knowledge base a handful of times.
-export function kbRateLimiter(): RequestHandler {
-  return rateLimit({
+// The options only; routes/kb.ts calls rateLimit() with them, so the limit is built right next to
+// the routes it protects (which is also where code scanning looks for it).
+export function kbRateLimitOptions(): Partial<Options> {
+  return {
     windowMs: Number(process.env.KB_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
     limit: () => Number(process.env.KB_RATE_LIMIT_MAX) || 120,
     standardHeaders: 'draft-7',
@@ -78,5 +80,5 @@ export function kbRateLimiter(): RequestHandler {
         requestId: req.id,
       });
     },
-  });
+  };
 }
