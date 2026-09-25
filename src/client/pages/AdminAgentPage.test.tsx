@@ -87,9 +87,9 @@ describe('auto mode and the circuit breaker', () => {
     expect(screen.queryByTestId('circuit-open')).not.toBeInTheDocument();
     expect(screen.queryByTestId('auto-unavailable')).not.toBeInTheDocument();
     expect(
-      screen.getByRole('option', {
+      screen.getAllByRole('option', {
         name: 'Auto: may answer alone, for the categories ticked below',
-      })
+      })[0]
     ).toBeInTheDocument();
   });
 
