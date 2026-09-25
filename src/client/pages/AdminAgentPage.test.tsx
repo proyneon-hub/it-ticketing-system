@@ -313,6 +313,44 @@ describe('the runs', () => {
     expect(screen.queryByRole('region', { name: 'Run details' })).not.toBeInTheDocument();
   });
 
+  it('shows how many attempts a run took, only when it took more than one', async () => {
+    vi.mocked(api.fetchAgentRun).mockResolvedValue(
+      makeRunDetail({ run: { ...makeRunDetail().run, attempts: 2 } })
+    );
+    const { user } = await open();
+    await user.click(
+      await screen.findByRole('button', { name: 'Details of the run for TKT-0001' })
+    );
+    expect(await screen.findByText(/2 attempts/)).toBeInTheDocument();
+  });
+
+  it('shows no attempts for a run that went straight through', async () => {
+    const { user } = await open();
+    await user.click(
+      await screen.findByRole('button', { name: 'Details of the run for TKT-0001' })
+    );
+    await screen.findByText('search_kb');
+    expect(screen.queryByText(/attempts?\b/)).not.toBeInTheDocument();
+  });
+
+  it('the same button closes it, and going back to page one when the filter changes', async () => {
+    vi.mocked(api.fetchAgentRuns).mockResolvedValue(
+      page([makeRun()], { page: 3, totalPages: 3, total: 40 })
+    );
+    const { router } = renderSignedInAs('admin', '/admin/agent?page=3');
+    const user = userEvent.setup();
+    await screen.findByRole('heading', { name: 'Service desk agent' });
+
+    const details = await screen.findByRole('button', { name: 'Details of the run for TKT-0001' });
+    await user.click(details);
+    expect(await screen.findByRole('region', { name: 'Run details' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Details of the run for TKT-0001' }));
+    expect(screen.queryByRole('region', { name: 'Run details' })).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Filter runs by outcome'), 'error');
+    expect(router.state.location.search).toBe('?outcome=error');
+  });
+
   it('marks a step that only recorded what it would have done, and one that failed', async () => {
     vi.mocked(api.fetchAgentRun).mockResolvedValue(
       makeRunDetail({

@@ -90,9 +90,18 @@ describe('the drafted reply', () => {
     expect(await screen.findByText(/Loading the agent's drafted reply/)).toBeInTheDocument();
   });
 
-  it('marks the triage as the agent’s on the ticket, for staff', async () => {
+  it('marks the triage as the agent’s on the ticket, for staff, until a person changes it', async () => {
     await open();
     expect(await screen.findByText('Triaged by the agent')).toBeInTheDocument();
+  });
+
+  it('says nothing about the agent’s triage once a person has taken it over', async () => {
+    vi.mocked(api.fetchTicket).mockResolvedValue({
+      ticket: makeTicket({ agent: { triageSource: 'human', proposalStatus: 'pending' } }),
+    });
+    await open();
+    await screen.findByTestId('proposal-reply');
+    expect(screen.queryByText('Triaged by the agent')).not.toBeInTheDocument();
   });
 });
 
@@ -144,6 +153,52 @@ describe('approving', () => {
     expect(screen.getByRole('button', { name: 'Approve edited reply' })).toBeDisabled();
   });
 
+  it('allows a reply of exactly twenty characters, and not one character fewer', async () => {
+    const { user } = await open();
+    const box = await screen.findByTestId('proposal-reply');
+    await user.clear(box);
+    await user.type(box, 'x'.repeat(19));
+    expect(screen.getByRole('button', { name: 'Approve edited reply' })).toBeDisabled();
+    await user.type(box, 'x');
+    expect(screen.getByRole('button', { name: 'Approve edited reply' })).toBeEnabled();
+  });
+
+  it('sends the edited reply without the spaces around it', async () => {
+    const { user } = await open();
+    const box = await screen.findByTestId('proposal-reply');
+    await user.clear(box);
+    await user.type(box, '   Restart the VPN client and your laptop.   ');
+    await user.click(screen.getByRole('button', { name: 'Approve edited reply' }));
+    expect(api.approveProposal).toHaveBeenCalledWith(ID, {
+      replyMarkdown: 'Restart the VPN client and your laptop.',
+    });
+  });
+
+  it('reloads the thread and the ticket after a decision, so the reply and the new status appear', async () => {
+    const { user } = await open();
+    await user.click(await screen.findByRole('button', { name: 'Approve and post' }));
+    await waitFor(() => expect(vi.mocked(api.fetchComments).mock.calls.length).toBeGreaterThan(1));
+    await waitFor(() => expect(vi.mocked(api.fetchTicket).mock.calls.length).toBeGreaterThan(1));
+  });
+
+  it('starts a fresh draft if the proposal turns out to be a different one', async () => {
+    vi.mocked(api.approveProposal).mockRejectedValue(
+      Object.assign(new Error('Someone decided first.'), { status: 409 })
+    );
+    const { user } = await open();
+    await user.click(await screen.findByRole('button', { name: 'Approve and post' }));
+    vi.mocked(api.fetchProposal).mockResolvedValue({
+      proposal: makeProposal({
+        runId: '665f0f40d5d4f541f8ef3999',
+        proposal: { ...makeProposal().proposal, replyMarkdown: 'A newer draft from a newer run.' },
+      }),
+    });
+    await screen.findByText('Someone decided first.');
+    await user.click(screen.getByRole('button', { name: 'Approve and post' }));
+
+    expect(await screen.findByDisplayValue('A newer draft from a newer run.')).toBeInTheDocument();
+  });
+
   it('disables the buttons while it posts, so it cannot be posted twice', async () => {
     const pending = deferred<{ status: 'approved' }>();
     vi.mocked(api.approveProposal).mockReturnValue(pending.promise as never);
@@ -187,6 +242,14 @@ describe('rejecting', () => {
     expect(
       await screen.findByText('Drafted reply rejected. Nothing was sent to the requester.')
     ).toBeInTheDocument();
+  });
+
+  it('does not send a reason that is only spaces', async () => {
+    const { user } = await open();
+    await user.click(await screen.findByRole('button', { name: 'Reject' }));
+    await user.type(screen.getByLabelText(/Why\?/), '    ');
+    await user.click(screen.getByRole('button', { name: 'Confirm rejection' }));
+    expect(api.rejectProposal).toHaveBeenCalledWith(ID, {});
   });
 
   it('needs no reason, and can be cancelled', async () => {
