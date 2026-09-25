@@ -21,6 +21,7 @@ import KbArticle from '../models/KbArticle';
 import OutboxEvent from '../models/OutboxEvent';
 import Ticket from '../models/Ticket';
 import { issueServiceToken } from '../security/accessToken';
+import { postResolution } from '../services/agentResolutionService';
 import { updateSettings } from '../services/agentSettingsService';
 import { processAgentEvents } from '../services/agentWorkerService';
 import { importArticles } from '../services/kbService';
@@ -297,6 +298,17 @@ describe('where auto mode is not allowed', () => {
     expect(await commentsOf(created._id)).toEqual([]);
   });
 
+  test('the settings say whether auto is available, so the admin page can tell people', async () => {
+    const read = async () =>
+      (await request(app).get('/api/agent/settings').set(bearer(tokens, 'admin'))).body.settings
+        .autoAvailable;
+    expect(await read()).toBe(true);
+    process.env.VERCEL = '1';
+    expect(await read()).toBe(false);
+    process.env.AGENT_ALLOW_AUTO = 'true';
+    expect(await read()).toBe(true);
+  });
+
   test('AGENT_ALLOW_AUTO=true allows it, and only exactly that', async () => {
     process.env.VERCEL = '1';
     process.env.AGENT_ALLOW_AUTO = 'yes';
@@ -452,6 +464,74 @@ describe('POST /agent/resolutions, called directly', () => {
       .send(answerBody(created._id));
     expect(response.status).toBe(403);
     expect(await commentsOf(created._id)).toEqual([]);
+  });
+
+  test('the service itself refuses anyone but the agent, whatever a route lets through', async () => {
+    const created = await createTicket();
+    for (const role of ['technician', 'admin', 'user'] as const) {
+      await expect(
+        postResolution(
+          { sub: 'u', name: 'U', email: 'u@example.com', role, exp: 0 },
+          {
+            ticketId: created._id,
+            replyMarkdown: REPLY,
+            citedKbIds: ['KB-006'],
+            confidence: 'high',
+          }
+        )
+      ).rejects.toThrow(/Only the service desk agent/);
+    }
+    expect(await commentsOf(created._id)).toEqual([]);
+  });
+
+  test('tries again when it loses a race with an edit, and gives up after three', async () => {
+    const created = await createTicket();
+    const runId = String(new mongoose.Types.ObjectId());
+    const agent = {
+      sub: 'service-desk-agent',
+      name: 'Service Desk Agent',
+      email: 'agent@service.local',
+      role: 'agent' as const,
+      exp: 0,
+      ticketId: created._id,
+      runId,
+    };
+    const input = {
+      ticketId: created._id,
+      replyMarkdown: REPLY,
+      citedKbIds: ['KB-006'],
+      confidence: 'high' as const,
+    };
+
+    const once = vi.spyOn(Ticket, 'findOneAndUpdate').mockResolvedValueOnce(null);
+    try {
+      const ticket = await postResolution(agent, input);
+      expect(ticket.status).toBe('pending-user');
+      expect(once).toHaveBeenCalledTimes(2);
+    } finally {
+      once.mockRestore();
+    }
+
+    const other = await createTicket({ title: 'Second' });
+    const losing = vi.spyOn(Ticket, 'findOneAndUpdate').mockResolvedValue(null);
+    try {
+      await expect(
+        postResolution({ ...agent, ticketId: other._id }, { ...input, ticketId: other._id })
+      ).rejects.toMatchObject({ code: 'VERSION_CONFLICT' });
+      expect(losing).toHaveBeenCalledTimes(3);
+    } finally {
+      losing.mockRestore();
+    }
+    expect(await commentsOf(other._id)).toEqual([]);
+  });
+
+  test('names each cited article once in the history, however often it was repeated', async () => {
+    const created = await createTicket();
+    await post(created._id, { citedKbIds: ['KB-006', 'KB-006', 'KB-006'] }).then((r) =>
+      expect(r.status).toBe(201)
+    );
+    const entry = (await ticketOf(created._id))?.activity.find((a) => a.action === 'agent_posted');
+    expect(entry?.detail).toBe('Answered without review (KB-006)');
   });
 
   test('is refused without a token', async () => {

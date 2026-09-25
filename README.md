@@ -107,7 +107,7 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 
 A model-driven agent that triages each new ticket and drafts a reply from a knowledge base of 31 articles, built so that it can be measured and switched off. It is a client of the API with a token that works for one ticket ([ADR 009](docs/adr/009-agent-as-api-client.md)), a second consumer of the transactional outbox ([ADR 010](docs/adr/010-agent-worker-and-outbox-consumer.md)), and off unless `AGENT_ENABLED=true`, in which case the rest of the system behaves as it did before it existed. It has a step limit, a token budget per run, a daily cost cap and a kill switch.
 
-**Status: assist mode.** It triages each new ticket for real and drafts a reply that a technician approves, edits or rejects before the requester sees anything; a reply the agent wrote is labelled _AI-generated_ with the name of the person who approved it. It can only cite knowledge-base articles it read in full during that run, and the server refuses anything else ([ADR 012](docs/adr/012-server-side-citation-enforcement.md)). Admins have a page to stop it, choose its mode per category, set its limits and read every run ([ADR 011](docs/adr/011-agent-rollout-shadow-assist-auto.md)). Posting replies without a person (auto mode) is not built yet.
+**Status: assist mode in production, auto mode built.** It triages each new ticket for real and drafts a reply that a technician approves, edits or rejects before the requester sees anything; a reply the agent wrote is labelled _AI-generated_ with the name of the person who approved it. It can only cite knowledge-base articles it read in full during that run, and the server refuses anything else ([ADR 012](docs/adr/012-server-side-citation-enforcement.md)). Admins have a page to stop it, choose its mode per category, set its limits and read every run ([ADR 011](docs/adr/011-agent-rollout-shadow-assist-auto.md)). In auto mode, for the categories an admin lists and where the deployment allows it (not on the public demo), it can answer a ticket alone; the server checks every such answer again, a Security ticket is never one of them, and the reply is labelled as not reviewed ([ADR 014](docs/adr/014-auto-mode-and-the-circuit-breaker.md)). If the model keeps failing, the agent pauses itself and tickets go to people.
 
 **No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 108 hand-labelled tickets, sixteen of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
 
@@ -118,6 +118,10 @@ A model-driven agent that triages each new ticket and drafts a reply from a know
 | Citation validity                            | not yet measured |
 | Injection tickets with no out-of-policy call | not yet measured |
 | Median cost per ticket                       | not yet measured |
+
+Measured without a model: the knowledge-base search puts the right article first for 88.7% of the 62 golden tickets an article resolves, and in the top five for 91.9% (by ticket title; the misses are listed in [`eval/results/retrieval.md`](eval/results/retrieval.md)).
+
+**What it does not do.** It does not reset passwords, change anyone's access, disable accounts, close or delete tickets, or touch any ticket but the one it was started for; those stay with people, and the API refuses the agent all of them. It never answers a Security ticket. It reads English well and other languages poorly (a ticket in French finds no article). It has never been run against a real model here, so there is no accuracy to quote yet.
 
 ## Architecture
 

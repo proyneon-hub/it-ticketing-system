@@ -1,6 +1,6 @@
 # ADR 011: The agent is rolled out in modes: shadow, then assist, then auto
 
-Status: accepted (auto mode is designed here and arrives in its own change; this record is updated when it does)
+Status: accepted (auto mode is built; its rules and the circuit breaker are in [ADR 014](014-auto-mode-and-the-circuit-breaker.md))
 
 ## Context
 
@@ -10,12 +10,12 @@ A language model that writes to customers' tickets is not something to switch on
 
 There are four modes. The mode decides which tiers of tool may act (`domain/agentPolicy.ts`, a pure function that fails closed: a mode it does not recognise refuses everything).
 
-| Mode       | Read | Set triage, hand over | Draft a reply      | Post a reply                                                               |
-| ---------- | ---- | --------------------- | ------------------ | -------------------------------------------------------------------------- |
-| **off**    | no   | no                    | no                 | no                                                                         |
-| **shadow** | yes  | recorded only         | recorded only      | refused                                                                    |
-| **assist** | yes  | yes                   | saved for a person | refused                                                                    |
-| **auto**   | yes  | yes                   | saved for a person | only for allowlisted categories, only with high confidence (not built yet) |
+| Mode       | Read | Set triage, hand over | Draft a reply      | Post a reply                                                                                                                                          |
+| ---------- | ---- | --------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **off**    | no   | no                    | no                 | no                                                                                                                                                    |
+| **shadow** | yes  | recorded only         | recorded only      | refused                                                                                                                                               |
+| **assist** | yes  | yes                   | saved for a person | refused                                                                                                                                               |
+| **auto**   | yes  | yes                   | saved for a person | only for allowlisted categories, only with high confidence, and only where the server allows it ([ADR 014](014-auto-mode-and-the-circuit-breaker.md)) |
 
 - **Shadow** runs the whole agent and writes nothing. What it would have done is recorded on the run (`intendedActions`), so it can be read and scored before anyone depends on it.
 - **Assist** makes the low-risk writes for real. The agent sets the ticket's category, priority and group (and the group only if nobody has assigned it), or hands the ticket to a group with a summary as an internal note. Both go through the same API, permissions and version checks as a person's, with the agent's own one-ticket token ([ADR 009](009-agent-as-api-client.md)). The reply it drafts is **not** sent: it is saved on the run, and the ticket says a proposal is waiting.
@@ -23,7 +23,7 @@ There are four modes. The mode decides which tiers of tool may act (`domain/agen
 - **A person always outranks the agent's write.** The agent's triage is guarded by the ticket version it read. If a person edits the ticket in between it reads again and retries once; a second conflict makes it step back (the run ends `aborted: ticket_changed`) rather than fight. If a person later changes what the agent set, the ticket records that the triage is now a person's (`triageSource: human`).
 - **Modes are per category, and there is a kill switch.** Each category can have its own mode in place of the default, so the agent can be on for Email and off for Security. The kill switch is read fresh, with no cache, before each step and again before the tools of a step run, and it can be flipped from the admin page without a deploy. Every settings change is audited.
 - **Hard limits, whatever the mode.** A step limit and a token budget per run, a daily cost cap by UTC day checked before every model call, and a per-requester hourly limit (default 5 runs), past which the ticket is left to a person. Every one of these ends in "a person has the ticket", not in an error.
-- **Where each mode runs.** The intended production setting is assist with the daily cap. Auto is for a local or Docker deployment only. Until auto exists a setting of `auto` runs as assist, so turning it up early cannot make the agent do more than assist does.
+- **Where each mode runs.** The intended production setting is assist with the daily cap. Auto is for a local or Docker deployment only. Where auto is not available (serverless, unless allowed) a setting of `auto` runs as assist, so turning it up cannot make the agent do more than assist does.
 
 ## Consequences
 
