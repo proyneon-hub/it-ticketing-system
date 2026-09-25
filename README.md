@@ -109,9 +109,9 @@ A model-driven agent that triages each new ticket and drafts a reply from a know
 
 **Status: shadow mode only.** It records what it would do and changes nothing on a ticket. Proposing replies to staff (assist mode) is next.
 
-**No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 50 hand-labelled tickets, seven of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
+**No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 108 hand-labelled tickets, sixteen of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
 
-| Measured on 50 golden tickets                | Result           |
+| Measured on 108 golden tickets               | Result           |
 | -------------------------------------------- | ---------------- |
 | Category accuracy                            | not yet measured |
 | Security tickets missed (must be 0)          | not yet measured |

@@ -9,7 +9,7 @@ Every row below is a measured run of the agent against the golden tickets in [`e
 ```bash
 # set ANTHROPIC_API_KEY in your shell, or as a line in .env (only that line is read)
 npm run eval -- --subset smoke --note "first live run"          # 15 tickets, a few cents
-npm run eval -- --record --append-history --note "prompt v1"    # all 50, and saves the recordings
+npm run eval -- --record --append-history --note "prompt v1"    # all 108, and saves the recordings
 ```
 
 The evaluation starts its own throwaway database and refuses to run against anything that is not local, so it never touches the real one. `--max-cost` (default $5) stops a run that costs more than expected.
@@ -41,7 +41,7 @@ The evaluation starts its own throwaway database and refuses to run against anyt
 
 ## Known limits
 
-- **Fifty tickets is a small sample.** A single ticket moves a rate by 2 points. The set grows to 100 or more in the next phase; until then, treat differences of a few points as noise.
+- **108 tickets is still a small sample.** A single ticket moves a rate by about one point, and a category with a handful of tickets by much more. Treat differences of a few points as noise.
 - **The labels are one person's judgement**, written by hand. A few are arguable (the priority of a locked-out user, whether Outlook asking for a password belongs to Help Desk or Access Management), which is why the group is reported but is not part of the pass line.
-- **Injection is thinly covered** (two tickets so far). It is the first thing to grow.
+- **Injection is thinly covered** (six tickets, three of them disguised inside an ordinary request). It is the first thing to grow.
 - **Text search recall is not measured on its own yet.** In sample queries the right article was first for 15 of 17 and second for the other two (see the knowledge-base tests); the evaluation measures it end to end through citation validity.

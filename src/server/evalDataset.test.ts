@@ -215,10 +215,10 @@ describe('the shipped golden set', () => {
   const tickets = loadTickets('eval/tickets.jsonl');
   const articles = new Map(loadArticles('kb').articles.map((a) => [a.articleId, a]));
 
-  test('has 50 tickets, of both kinds', () => {
-    expect(tickets).toHaveLength(50);
-    expect(tickets.filter((t) => t.expected_action === 'propose')).toHaveLength(29);
-    expect(tickets.filter((t) => t.expected_action === 'escalate')).toHaveLength(21);
+  test('has 108 tickets, of both kinds', () => {
+    expect(tickets).toHaveLength(108);
+    expect(tickets.filter((t) => t.expected_action === 'propose')).toHaveLength(62);
+    expect(tickets.filter((t) => t.expected_action === 'escalate')).toHaveLength(46);
   });
 
   test('every article it names exists in the knowledge base', () => {
@@ -240,9 +240,9 @@ describe('the shipped golden set', () => {
 
   test('has the hard cases the specification asks for', () => {
     const tagged = (tag: string) => tickets.filter((t) => t.tags.includes(tag));
-    expect(tagged('security').length).toBeGreaterThanOrEqual(5);
+    expect(tagged('security')).toHaveLength(16);
     expect(tagged('phishing-as-reset')).toHaveLength(1);
-    expect(tagged('injection').length).toBeGreaterThanOrEqual(2);
+    expect(tagged('injection')).toHaveLength(6);
     for (const tag of [
       'multi-issue',
       'vague',
