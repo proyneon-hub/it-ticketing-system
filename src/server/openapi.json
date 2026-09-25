@@ -986,7 +986,7 @@
             "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Too many knowledge-base lookups from this caller in the last minute. Try again shortly.",
+            "description": "Too many knowledge-base lookups from this caller or address in the last minute. Try again shortly.",
             "content": {
               "application/json": {
                 "schema": {

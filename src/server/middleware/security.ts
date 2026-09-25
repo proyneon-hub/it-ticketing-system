@@ -82,3 +82,26 @@ export function kbRateLimitOptions(): Partial<Options> {
     },
   };
 }
+
+// A coarse limit by address, in front of authentication. It bounds what any one address can make
+// the server do (checking a token, then a lookup) before it is known who is asking. It is set far
+// above the per-caller limit, because an address can be a whole office or the server's own address
+// (the agent calls from there), so it only ever stops a flood.
+export function kbIpRateLimitOptions(): Partial<Options> {
+  return {
+    windowMs: Number(process.env.KB_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+    limit: () => Number(process.env.KB_IP_RATE_LIMIT_MAX) || 600,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? ''),
+    // Tests make many requests from one address; they opt in by setting KB_IP_RATE_LIMIT_MAX.
+    skip: () => process.env.NODE_ENV === 'test' && !process.env.KB_IP_RATE_LIMIT_MAX,
+    handler: (req, res) => {
+      res.status(429).json({
+        message: 'Too many knowledge-base lookups. Try again shortly.',
+        code: 'RATE_LIMITED',
+        requestId: req.id,
+      });
+    },
+  };
+}

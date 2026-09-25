@@ -7,6 +7,7 @@ import request from 'supertest';
 import app from '../app';
 import { connectToDatabase } from '../db';
 import KbArticle from '../models/KbArticle';
+import { kbIpRateLimitOptions, kbRateLimitOptions } from '../middleware/security';
 import { issueServiceToken } from '../security/accessToken';
 import { bearer, signInAll, startTestDatabase, type TestDatabase, type Tokens } from './helpers';
 
@@ -105,5 +106,33 @@ describe('who is counted', () => {
     }
     // Neither used up anyone's budget: the requester's would be exhausted after three.
     await search(await newRun()).expect(200);
+  });
+});
+
+describe('the limit by address', () => {
+  afterEach(() => {
+    delete process.env.KB_IP_RATE_LIMIT_MAX;
+  });
+
+  test('comes before authentication, so a flood of unauthenticated requests is answered 429', async () => {
+    process.env.KB_IP_RATE_LIMIT_MAX = '3';
+    for (let i = 0; i < 3; i += 1) await request(app).get('/api/kb?search=vpn').expect(401);
+
+    await request(app).get('/api/kb?search=vpn').expect(429);
+    // The address is used up, so even someone who is signed in is turned away from it.
+    await search(await newRun()).expect(429);
+
+    // A coarse limit, read on every request: raised, the same address is served again.
+    process.env.KB_IP_RATE_LIMIT_MAX = '100';
+    await search(await newRun()).expect(200);
+  });
+
+  test('is far above the per-caller limit, so it only ever stops a flood', () => {
+    delete process.env.KB_RATE_LIMIT_MAX;
+    const perAddress = (kbIpRateLimitOptions().limit as () => number)();
+    const perCaller = (kbRateLimitOptions().limit as () => number)();
+    expect(perCaller).toBe(120);
+    expect(perAddress).toBe(600);
+    expect(perAddress).toBeGreaterThanOrEqual(perCaller * 5);
   });
 });
