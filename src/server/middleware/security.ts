@@ -1,6 +1,6 @@
 import cors from 'cors';
 import type { RequestHandler } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 
 type Env = Record<string, string | undefined>;
@@ -44,6 +44,36 @@ export function loginRateLimiter(): RequestHandler {
     handler: (req, res) => {
       res.status(429).json({
         message: 'Too many failed sign-in attempts. Try again later.',
+        code: 'RATE_LIMITED',
+        requestId: req.id,
+      });
+    },
+  });
+}
+
+// Limits knowledge-base lookups, because each one runs a text query. The limit is per caller, not
+// per address: staff behind one office address must not share a budget, and the agent calls from
+// the server's own address. An agent token counts against its run, so one busy run cannot starve
+// the next. It sits after authentication, so an unauthenticated flood is turned away before it
+// reaches this or the database. The default (120 a minute) is far above any real use: a run reads
+// the knowledge base a handful of times.
+export function kbRateLimiter(): RequestHandler {
+  return rateLimit({
+    windowMs: Number(process.env.KB_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+    limit: () => Number(process.env.KB_RATE_LIMIT_MAX) || 120,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    keyGenerator: (req) =>
+      req.user
+        ? req.user.runId
+          ? `run:${req.user.runId}`
+          : `user:${req.user.sub}`
+        : ipKeyGenerator(req.ip ?? ''),
+    // Tests make many lookups; they opt in by setting KB_RATE_LIMIT_MAX.
+    skip: () => process.env.NODE_ENV === 'test' && !process.env.KB_RATE_LIMIT_MAX,
+    handler: (req, res) => {
+      res.status(429).json({
+        message: 'Too many knowledge-base lookups. Try again shortly.',
         code: 'RATE_LIMITED',
         requestId: req.id,
       });

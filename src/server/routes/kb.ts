@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from '../asyncHandler';
 import { requireAuth, requireRole } from '../auth';
+import { kbRateLimiter } from '../middleware/security';
 import { getArticle, searchArticles } from '../services/kbService';
 import { parseKbSearch } from '../validation/kb';
 
@@ -8,7 +9,7 @@ import { parseKbSearch } from '../validation/kb';
 // use for the internal steps. Read-only: the articles are files in kb/ (npm run kb:seed).
 const router = Router();
 
-router.use('/kb', requireAuth, requireRole('admin', 'technician', 'agent'));
+router.use('/kb', requireAuth, requireRole('admin', 'technician', 'agent'), kbRateLimiter());
 
 router.get(
   '/kb',
