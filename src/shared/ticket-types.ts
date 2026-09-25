@@ -1,11 +1,11 @@
-import type { CommentVisibility, Priority, Role, Status } from './ticket-constants';
+import type { ActorRole, CommentVisibility, Priority, Role, Status } from './ticket-constants';
 
 // One entry in a ticket's history. Written by the service on every change.
 export interface ActivityEntry {
   action: string;
   actorName?: string | undefined;
   // 'system' for changes made by an automated job rather than a person.
-  actorRole?: Role | 'system' | undefined;
+  actorRole?: ActorRole | 'system' | undefined;
   actorEmail?: string | undefined;
   from?: string | undefined;
   to?: string | undefined;
@@ -34,6 +34,7 @@ export interface TicketAttrs {
   slaAtRiskAt?: Date;
   slaBreachedAt?: Date;
   activity: ActivityEntry[];
+  // Only people create tickets (the agent is refused), so this is never 'agent'.
   createdByRole: Role;
   createdAt?: Date;
   updatedAt?: Date;
@@ -62,7 +63,7 @@ export interface Comment {
   ticketId: string;
   body: string;
   visibility: CommentVisibility;
-  author: { id: string; name: string; email: string; role: Role };
+  author: { id: string; name: string; email: string; role: ActorRole };
   createdAt: string;
 }
 

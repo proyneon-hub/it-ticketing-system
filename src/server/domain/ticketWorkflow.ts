@@ -2,7 +2,7 @@ import {
   adminOnlyTransitions,
   statusTransitions,
   terminalStatuses,
-  type Role,
+  type ActorRole,
   type Status,
 } from '../../shared/ticket-constants';
 import { ConflictError, ForbiddenError } from '../errors';
@@ -17,13 +17,13 @@ const movesFrom = (from: string): readonly string[] => statusTransitions[from as
 const isAdminOnly = (from: string, to: string): boolean =>
   adminOnlyTransitions.some(([source, target]) => source === from && target === to);
 
-function isAllowed(from: string, to: string, role: Role): boolean {
+function isAllowed(from: string, to: string, role: ActorRole): boolean {
   return movesFrom(from).includes(to) && (role === 'admin' || !isAdminOnly(from, to));
 }
 
 // Throws unless `role` may move a ticket from `from` to `to`. Staying on the
 // current status is always fine, so a form that re-sends it does not fail.
-export function assertTransition(from: string, to: string, role: Role): void {
+export function assertTransition(from: string, to: string, role: ActorRole): void {
   if (from === to) return;
 
   if (!movesFrom(from).includes(to)) {
@@ -35,7 +35,7 @@ export function assertTransition(from: string, to: string, role: Role): void {
 }
 
 // Current status first (a select needs its own value), then the moves `role` may make.
-export function allowedNextStatuses(from: string, role: Role): string[] {
+export function allowedNextStatuses(from: string, role: ActorRole): string[] {
   return [from, ...movesFrom(from).filter((to) => isAllowed(from, to, role))];
 }
 

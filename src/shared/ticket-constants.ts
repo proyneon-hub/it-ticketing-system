@@ -3,8 +3,19 @@
 // literal types (Status, Priority, ...), and a value can never be added in one
 // place and forgotten in another.
 
+// The roles a person can hold. This is what the user model, the role picker and the
+// role-change endpoint accept, so nobody can be given the agent role through them.
 export const roles = ['admin', 'technician', 'user'] as const;
 export type Role = (typeof roles)[number];
+
+// The service desk agent is not a user account. It exists only as a short-lived token
+// minted by the worker for one ticket (security/accessToken.ts), so it is a separate
+// actor role, not a member of `roles`.
+export const agentRole = 'agent' as const;
+
+// Everyone who can appear in a token, a comment or a history entry.
+export const actorRoles = [...roles, agentRole] as const;
+export type ActorRole = (typeof actorRoles)[number];
 
 export const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'] as const;
 export type Status = (typeof statuses)[number];

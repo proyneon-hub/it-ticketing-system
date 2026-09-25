@@ -1,5 +1,6 @@
 import mongoose, { type HydratedDocument, type Model, type Types } from 'mongoose';
 import {
+  actorRoles,
   priorities,
   roles,
   slaHoursByPriority,
@@ -114,7 +115,7 @@ const ticketSchema = new mongoose.Schema<TicketAttrs>(
         },
         actorRole: {
           type: String,
-          enum: [...roles, 'system'],
+          enum: [...actorRoles, 'system'],
           default: 'user',
         },
         actorEmail: {

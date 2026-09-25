@@ -1,5 +1,5 @@
 import type { TokenPayload } from '../auth';
-import type { CommentVisibility, Role } from '../../shared/ticket-constants';
+import type { ActorRole, CommentVisibility } from '../../shared/ticket-constants';
 import type { ActivityEntry } from '../../shared/ticket-types';
 import { ForbiddenError } from '../errors';
 import { activityEntry } from './activity';
@@ -8,7 +8,7 @@ import { activityEntry } from './activity';
 // hides nothing on its own, so a requester's session simply never receives one.
 
 // The visibilities a role may read.
-export const readableVisibilities = (role: Role): CommentVisibility[] =>
+export const readableVisibilities = (role: ActorRole): CommentVisibility[] =>
   role === 'user' ? ['public'] : ['public', 'internal'];
 
 // Throws unless `user` may post a comment with this visibility.
@@ -33,7 +33,7 @@ export const commentAddedEntry = (
 // The history a role may see: everything for staff, without internal entries for a requester.
 export function visibleActivity<T extends { internal?: boolean | undefined }>(
   activity: T[] | undefined,
-  role: Role
+  role: ActorRole
 ): T[] {
   const entries = activity ?? [];
   return role === 'user' ? entries.filter((entry) => !entry.internal) : entries;

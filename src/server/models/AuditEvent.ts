@@ -1,5 +1,10 @@
 import mongoose, { type Model, type Types } from 'mongoose';
-import { auditTypes, roles, type AuditType, type Role } from '../../shared/ticket-constants';
+import {
+  actorRoles,
+  auditTypes,
+  type ActorRole,
+  type AuditType,
+} from '../../shared/ticket-constants';
 
 export type { AuditType };
 
@@ -7,7 +12,7 @@ export interface AuditEventAttrs {
   type: AuditType;
   outcome: 'success' | 'failure' | 'denied';
   // Who did it. Absent for a failed sign-in, where nobody is authenticated.
-  actor?: { id?: string; email?: string; role?: Role };
+  actor?: { id?: string; email?: string; role?: ActorRole };
   target?: { type: string; id?: string; label?: string };
   detail?: string;
   ip?: string;
@@ -30,7 +35,7 @@ const auditSchema = new mongoose.Schema<AuditEventAttrs>({
   actor: {
     id: String,
     email: { type: String, lowercase: true, maxlength: 254 },
-    role: { type: String, enum: roles },
+    role: { type: String, enum: actorRoles },
   },
   target: { type: { type: String }, id: String, label: { type: String, maxlength: 200 } },
   detail: { type: String, maxlength: 300 },

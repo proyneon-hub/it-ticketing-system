@@ -4,7 +4,13 @@ import type { TokenPayload } from '../auth';
 import { activityEntriesForPatch, activityEntry } from '../domain/activity';
 import { visibleActivity } from '../domain/comments';
 import { csvHeaderLine, ticketToCsvLine } from '../domain/csv';
-import { assertCanMutateTicket, requesterOverrides, requesterScope } from '../domain/permissions';
+import {
+  assertAgentScope,
+  assertCanMutateTicket,
+  assertHuman,
+  requesterOverrides,
+  requesterScope,
+} from '../domain/permissions';
 import { createdEvent, patchEvents } from '../domain/outbox';
 import { deriveTimestampChanges } from '../domain/sla';
 import {
@@ -93,12 +99,14 @@ export async function listTickets(user: TokenPayload, query: ListQuery) {
 
 export async function getTicket(user: TokenPayload, id: string): Promise<TicketRecord> {
   assertValidObjectId(id);
+  assertAgentScope(user, id);
   const ticket = await repository.findOne(id, requesterScope(user));
   if (!ticket) throw notFound();
   return present(ticket, user);
 }
 
 export async function getStats(user: TokenPayload) {
+  assertHuman(user);
   const { total, byStatus, byPriority, breached, dueSoon } = await repository.counts(
     requesterScope(user),
     new Date()
@@ -121,6 +129,7 @@ export async function getTrends(
   { days, tz }: TrendsQuery,
   now: Date = new Date()
 ) {
+  assertHuman(user);
   const timeZone = tz ?? DEFAULT_TIME_ZONE;
   if (!isValidTimeZone(timeZone)) {
     throw new ValidationError('Unknown time zone.', [
@@ -140,6 +149,7 @@ export async function createTicket(
   user: TokenPayload,
   payload: CreateTicketInput
 ): Promise<TicketRecord> {
+  assertHuman(user);
   const data: Partial<TicketAttrs> = {
     ...payload,
     // Requesters cannot pick the requester identity, workflow state or owner.
@@ -183,6 +193,7 @@ export async function updateTicket(
   { expectedVersion }: { expectedVersion?: number | undefined } = {}
 ): Promise<TicketRecord> {
   assertValidObjectId(id);
+  assertAgentScope(user, id);
   if (Object.keys(payload).length === 0) {
     throw new ValidationError('No supported ticket fields were provided.');
   }
@@ -240,6 +251,7 @@ export async function* exportTicketsCsv(
   user: TokenPayload,
   query: ExportQuery
 ): AsyncGenerator<string, void, undefined> {
+  assertHuman(user);
   const now = Date.now();
   let lines = [csvHeaderLine()];
 

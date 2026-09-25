@@ -1,7 +1,14 @@
 import { SignJWT, UnsecuredJWT } from 'jose';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { PublicUser } from '../auth';
-import { ACCESS_TOKEN_TTL_SECONDS, issueAccessToken, verifyAccessToken } from './accessToken';
+import {
+  ACCESS_TOKEN_TTL_SECONDS,
+  AGENT_IDENTITY,
+  SERVICE_TOKEN_TTL_SECONDS,
+  issueAccessToken,
+  issueServiceToken,
+  verifyAccessToken,
+} from './accessToken';
 
 const user: PublicUser = {
   id: '665f0f40d5d4f541f8ef1001',
@@ -109,6 +116,68 @@ describe('access tokens', () => {
     expect(await verifyAccessToken(await forge({ ...goodClaims, role: 'superuser' }))).toBeNull();
     expect(await verifyAccessToken(await forge({ name: user.name, email: user.email }))).toBeNull();
     expect(await verifyAccessToken(await forge({ ...goodClaims, email: 42 }))).toBeNull();
+  });
+});
+
+describe('service tokens for the agent', () => {
+  const ticketId = '665f0f40d5d4f541f8ef2002';
+  const runId = 'run-1';
+
+  test('round-trip the ticket and run they are scoped to, and expire after ten minutes', async () => {
+    const claims = await verifyAccessToken(await issueServiceToken({ ticketId, runId }));
+
+    expect(claims).toMatchObject({
+      sub: AGENT_IDENTITY.id,
+      name: AGENT_IDENTITY.name,
+      role: 'agent',
+      ticketId,
+      runId,
+    });
+    expect(SERVICE_TOKEN_TTL_SECONDS).toBe(10 * 60);
+    expect((claims?.exp ?? 0) - Math.floor(Date.now() / 1000)).toBeLessThanOrEqual(10 * 60);
+  });
+
+  test('refuses to mint a token without a real ticket id or a run id', async () => {
+    await expect(issueServiceToken({ ticketId: 'not-an-id', runId })).rejects.toThrow(/ticket id/);
+    await expect(issueServiceToken({ ticketId, runId: '' })).rejects.toThrow(/run id/);
+  });
+
+  test.each([
+    ['no ticket', { rid: runId }],
+    ['a malformed ticket', { tid: 'abc', rid: runId }],
+    ['a ticket that is not a string', { tid: 42, rid: runId }],
+    ['no run', { tid: ticketId }],
+  ])(
+    'an agent token with %s is not valid, so the agent can never be unscoped',
+    async (_l, extra) => {
+      const claims = { name: AGENT_IDENTITY.name, email: AGENT_IDENTITY.email, role: 'agent' };
+      expect(await verifyAccessToken(await forge({ ...claims, ...extra }))).toBeNull();
+    }
+  );
+
+  test('a person token never carries a ticket scope, even if the claims say so', async () => {
+    const claims = await verifyAccessToken(
+      await forge({ ...goodClaims, tid: ticketId, rid: runId })
+    );
+    expect(claims?.role).toBe('technician');
+    expect(claims).not.toHaveProperty('ticketId');
+  });
+
+  test('cannot be forged from a person token by changing the role', async () => {
+    const [header, payload, signature] = (await issueAccessToken(user)).split('.') as [
+      string,
+      string,
+      string,
+    ];
+    const edited = Buffer.from(
+      JSON.stringify({
+        ...JSON.parse(Buffer.from(payload, 'base64url').toString()),
+        role: 'agent',
+        tid: ticketId,
+        rid: runId,
+      })
+    ).toString('base64url');
+    expect(await verifyAccessToken(`${header}.${edited}.${signature}`)).toBeNull();
   });
 });
 

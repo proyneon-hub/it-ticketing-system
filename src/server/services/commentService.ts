@@ -3,7 +3,7 @@ import type { CreateCommentInput } from '../../shared/schemas';
 import type { TokenPayload } from '../auth';
 import { assertCanPost, commentAddedEntry, readableVisibilities } from '../domain/comments';
 import { commentEvent } from '../domain/outbox';
-import { requesterScope } from '../domain/permissions';
+import { assertAgentScope, requesterScope } from '../domain/permissions';
 import { NotFoundError, ValidationError } from '../errors';
 import * as comments from '../repositories/commentRepository';
 import * as tickets from '../repositories/ticketRepository';
@@ -17,6 +17,7 @@ const MAX_COMMENTS = 500;
 // requester cannot tell someone else's ticket from one that does not exist.
 async function visibleTicket(user: TokenPayload, id: string) {
   if (!/^[a-f\d]{24}$/i.test(String(id))) throw new ValidationError('Invalid ticket id.');
+  assertAgentScope(user, id);
   const ticket = await tickets.findOne(id, requesterScope(user));
   if (!ticket) throw new NotFoundError('Ticket not found.');
   return ticket;
