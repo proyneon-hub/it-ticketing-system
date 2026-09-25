@@ -6,7 +6,12 @@ import type { AddressInfo } from 'net';
 import type { Server } from 'http';
 import mongoose from 'mongoose';
 import { loadTickets } from '../../../scripts/eval/dataset';
-import { alwaysEscalate, alwaysProposeVpn, oracleFor } from '../../../scripts/eval/oracle';
+import {
+  alwaysEscalate,
+  alwaysProposeVpn,
+  oracleFor,
+  oracleScript,
+} from '../../../scripts/eval/oracle';
 import { renderMarkdown } from '../../../scripts/eval/report';
 import { runEvaluation } from '../../../scripts/eval/run';
 import { summarize } from '../../../scripts/eval/score';
@@ -338,6 +343,179 @@ describe('the run', () => {
       expect(results[1]!.run.error).toContain('529 overloaded');
       expect(results[1]!.score.actionOk).toBe(false);
       expect(summarize(results).errors).toBe(1);
+    },
+    BIG
+  );
+});
+
+describe('how the harness runs a case', () => {
+  test(
+    'gives every case its own requester',
+    async () => {
+      const seen: string[] = [];
+      await evaluate(golden.slice(0, 2), undefined, {
+        afterCase: async ({ ticketId }) => {
+          seen.push((await Ticket.findById(ticketId).lean())!.requesterEmail);
+        },
+      });
+      expect(seen).toEqual(['eval-t001@example.com', 'eval-t002@example.com']);
+    },
+    BIG
+  );
+
+  test(
+    'calls afterCase once for each case, with the ticket and what the agent did',
+    async () => {
+      const seen: { id: string; ticketId: string; outcome: string }[] = [];
+      await evaluate(golden.slice(0, 3), undefined, {
+        afterCase: async ({ golden: g, ticketId, run }) => {
+          seen.push({ id: g.id, ticketId, outcome: run.outcome });
+        },
+      });
+      expect(seen.map((s) => s.id)).toEqual(['T001', 'T002', 'T003']);
+      expect(new Set(seen.map((s) => s.ticketId)).size).toBe(3);
+      expect(seen.every((s) => s.outcome !== 'none')).toBe(true);
+    },
+    BIG
+  );
+
+  test(
+    'starts each case clean, even if something was left behind before the first',
+    async () => {
+      // A ticket raised earlier with the agent on leaves an event that would be picked up first.
+      process.env.AGENT_ENABLED = 'true';
+      await fetch(`${baseUrl}/api/tickets`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${staffToken}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Left behind',
+          description: 'From before.',
+          requesterName: 'Someone',
+          requesterEmail: 'left-behind@example.com',
+        }),
+      });
+      expect(await OutboxEvent.countDocuments()).toBeGreaterThan(0);
+
+      const { results } = await evaluate([golden[0]!]);
+      expect(results[0]!.run.error).toBeUndefined();
+      expect(results[0]!.score.actionOk).toBe(true);
+      expect(await Ticket.countDocuments()).toBe(0);
+    },
+    BIG
+  );
+
+  test(
+    'puts the agent switch back as it found it',
+    async () => {
+      process.env.AGENT_ENABLED = 'false';
+      await evaluate([golden.find((g) => g.id === 'T047')!]);
+      expect(process.env.AGENT_ENABLED).toBe('false');
+
+      delete process.env.AGENT_ENABLED;
+      await evaluate([golden[0]!]);
+      expect(process.env.AGENT_ENABLED).toBeUndefined();
+    },
+    BIG
+  );
+
+  test(
+    'is not held back by the real daily cost cap, only by its own limit',
+    async () => {
+      process.env.AGENT_DAILY_COST_CAP_USD = '0.0001';
+      try {
+        const { results } = await evaluate(golden.slice(0, 2));
+        expect(results.map((r) => r.score.actionOk)).toEqual([true, true]);
+        expect(results.every((r) => r.run.outcome !== 'none')).toBe(true);
+      } finally {
+        delete process.env.AGENT_DAILY_COST_CAP_USD;
+      }
+    },
+    BIG
+  );
+
+  test(
+    'walks an earlier ticket through each status it can have',
+    async () => {
+      const statuses = [
+        'open',
+        'assigned',
+        'in-progress',
+        'pending-user',
+        'resolved',
+        'closed',
+      ] as const;
+      const seen: string[][] = [];
+      await evaluate(
+        [
+          {
+            ...golden[0]!,
+            history: statuses.map((status) => ({
+              title: `Was ${status}`,
+              status,
+              category: 'Network',
+            })),
+          },
+        ],
+        undefined,
+        {
+          afterCase: async () => {
+            const earlier = await Ticket.find({ title: /^Was / }).lean();
+            seen.push(earlier.map((t) => `${t.title.replace('Was ', '')}=${t.status}`).sort());
+          },
+        }
+      );
+      expect(seen[0]).toEqual(statuses.map((s) => `${s}=${s}`).sort());
+    },
+    BIG
+  );
+
+  test(
+    'reports each tool call the agent made, in order, and whether it failed',
+    async () => {
+      const { results } = await evaluate(
+        [golden[0]!],
+        ({ golden: g }) =>
+          new ScriptedModelClient([calls(toolUse('delete_everything', {})), ...oracleScript(g)])
+      );
+      const toolCalls = results[0]!.run.toolCalls;
+      expect(toolCalls[0]).toMatchObject({ tool: 'delete_everything', isError: true });
+      expect(toolCalls[0]!.summary).toMatch(/^unknown_tool/);
+      // Only tool calls, in the order made; the model's own turns are not among them.
+      expect(toolCalls.map((c) => c.tool)).toEqual([
+        'delete_everything',
+        'search_kb',
+        'get_kb_article',
+        'set_triage',
+        'propose_resolution',
+      ]);
+      expect(toolCalls.slice(1).every((c) => !c.isError)).toBe(true);
+    },
+    BIG
+  );
+
+  test(
+    'says so when the worker recorded no run for a ticket',
+    async () => {
+      const spy = vi
+        .spyOn(AgentRun, 'findOne')
+        .mockReturnValueOnce({ lean: async () => null } as never);
+      try {
+        const { results } = await evaluate([golden[0]!]);
+        expect(results[0]!.run.error).toMatch(/recorded no run/);
+        expect(results[0]!.score.errored).toBe(true);
+      } finally {
+        spy.mockRestore();
+      }
+    },
+    BIG
+  );
+
+  test(
+    'stops before the first ticket if the limit is nothing',
+    async () => {
+      const { results, truncated } = await evaluate(golden, undefined, { maxCostUsd: 0 });
+      expect(results).toEqual([]);
+      expect(truncated).toMatch(/Stopped after 0 of 50/);
     },
     BIG
   );

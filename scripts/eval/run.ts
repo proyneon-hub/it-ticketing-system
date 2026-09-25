@@ -76,38 +76,32 @@ const requesterFor = (golden: GoldenTicket) => ({
 
 async function createCase(golden: GoldenTicket, options: RunOptions): Promise<string> {
   const requester = requesterFor(golden);
-  const previous = process.env.AGENT_ENABLED;
 
   // The requester's earlier tickets exist already and are not the agent's to work on, so the agent is
   // switched off while they are created (no event is recorded for them).
   process.env.AGENT_ENABLED = 'false';
-  try {
-    for (const earlier of golden.history ?? []) {
-      const created = await api<{ ticket: { _id: string } }>(
+  for (const earlier of golden.history ?? []) {
+    const created = await api<{ ticket: { _id: string } }>(
+      options.baseUrl,
+      options.staffToken,
+      'POST',
+      '/tickets',
+      {
+        title: earlier.title,
+        description: 'An earlier ticket.',
+        category: earlier.category,
+        ...requester,
+      }
+    );
+    for (const step of PATH_TO[earlier.status] ?? []) {
+      await api(
         options.baseUrl,
         options.staffToken,
-        'POST',
-        '/tickets',
-        {
-          title: earlier.title,
-          description: 'An earlier ticket.',
-          category: earlier.category,
-          ...requester,
-        }
+        'PATCH',
+        `/tickets/${created.ticket._id}`,
+        step
       );
-      for (const step of PATH_TO[earlier.status] ?? []) {
-        await api(
-          options.baseUrl,
-          options.staffToken,
-          'PATCH',
-          `/tickets/${created.ticket._id}`,
-          step
-        );
-      }
     }
-  } finally {
-    if (previous === undefined) delete process.env.AGENT_ENABLED;
-    else process.env.AGENT_ENABLED = previous;
   }
 
   // The ticket under test, as its requester raised it. No category: the agent's triage decides.
@@ -210,6 +204,17 @@ async function reset(): Promise<void> {
 }
 
 export async function runEvaluation(options: RunOptions): Promise<RunOutput> {
+  // Each case switches the agent on and off in this process's environment, so put it back afterwards.
+  const previous = process.env.AGENT_ENABLED;
+  try {
+    return await runCases(options);
+  } finally {
+    if (previous === undefined) delete process.env.AGENT_ENABLED;
+    else process.env.AGENT_ENABLED = previous;
+  }
+}
+
+async function runCases(options: RunOptions): Promise<RunOutput> {
   const results: CaseResult[] = [];
   let spent = 0;
   let truncated: string | undefined;

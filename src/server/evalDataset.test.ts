@@ -1,3 +1,6 @@
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import {
   loadSmokeIds,
   loadTickets,
@@ -140,6 +143,16 @@ describe('parseTickets', () => {
     );
   });
 
+  test('names the line a bad ticket is on, counting from one', () => {
+    const text = `${JSON.stringify(row())}
+
+${JSON.stringify(row({ id: 'T002', expected_category: 'Nope' }))}`;
+    expect(() => parseTickets(text)).toThrow(/line 3 \(T002\)/);
+    expect(() => parseTickets(JSON.stringify(row({ expected_category: 'Nope' })))).toThrow(
+      /line 1 \(T001\)/
+    );
+  });
+
   test('refuses an id used twice', () => {
     expect(() => parseTickets(`${JSON.stringify(row())}\n${JSON.stringify(row())}`)).toThrow(
       /T001 appears twice/
@@ -168,6 +181,12 @@ describe('selectTickets', () => {
       'T001',
       'T003',
     ]);
+  });
+
+  test('named ids narrow the smoke set rather than replace it', () => {
+    expect(
+      ids(selectTickets(all, { subset: 'smoke', ids: ['T002', 'T003'] }, ['T001', 'T002']))
+    ).toEqual(['T002']);
   });
 
   test('filters by tag and limits how many', () => {
@@ -297,6 +316,20 @@ describe('the shipped golden set', () => {
 
   test('a smoke file that is not a list of ids is refused', () => {
     expect(() => loadSmokeIds('eval/tickets.jsonl')).toThrow();
+  });
+
+  test.each([
+    ['no ids at all', '{}'],
+    ['ids that is one string', '{"ids":"T001"}'],
+    ['ids that hold a number', '{"ids":["T001",2]}'],
+  ])('a smoke file with %s says what it should be', (_what, body) => {
+    const file = path.join(os.tmpdir(), `smoke-${process.pid}-${Math.random()}.json`);
+    fs.writeFileSync(file, body);
+    try {
+      expect(() => loadSmokeIds(file)).toThrow(/must be \{ "ids"/);
+    } finally {
+      fs.rmSync(file);
+    }
   });
 });
 
