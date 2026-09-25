@@ -337,6 +337,31 @@ jobs:
           done
           exit 1
 
+      # The agent's gauges are read from the database when Prometheus scrapes, so they only appear once
+      # a request has opened the connection (the readiness check above did). Zero-filled ones must be
+      # there even though the agent is off and has never run: a dashboard row that is empty because a
+      # metric was renamed is the failure this catches.
+      - name: The agent's metrics are exported and reach Prometheus
+        run: |
+          token=local-observability-metrics-token-0123456789
+          for attempt in $(seq 1 30); do
+            curl --silent --output /dev/null http://127.0.0.1:5000/api/ready
+            body=$(curl --silent --fail -H "Authorization: Bearer $token" http://127.0.0.1:5000/api/metrics || true)
+            if echo "$body" | grep -q '^agent_kill_switch 0' \
+              && echo "$body" | grep -q '^agent_proposals{status="pending"} 0' \
+              && echo "$body" | grep -q '^agent_events{status="dead"} 0'; then
+              echo "the API exports the agent's metrics"; break
+            fi
+            echo "attempt $attempt: not exported yet"; sleep 5
+          done
+          echo "$body" | grep -q '^agent_kill_switch 0'
+          for attempt in $(seq 1 30); do
+            found=$(curl --silent --get http://127.0.0.1:9090/api/v1/query --data-urlencode 'query=agent_kill_switch' | jq -r '.data.result[0].value[1] // "none"')
+            if [ "$found" = "0" ]; then echo "Prometheus has agent_kill_switch"; exit 0; fi
+            echo "attempt $attempt: Prometheus has $found"; sleep 5
+          done
+          exit 1
+
       - name: Grafana loaded the dashboard and can reach Prometheus
         run: |
           for attempt in $(seq 1 24); do

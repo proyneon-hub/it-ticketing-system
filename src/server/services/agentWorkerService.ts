@@ -9,6 +9,7 @@ import { effectiveMode } from '../domain/agentPolicy';
 import { isPricedModel } from '../domain/agentPricing';
 import { MAX_ATTEMPTS, backoffMs } from '../domain/outbox';
 import { logger } from '../logger';
+import { agentRunDuration, agentTokens, agentToolCalls } from '../metrics';
 import * as outboxRepository from '../repositories/outboxRepository';
 import type { OutboxEventRecord } from '../repositories/outboxRepository';
 import * as runs from '../repositories/agentRunRepository';
@@ -161,6 +162,17 @@ const runnableMode = (mode: 'shadow' | 'assist' | 'auto'): AgentRunMode => {
 
 const HOUR_MS = 60 * 60 * 1000;
 
+// What this process did on one run, for the metrics that describe the detail (the ones that describe the
+// whole system are read from the database when Prometheus scrapes).
+function observeRun(outcome: RunOutcome, mode: AgentRunMode, model: string): void {
+  agentRunDuration.observe({ outcome: outcome.outcome, mode }, outcome.latencyMs / 1000);
+  const { input, output, cacheRead, cacheWrite } = outcome.usage;
+  agentTokens.inc({ model, direction: 'input' }, input);
+  agentTokens.inc({ model, direction: 'output' }, output);
+  agentTokens.inc({ model, direction: 'cache_read' }, cacheRead);
+  agentTokens.inc({ model, direction: 'cache_write' }, cacheWrite);
+}
+
 async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
   const ticketId = event.payload.ticket.id;
   const done = () => outboxRepository.markDelivered(event._id, deps.clock());
@@ -182,6 +194,9 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
     promptVersion: deps.prompt.version,
     ticketNumber: ticket.ticketNumber,
     requesterEmail: ticket.requesterEmail,
+    // The request that created the ticket: one id links it, the event, this run and every call the
+    // agent makes back into the API.
+    requestId: event.requestId,
   };
 
   // Off, by the kill switch or for this category: recorded, so it can be seen, and not run.
@@ -261,14 +276,24 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
     mode: runMode,
     model: deps.model,
     system: deps.prompt.text,
+    requestId: event.requestId,
     api: createHttpApi({
       baseUrl: deps.baseUrl,
       token,
+      requestId: event.requestId,
       ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
     }),
     modelClient: deps.modelClient(),
     recorder: {
-      step: (step) => runs.recordStep({ runId: run._id, attempt: run.attempts, ...step }),
+      step: async (step) => {
+        if (step.kind === 'tool') {
+          agentToolCalls.inc({
+            tool: step.toolName ?? 'unknown',
+            is_error: String(step.isError === true),
+          });
+        }
+        await runs.recordStep({ runId: run._id, attempt: run.attempts, ...step });
+      },
     },
     limits: {
       maxSteps: numberFrom(deps.env.AGENT_MAX_STEPS, 8),
@@ -282,6 +307,7 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
 
   try {
     const outcome = await runAgent(context);
+    observeRun(outcome, runMode, deps.model);
     // A reply waiting for a person is marked on the ticket first: if that fails, the run is retried as
     // a whole, and a proposal is never left on a run that no ticket points to.
     if (runMode === 'assist' && outcome.outcome === 'proposed') {

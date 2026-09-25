@@ -411,3 +411,11 @@ export function decideProposal(
     { new: true, session: tx }
   );
 }
+
+// How many tickets have each proposal status, for the metrics. Tickets the agent never proposed
+// anything for have no status and are not counted.
+export const countByProposalStatus = (): Promise<{ _id: string; count: number }[]> =>
+  Ticket.aggregate([
+    { $match: { 'agent.proposalStatus': { $exists: true } } },
+    { $group: { _id: '$agent.proposalStatus', count: { $sum: 1 } } },
+  ]);

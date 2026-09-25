@@ -14,6 +14,7 @@
     "scripts/seed-kb.ts",
     "scripts/sync-indexes.ts",
     "scripts/eval.ts",
+    "scripts/eval-retrieval.ts",
     "scripts/eval/**/*.ts"
   ],
   "exclude": []

@@ -22,4 +22,7 @@ export interface OutboxDraft {
   payload: OutboxPayload;
   // Set when the event is routed (domain/outbox.ts withConsumers); the builders leave it out.
   consumer?: OutboxConsumer;
+  // The request that caused the event, so the agent's run can be traced back to it. Never sent to
+  // the webhook: it is not part of the payload.
+  requestId?: string;
 }

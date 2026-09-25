@@ -56,8 +56,40 @@ describe('the Grafana dashboard', () => {
     expect(missing).toEqual([]);
   });
 
+  test('has a row of panels for the service desk agent, and they query the agent’s metrics', () => {
+    const agent = dashboard.panels.filter((panel) => panel.title.startsWith('Agent:'));
+    expect(agent.length).toBeGreaterThanOrEqual(8);
+    const text = agent.flatMap((panel) => panel.targets.map((t) => t.expr)).join('\n');
+    for (const metric of [
+      'agent_kill_switch',
+      'agent_cost_usd_today',
+      'agent_proposals',
+      'agent_events',
+      'agent_runs',
+      'agent_tool_calls_total',
+      'agent_tokens_total',
+      'agent_run_duration_seconds_bucket',
+    ]) {
+      expect(text, metric).toContain(metric);
+    }
+  });
+
   test('uses only labels the API attaches', () => {
-    const labels = new Set(['method', 'route', 'status', 'status_class', 'le', 'result', 'kind']);
+    const labels = new Set([
+      'method',
+      'route',
+      'status',
+      'status_class',
+      'le',
+      'result',
+      'kind',
+      'outcome',
+      'mode',
+      'model',
+      'tool',
+      'is_error',
+      'direction',
+    ]);
     const text = dashboard.panels.flatMap((panel) => panel.targets.map((t) => t.expr)).join('\n');
     const byClauses = [...text.matchAll(/by \(([^)]*)\)/g)].flatMap((m) =>
       (m[1] ?? '').split(',').map((label) => label.trim())

@@ -1,0 +1,128 @@
+name: Agent evaluation
+
+# Measures the service desk agent against the golden tickets (docs/EVAL_HISTORY.md, docs/adr/011).
+#
+#   every pull request that touches the agent, its prompt, the knowledge base or the evaluation:
+#       the evaluation checked on its own (no model), the knowledge-base search measured (no model),
+#       recorded runs scored again if there are any (no model), and the 15-ticket smoke set against the
+#       real model when the key is available
+#   every Monday, and on request: the whole set against the real model, recorded as cassettes
+#
+# Everything that calls the model is skipped, with a notice and not a failure, when there is no
+# ANTHROPIC_API_KEY secret: a fork's pull request never has one, and a repository that has not set it
+# has nothing to measure yet. A run that is worse than the line drawn (scripts/eval/gate.ts) fails: any
+# security ticket not escalated, any ticket the agent could not finish, any injection that made it try
+# something it may not do, and (once eval/baseline.json exists) a fall of more than five points against it.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/server/agent/**'
+      - 'src/server/domain/agent*.ts'
+      - 'prompts/**'
+      - 'kb/**'
+      - 'eval/**'
+      - 'scripts/eval.ts'
+      - 'scripts/eval/**'
+      - '.github/workflows/agent-eval.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      subset:
+        description: 'Which tickets'
+        type: choice
+        options: [smoke, full]
+        default: full
+      note:
+        description: 'A note for the run (what changed)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    name: Evaluate the agent
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # The whole set on a schedule or on request, the small one on a pull request.
+      SUBSET: ${{ (github.event_name == 'pull_request' && 'smoke') || github.event.inputs.subset || 'full' }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The evaluation is a program too. This runs it with an "agent" that answers from the answer key,
+      # so a broken scorer, a golden ticket nobody can answer, or a tool the agent needs that no longer
+      # works fails here, for free, before any money is spent.
+      - name: Check the evaluation itself
+        run: npm run eval -- --offline --subset smoke --gate
+
+      - name: Measure the knowledge-base search
+        run: npm run eval:retrieval
+
+      - name: Score the recorded runs again
+        run: |
+          if [ -d eval/cassettes ]; then
+            npm run eval -- --replay --gate
+          else
+            echo "::notice::No recorded runs in eval/cassettes yet, so there is nothing to replay. The first live run records them."
+          fi
+
+      - name: Run the agent on the golden tickets
+        env:
+          # Passed through the environment, never spliced into the script, so a note cannot run as a command.
+          NOTE: ${{ github.event.inputs.note }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::notice::ANTHROPIC_API_KEY is not available to this run, so the live evaluation was skipped."
+            exit 0
+          fi
+          args="--subset $SUBSET --gate --max-cost 5"
+          if [ -f eval/baseline.json ]; then args="$args --baseline eval/baseline.json"; fi
+          # A full run keeps its recordings, so the next pull request can score them again for free.
+          if [ "$SUBSET" = "full" ]; then args="$args --record"; fi
+          npm run eval -- $args ${NOTE:+--note "$NOTE"}
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "## Agent evaluation"
+            echo
+            # Live results are named by date; retrieval.md is the search measurement.
+            if ls eval/results/20*.md >/dev/null 2>&1; then
+              for file in $(ls -t eval/results/20*.md | head -3); do cat "$file"; echo; done
+            else
+              echo "No live results: the model was not run (see the notices above)."
+            fi
+            if [ -f eval/results/retrieval.md ]; then cat eval/results/retrieval.md; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the results and any recordings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: agent-eval-results
+          path: |
+            eval/results/
+            eval/cassettes/
+          if-no-files-found: ignore
+          retention-days: 30

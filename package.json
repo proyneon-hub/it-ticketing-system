@@ -55,7 +55,8 @@
     "perf": "k6 run perf/load.js",
     "db:sync-indexes": "tsx scripts/sync-indexes.ts",
     "kb:seed": "tsx scripts/seed-kb.ts",
-    "eval": "tsx scripts/eval.ts"
+    "eval": "tsx scripts/eval.ts",
+    "eval:retrieval": "tsx scripts/eval-retrieval.ts"
   },
   "keywords": [
     "it-ticketing",
