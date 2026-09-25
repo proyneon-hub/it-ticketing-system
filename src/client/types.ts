@@ -6,10 +6,33 @@ import type {
   Status,
   AuditType,
 } from '../shared/ticket-constants';
-import type { Comment, Ticket, Trends } from '../shared/ticket-types';
+import type { Comment, Ticket, TicketAgent, Trends } from '../shared/ticket-types';
+import type {
+  AgentProposal,
+  AgentRunDetail,
+  AgentRunSummary,
+  AgentSettings,
+  AgentSettingsChanges,
+  AgentStepRecord,
+  AgentTriage,
+  ProposalView,
+} from '../shared/agent-types';
+import type { AgentMode, AgentOutcome, ProposalStatus } from '../shared/agent-constants';
 import type { CommentVisibility } from '../shared/ticket-constants';
 
 export type {
+  AgentMode,
+  AgentOutcome,
+  AgentProposal,
+  AgentRunDetail,
+  AgentRunSummary,
+  AgentSettings,
+  AgentSettingsChanges,
+  AgentStepRecord,
+  AgentTriage,
+  ProposalStatus,
+  ProposalView,
+  TicketAgent,
   AuditType,
   Comment,
   CommentVisibility,
@@ -119,5 +142,16 @@ export interface AuditQuery {
 
 export interface AuditPage {
   events: AuditEvent[];
+  pagination: Pagination;
+}
+
+export interface AgentRunsQuery {
+  outcome: AgentOutcome | '';
+  page: number;
+  limit: number;
+}
+
+export interface AgentRunsPage {
+  runs: AgentRunSummary[];
   pagination: Pagination;
 }

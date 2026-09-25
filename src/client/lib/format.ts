@@ -11,6 +11,12 @@ export function label(value: string): string {
     .join(' ');
 }
 
+// US dollars for what a run costs: fractions of a cent matter at this scale, so small amounts show four
+// decimal places.
+export function usd(value: number): string {
+  return `$${value.toFixed(value < 0.1 ? 4 : 2)}`;
+}
+
 export function formatDate(value: string | Date | undefined | null): string {
   if (!value) return '-';
   return new Intl.DateTimeFormat('en-CA', {
@@ -49,6 +55,10 @@ const activityLabels: Record<string, string> = {
   comment_added: 'Comment added',
   sla_at_risk: 'SLA at risk',
   sla_breached: 'SLA breached',
+  agent_proposed: 'Agent drafted a reply',
+  agent_escalated: 'Agent handed over the ticket',
+  proposal_approved: 'Drafted reply approved',
+  proposal_rejected: 'Drafted reply rejected',
 };
 
 export function activityLabel(activity: { action?: string }): string {

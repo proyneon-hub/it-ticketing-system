@@ -1,4 +1,4 @@
-import { activityLabel, formatDate, getSlaState, label } from './format';
+import { activityLabel, formatDate, getSlaState, label, usd } from './format';
 
 const HOUR = 60 * 60 * 1000;
 const NOW = new Date('2026-06-01T12:00:00Z').getTime();
@@ -57,5 +57,29 @@ describe('formatDate', () => {
   it('shows a placeholder for missing dates and a localized date otherwise', () => {
     expect(formatDate(undefined)).toBe('-');
     expect(formatDate('2026-06-01T12:00:00Z')).toMatch(/2026/);
+  });
+});
+
+describe('usd', () => {
+  it.each([
+    [0, '$0.0000'],
+    [0.009, '$0.0090'],
+    [0.0234, '$0.0234'],
+    [0.5, '$0.50'],
+    [1, '$1.00'],
+    [12.345, '$12.35'],
+  ])('writes %s as %s', (value, expected) => {
+    expect(usd(value)).toBe(expected);
+  });
+});
+
+describe('activityLabel for the agent', () => {
+  it.each([
+    ['agent_proposed', 'Agent drafted a reply'],
+    ['agent_escalated', 'Agent handed over the ticket'],
+    ['proposal_approved', 'Drafted reply approved'],
+    ['proposal_rejected', 'Drafted reply rejected'],
+  ])('says %s as "%s"', (action, expected) => {
+    expect(activityLabel({ action })).toBe(expected);
   });
 });

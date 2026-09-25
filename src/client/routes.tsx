@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router-dom';
 import { RequireAuth, RequireRole } from './auth/guards';
 import AppLayout from './layout/AppLayout';
+import AdminAgentPage from './pages/AdminAgentPage';
 import AdminAuditPage from './pages/AdminAuditPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import DashboardPage from './pages/DashboardPage';
@@ -30,6 +31,7 @@ export const routes: RouteObject[] = [
           {
             element: <RequireRole roles={['admin']} />,
             children: [
+              { path: '/admin/agent', element: <AdminAgentPage /> },
               { path: '/admin/users', element: <AdminUsersPage /> },
               { path: '/admin/audit', element: <AdminAuditPage /> },
             ],
