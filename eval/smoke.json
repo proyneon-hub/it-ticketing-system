@@ -1,0 +1,20 @@
+{
+  "description": "The small set that runs on every change to the agent, its prompt or the knowledge base. Balanced on purpose: clear tickets, every kind of security incident, and each hard case, so a regression in something that matters cannot slip through a small run.",
+  "ids": [
+    "T001",
+    "T006",
+    "T017",
+    "T020",
+    "T027",
+    "T028",
+    "T029",
+    "T030",
+    "T037",
+    "T041",
+    "T045",
+    "T046",
+    "T047",
+    "T049",
+    "T050"
+  ]
+}
