@@ -272,16 +272,16 @@ describe('the ways a run is stopped', () => {
   });
 
   test('the kill switch is read again before each step, so it works during a run', async () => {
-    let h!: ReturnType<typeof harness>;
     const model = new ScriptedModelClient([
       calls(search()),
       (_request) => {
-        // Someone flips the switch while the model is working on its second answer.
+        // Someone flips the switch while the model is working on its second answer. (`h` is
+        // declared below, and this only runs once the run has started.)
         h.settings.current = { ...h.settings.current, killSwitch: true };
         return calls(read());
       },
     ]);
-    h = harness({ modelClient: model });
+    const h = harness({ modelClient: model });
     const outcome = await runAgent(h.ctx);
 
     expect(outcome).toMatchObject({ outcome: 'aborted', reason: 'kill_switch', steps: 2 });
@@ -290,14 +290,13 @@ describe('the ways a run is stopped', () => {
   });
 
   test('nothing the model asked for in the answer that was in flight is done once the switch is on', async () => {
-    let h!: ReturnType<typeof harness>;
     const model = new ScriptedModelClient([
       () => {
         h.settings.current = { ...h.settings.current, killSwitch: true };
         return calls(toolUse('set_triage', triage()), toolUse('escalate', escalation()));
       },
     ]);
-    h = harness({ modelClient: model });
+    const h = harness({ modelClient: model });
     const outcome = await runAgent(h.ctx);
 
     expect(outcome).toMatchObject({ outcome: 'aborted', reason: 'kill_switch' });
