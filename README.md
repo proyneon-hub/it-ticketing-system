@@ -203,4 +203,4 @@ Users are stored with argon2id password hashes, sessions use 15-minute access to
 
 ## License
 
-MIT. Built by [Pramit Roy](https://pramitroy.tech).
+MIT. Built by [Pramit Roy](https://pramitroy.vercel.app).
