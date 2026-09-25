@@ -66,10 +66,16 @@ function sourceFiles(layer: string): string[] {
     .map((name) => path.join(dir, name));
 }
 
+// Every way a file can name another module: `from 'x'`, `require('x')`, a bare `import 'x'` and a
+// dynamic `import('x')`. The last two matter: a layer rule that only saw `from` could be walked
+// around with `await import('../db')`, which this codebase already uses for jose and the SDK.
+const IMPORT_SPECIFIER = /(?:\bfrom|\brequire\(|\bimport\(?)\s*['"]([^'"]+)['"]/g;
+
+const specifiersIn = (source: string): string[] =>
+  [...source.matchAll(IMPORT_SPECIFIER)].map((match) => match[1] as string);
+
 function importsIn(file: string): string[] {
-  const source = fs.readFileSync(file, 'utf8');
-  const found = [...source.matchAll(/(?:from|require\()\s*['"]([^'"]+)['"]/g)];
-  return found.map((match) => match[1] as string);
+  return specifiersIn(fs.readFileSync(file, 'utf8'));
 }
 
 describe('layer boundaries', () => {
@@ -84,6 +90,30 @@ describe('layer boundaries', () => {
     );
 
     expect(violations).toEqual([]);
+  });
+
+  test('every form of import is seen, so a rule cannot be walked around', () => {
+    expect(
+      specifiersIn(
+        [
+          "import a from '../a';",
+          "import { b } from '../b';",
+          "import type { c } from '../c';",
+          "export { d } from '../d';",
+          "import '../e';",
+          "const f = await import('../f');",
+          "const g = require('../g');",
+          'import h from "../h";',
+        ].join('\n')
+      )
+    ).toEqual(['../a', '../b', '../c', '../d', '../e', '../f', '../g', '../h']);
+  });
+
+  test('a word that merely contains "import" or "from" is not an import', () => {
+    expect(specifiersIn("const important = 'x'; // nothing from 'here' is imported")).toEqual([
+      'here',
+    ]);
+    expect(specifiersIn("const reimport = 'x'; const important = 'y';")).toEqual([]);
   });
 
   test('the rule patterns catch what they are meant to catch', () => {
