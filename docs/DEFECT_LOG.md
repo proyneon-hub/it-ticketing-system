@@ -28,6 +28,11 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 | [DEF-020](#def-020-every-api-route-answered-500-on-vercel)                                        | High     | Every API route answered 500 on Vercel (an ES-module-only dependency)          | Introduced by the auth work, found after the release     |
 | [DEF-021](#def-021-most-api-routes-answered-a-platform-404-on-vercel)                             | High     | Most API routes answered a platform 404 on Vercel                              | Introduced with each new route, found after the release  |
 | [DEF-022](#def-022-vercel-answered-412-to-every-saved-edit)                                       | High     | Vercel answered 412 to every saved edit                                        | Introduced with versioned edits, found after the release |
+| [DEF-023](#def-023-the-agents-kill-switch-did-not-stop-tool-calls-already-requested)              | Medium   | The agent's kill switch did not stop tool calls already requested              | Introduced and caught during the agent work              |
+| [DEF-024](#def-024-a-category-named-like-an-object-property-could-pick-an-agent-mode)             | Low      | A category named like an object property could pick an agent mode              | Introduced and caught during the agent work              |
+| [DEF-025](#def-025-the-layer-rules-could-not-see-bare-or-dynamic-imports)                         | Medium   | The layer rules could not see bare or dynamic imports                          | Original test, found while adding the agent rule         |
+| [DEF-026](#def-026-knowledge-base-lookups-had-no-rate-limit)                                      | Medium   | Knowledge-base lookups had no rate limit                                       | Introduced and caught by CodeQL                          |
+| [DEF-027](#def-027-an-evaluation-run-left-the-agent-switched-on-in-its-process)                   | Low      | An evaluation run left the agent switched on in its process                    | Introduced and caught by mutation testing                |
 
 ---
 
@@ -264,3 +269,48 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Fix:** the API also accepts the version as `X-Ticket-Version`, which the web app now sends; `If-Match` still works wherever the host leaves it alone. If both are sent, `X-Ticket-Version` wins. See [ADR 005](adr/005-workflow-state-machine-and-optimistic-concurrency.md).
 - **Regression tests:** integration tests for the new header (current, stale, malformed, and winning over `If-Match`), a client test that it is sent (and `If-Match` is not), and `LIVE-WORKFLOW-001` now uses it against the deployed site.
 - **Why the tests missed it:** the API and mock tests never go through Vercel's edge, and no smoke test had been run against production.
+
+## DEF-023: The agent's kill switch did not stop tool calls already requested
+
+- **Severity:** Medium (in shadow mode a tool call only records what it would do, so nothing was written; in a mode that acts, an operator who flipped the switch during a slow model call would still have had that turn's actions carried out)
+- **Found by:** review, while writing the kill-switch tests for the agent loop. The switch was read at the start of each step, and the model call comes after it.
+- **Root cause:** the loop read the settings, asked the model, and then ran whatever tools the answer contained. A switch flipped while the model was thinking (seconds to a minute) was only seen on the next step.
+- **Fix:** the switch is read again after the model answers and before any of its tools run; if it is on, none of them run and the run ends as `kill_switch`.
+- **Regression tests:** `loop.test.ts` (`nothing the model asked for in the answer that was in flight is done once the switch is on`, and the switch is read again before each step). The first fails without the second read.
+- **Why the tests missed it:** they were written for the first read and had not yet been written for the gap after the model call. Found before this was released.
+
+## DEF-024: A category named like an object property could pick an agent mode
+
+- **Severity:** Low (I did not find a request that reaches it: ticket categories are validated, so it needed a stored or future category with such a name)
+- **Found by:** review of the mode policy. The per-category mode was looked up with a plain property read on an object.
+- **Root cause:** `modeByCategory['constructor']` (or `toString`, `hasOwnProperty`, `__proto__`) returns something inherited from `Object.prototype` rather than nothing, and the policy then treated the result as a mode.
+- **Fix:** only an own property counts, and only if it is one of the four real modes; anything else falls back to the default mode. The decision itself refuses (fails closed) for a mode it does not recognise.
+- **Regression tests:** `agentPolicy.test.ts` checks five such category names and a mode that is only inherited, and the mode-to-decision function against `constructor`, an empty string and `undefined`.
+- **Why the tests missed it:** the first tests used realistic category names. Found before this was released.
+
+## DEF-025: The layer rules could not see bare or dynamic imports
+
+- **Severity:** Medium (the rules are a safety boundary: the agent must not reach the database, and a rule that cannot see an import does not enforce it)
+- **Found by:** reading `architecture.test.ts` closely while adding the agent's rule. It pulled imports out with a pattern that only matched `from '...'` and `require('...')`.
+- **Root cause:** `import '...'` on its own and `await import('...')` walked past every layer rule. Dynamic imports are used in this code base (`jose`, the Anthropic SDK), so the gap was real; no existing file was violating a rule.
+- **Fix:** one extraction pattern that sees all four forms, without mistaking a word that merely contains "import" or "from" for one.
+- **Regression tests:** `every form of import is seen, so a rule cannot be walked around` and `a word that merely contains "import" or "from" is not an import`; the first fails on the old pattern.
+- **Why the tests missed it:** nothing tested the test. The rule's own fixtures now do.
+
+## DEF-026: Knowledge-base lookups had no rate limit
+
+- **Severity:** Medium (the endpoint is authenticated, but a signed-in caller, or an agent run in a loop, could search without limit)
+- **Found by:** CodeQL, on the first pull request that added `GET /kb` (`js/missing-rate-limiting`). It was not dismissed; it was fixed.
+- **Root cause:** the route was added with authentication and roles but no limiter.
+- **Fix:** a limit per caller (per user, or per agent run, so runs do not share a budget) after authentication, and a much larger limit per address before it, so a flood of unauthenticated requests is answered `429` before any work is done. Both are configurable (`KB_RATE_LIMIT_MAX`, `KB_IP_RATE_LIMIT_MAX`, `KB_RATE_LIMIT_WINDOW_MS`). The first version limited only after authentication, which CodeQL still reported.
+- **Regression tests:** `kb-rate-limit.integration.test.ts`: the limit and its `429` body, one budget for search and read, each run and each person separately, unauthenticated floods, and that the limit is off under test unless a test turns it on.
+- **Why the tests missed it:** no test asked what happens on the hundred-and-first request.
+
+## DEF-027: An evaluation run left the agent switched on in its process
+
+- **Severity:** Low (only the evaluation harness, and only the process it ran in)
+- **Found by:** mutation testing of the evaluation runner. Removing the code that restored `AGENT_ENABLED` changed nothing the tests could see, which showed that the restore did nothing: the next line set it to `true` regardless.
+- **Root cause:** each case switches the agent off to create a requester's earlier tickets and on to create the one under test, and the "put it back as it was" was done before the final switch, so the process was always left with `AGENT_ENABLED=true`.
+- **Fix:** the runner records the value once at the start and restores it when the whole run ends, including when it throws.
+- **Regression tests:** `puts the agent switch back as it found it`, for a value that was `false` and one that was unset.
+- **Why the tests missed it:** they checked the results of a run and not what it left behind.
