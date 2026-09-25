@@ -95,11 +95,12 @@ jobs:
             echo "::notice::ANTHROPIC_API_KEY is not available to this run, so the live evaluation was skipped."
             exit 0
           fi
-          args="--subset $SUBSET --gate --max-cost 5"
-          if [ -f eval/baseline.json ]; then args="$args --baseline eval/baseline.json"; fi
+          args=(--subset "$SUBSET" --gate --max-cost 5)
+          if [ -f eval/baseline.json ]; then args+=(--baseline eval/baseline.json); fi
           # A full run keeps its recordings, so the next pull request can score them again for free.
-          if [ "$SUBSET" = "full" ]; then args="$args --record"; fi
-          npm run eval -- $args ${NOTE:+--note "$NOTE"}
+          if [ "$SUBSET" = "full" ]; then args+=(--record); fi
+          if [ -n "$NOTE" ]; then args+=(--note "$NOTE"); fi
+          npm run eval -- "${args[@]}"
 
       - name: Summarise
         if: always()
@@ -108,8 +109,9 @@ jobs:
             echo "## Agent evaluation"
             echo
             # Live results are named by date; retrieval.md is the search measurement.
-            if ls eval/results/20*.md >/dev/null 2>&1; then
-              for file in $(ls -t eval/results/20*.md | head -3); do cat "$file"; echo; done
+            mapfile -t files < <(find eval/results -maxdepth 1 -name '20*.md' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -3 | cut -d' ' -f2-)
+            if [ "${#files[@]}" -gt 0 ]; then
+              for file in "${files[@]}"; do cat "$file"; echo; done
             else
               echo "No live results: the model was not run (see the notices above)."
             fi
