@@ -1,13 +1,14 @@
 import { allowedNextStatuses, assertTransition, isReopen } from './ticketWorkflow';
 
-const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'];
+const statuses = ['open', 'assigned', 'in-progress', 'pending-user', 'resolved', 'closed'];
 
 // Written out by hand, not derived from the shared table, so editing the table
 // without meaning to fails here.
 const legal: Record<string, string[]> = {
-  open: ['assigned', 'in-progress', 'closed'],
-  assigned: ['in-progress', 'open'],
-  'in-progress': ['resolved', 'assigned'],
+  open: ['assigned', 'in-progress', 'pending-user', 'closed'],
+  assigned: ['in-progress', 'pending-user', 'open'],
+  'in-progress': ['resolved', 'pending-user', 'assigned'],
+  'pending-user': ['in-progress', 'resolved', 'closed'],
   resolved: ['closed', 'in-progress'],
   closed: ['in-progress'],
 };
@@ -59,8 +60,41 @@ describe('allowedNextStatuses', () => {
       'open',
       'assigned',
       'in-progress',
+      'pending-user',
       'closed',
     ]);
+    expect(allowedNextStatuses('pending-user', 'technician')).toEqual([
+      'pending-user',
+      'in-progress',
+      'resolved',
+      'closed',
+    ]);
+  });
+
+  test('a ticket that is finished cannot be handed back to the requester', () => {
+    expect(allowedNextStatuses('resolved', 'admin')).not.toContain('pending-user');
+    expect(allowedNextStatuses('closed', 'admin')).not.toContain('pending-user');
+  });
+});
+
+describe('the agent', () => {
+  test.each(['open', 'assigned', 'in-progress'])(
+    'may hand a %s ticket to the requester',
+    (from) => {
+      expect(() => assertTransition(from, 'pending-user', 'agent')).not.toThrow();
+    }
+  );
+
+  test('cannot hand a finished ticket to the requester', () => {
+    expect(() => assertTransition('resolved', 'pending-user', 'agent')).toThrow(
+      expect.objectContaining({ statusCode: 409 })
+    );
+  });
+
+  test('cannot make the admin-only move, like any other non-admin', () => {
+    expect(() => assertTransition('closed', 'in-progress', 'agent')).toThrow(
+      expect.objectContaining({ statusCode: 403 })
+    );
   });
 });
 

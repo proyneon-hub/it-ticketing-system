@@ -17,7 +17,17 @@ export const agentRole = 'agent' as const;
 export const actorRoles = [...roles, agentRole] as const;
 export type ActorRole = (typeof actorRoles)[number];
 
-export const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'] as const;
+// `pending-user` means the ticket is waiting on the requester (for a reply, or to confirm a
+// fix). The service desk agent sets it when it posts a resolution; the requester's reply, or
+// a technician, moves it on.
+export const statuses = [
+  'open',
+  'assigned',
+  'in-progress',
+  'pending-user',
+  'resolved',
+  'closed',
+] as const;
 export type Status = (typeof statuses)[number];
 
 export const priorities = ['low', 'medium', 'high', 'urgent'] as const;
@@ -29,12 +39,23 @@ export const terminalStatuses = ['resolved', 'closed'] as const satisfies readon
 // Which status a ticket may move to from each status. The API enforces this
 // (src/server/domain/ticketWorkflow.ts) and the status menu offers only these moves.
 export const statusTransitions = {
-  open: ['assigned', 'in-progress', 'closed'],
-  assigned: ['in-progress', 'open'],
-  'in-progress': ['resolved', 'assigned'],
+  open: ['assigned', 'in-progress', 'pending-user', 'closed'],
+  assigned: ['in-progress', 'pending-user', 'open'],
+  'in-progress': ['resolved', 'pending-user', 'assigned'],
+  'pending-user': ['in-progress', 'resolved', 'closed'],
   resolved: ['closed', 'in-progress'],
   closed: ['in-progress'],
 } as const satisfies Record<Status, readonly Status[]>;
+
+// The status the agent may move a ticket to (and the only one). Everything else about a
+// ticket's workflow stays with people.
+export const agentStatus = 'pending-user' as const satisfies Status;
+
+// While a ticket waits for its requester the team cannot act on it, so its SLA clock is not
+// counted: it is not flagged at risk or breached, and the escalation job leaves it alone.
+// The deadline itself does not move, so when the ticket is worked again the time it waited
+// still counts against it.
+export const slaPausedStatuses = ['pending-user'] as const satisfies readonly Status[];
 
 // Moves that exist in the table above but only an admin may make.
 export const adminOnlyTransitions = [

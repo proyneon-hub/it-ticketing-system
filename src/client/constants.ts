@@ -1,9 +1,14 @@
-import { priorities, statuses, terminalStatuses } from '../shared/ticket-constants';
+import {
+  priorities,
+  slaPausedStatuses,
+  statuses,
+  terminalStatuses,
+} from '../shared/ticket-constants';
 import type { Credentials, TicketFilters, TicketForm } from './types';
 
 // Status and priority lists come from the same module the API validates against,
 // so the UI can never offer a value the server would reject.
-export { priorities, statuses, terminalStatuses };
+export { priorities, slaPausedStatuses, statuses, terminalStatuses };
 
 export const sortOptions: [TicketFilters['sortBy'], string][] = [
   ['createdAt', 'Newest first'],

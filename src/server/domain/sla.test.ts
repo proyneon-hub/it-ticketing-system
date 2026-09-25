@@ -1,4 +1,4 @@
-import { HOUR_MS, deriveTimestampChanges, dueAtFor, isSlaBreached } from './sla';
+import { HOUR_MS, deriveTimestampChanges, dueAtFor, isSlaBreached, isSlaRunning } from './sla';
 
 const NOW = new Date('2026-06-10T12:00:00.000Z');
 const RAISED = new Date('2026-06-10T08:00:00.000Z');
@@ -31,6 +31,23 @@ describe('isSlaBreached', () => {
     expect(isSlaBreached({ status: 'open', dueAt: future }, NOW.getTime())).toBe(false);
     expect(isSlaBreached({ status: 'open' }, NOW.getTime())).toBe(false);
   });
+
+  test('a ticket waiting on its requester has paused the clock, so it is not breached', () => {
+    expect(isSlaBreached({ status: 'pending-user', dueAt: past }, NOW.getTime())).toBe(false);
+  });
+});
+
+describe('isSlaRunning', () => {
+  test.each([
+    ['open', true],
+    ['assigned', true],
+    ['in-progress', true],
+    ['pending-user', false],
+    ['resolved', false],
+    ['closed', false],
+  ])('%s: %s', (status, running) => {
+    expect(isSlaRunning(status)).toBe(running);
+  });
 });
 
 describe('deriveTimestampChanges', () => {
@@ -40,6 +57,16 @@ describe('deriveTimestampChanges', () => {
     const { set, unset } = deriveTimestampChanges(open, { status: 'resolved' }, NOW);
     expect(set.resolvedAt).toEqual(NOW);
     expect(unset).toEqual({});
+  });
+
+  test('waiting on the requester is neither finishing nor reopening: no timestamps change', () => {
+    expect(deriveTimestampChanges(open, { status: 'pending-user' }, NOW)).toEqual({
+      set: {},
+      unset: {},
+    });
+    expect(
+      deriveTimestampChanges({ ...open, status: 'pending-user' }, { status: 'in-progress' }, NOW)
+    ).toEqual({ set: {}, unset: {} });
   });
 
   test('closing an already resolved ticket keeps the original resolvedAt', () => {

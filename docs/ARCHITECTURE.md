@@ -104,11 +104,17 @@ stateDiagram-v2
     [*] --> open
     open --> assigned
     open --> in_progress: in-progress
+    open --> pending_user: pending-user
     open --> closed
     assigned --> in_progress
+    assigned --> pending_user
     assigned --> open
     in_progress --> resolved
+    in_progress --> pending_user
     in_progress --> assigned
+    pending_user --> in_progress: requester replies
+    pending_user --> resolved
+    pending_user --> closed
     resolved --> closed
     resolved --> in_progress: reopen
     closed --> in_progress: reopen (admin only)
@@ -116,7 +122,7 @@ stateDiagram-v2
 
 The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
 
-Resolved and closed tickets are terminal: they stop the SLA clock. Each priority has an SLA window (urgent 4h, high 24h, medium 48h, low 72h) that sets the due date.
+Resolved and closed tickets are terminal: they stop the SLA clock. A ticket waiting on its requester (`pending-user`) pauses it. Each priority has an SLA window (urgent 4h, high 24h, medium 48h, low 72h) that sets the due date.
 
 ## Deployment
 

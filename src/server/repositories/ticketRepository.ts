@@ -1,5 +1,10 @@
 import type { FilterQuery, PipelineStage, SortOrder } from 'mongoose';
-import { priorities, terminalStatuses, type SortField } from '../../shared/ticket-constants';
+import {
+  priorities,
+  slaPausedStatuses,
+  terminalStatuses,
+  type SortField,
+} from '../../shared/ticket-constants';
 import type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
 import { DUE_SOON_WINDOW_MS } from '../domain/sla';
 import type { OpenedRow, ResolvedRow } from '../domain/trends';
@@ -17,7 +22,9 @@ type TicketFilter = FilterQuery<TicketAttrs>;
 
 const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const OPEN_STATUSES = { $nin: [...terminalStatuses] };
+// Tickets whose SLA clock is being counted: not finished, and not waiting on the requester.
+const SLA_NOT_RUNNING: readonly string[] = [...terminalStatuses, ...slaPausedStatuses];
+const SLA_RUNNING_STATUSES = { $nin: [...SLA_NOT_RUNNING] };
 
 // Someone typing TKT-0012 (or the start of it) wants that ticket, not a text search.
 const TICKET_NUMBER_PREFIX = /^TKT-?\d*$/i;
@@ -52,8 +59,8 @@ export function toFilter(criteria: TicketCriteria): TicketFilter {
     // Combine with an explicit status filter instead of overwriting it: asking for
     // "resolved AND breached" matches nothing rather than silently ignoring the status.
     if (!status) {
-      filter.status = OPEN_STATUSES;
-    } else if ((terminalStatuses as readonly string[]).includes(status)) {
+      filter.status = SLA_RUNNING_STATUSES;
+    } else if (SLA_NOT_RUNNING.includes(status)) {
       filter.status = { $in: [] };
     }
 
@@ -228,7 +235,7 @@ export async function appendActivity(id: string, entry: ActivityEntry, tx?: Tx):
 // without the breach marker or due within 24 hours without the at-risk marker. Most overdue first.
 export const escalationCandidates = (now: Date, limit: number): Promise<TicketRecord[]> =>
   Ticket.find({
-    status: OPEN_STATUSES,
+    status: SLA_RUNNING_STATUSES,
     $or: [
       { dueAt: { $lt: now }, slaBreachedAt: { $exists: false } },
       {
@@ -258,11 +265,27 @@ export function applySlaStep(
   return Ticket.findOneAndUpdate(
     {
       _id: id,
-      status: OPEN_STATUSES,
+      status: SLA_RUNNING_STATUSES,
       [step.marker]: { $exists: false },
       ...(step.expectedPriority ? { priority: step.expectedPriority } : {}),
     },
     { $set: step.set, $push: { activity: step.activity }, $inc: { __v: 1 } },
+    { new: true, session: tx }
+  );
+}
+
+// Moves a ticket that is waiting on its requester back into work, once: it only matches
+// while the ticket is still pending-user, so a technician who got there first is not
+// overwritten. Bumps the version, like any other status change. Returns null when the ticket
+// was no longer waiting.
+export function resumeFromPending(
+  id: unknown,
+  activity: ActivityEntry,
+  tx: Tx
+): Promise<TicketDocument | null> {
+  return Ticket.findOneAndUpdate(
+    { _id: id, status: 'pending-user' },
+    { $set: { status: 'in-progress' }, $push: { activity }, $inc: { __v: 1 } },
     { new: true, session: tx }
   );
 }
@@ -328,7 +351,7 @@ export interface TicketCounts {
 // tickets when it is set.
 export async function counts(requesterEmail: string | undefined, now: Date): Promise<TicketCounts> {
   const scope: TicketFilter = requesterEmail ? { requesterEmail } : {};
-  const open: TicketFilter = { ...scope, status: OPEN_STATUSES };
+  const open: TicketFilter = { ...scope, status: SLA_RUNNING_STATUSES };
   const dueSoonUntil = new Date(now.getTime() + DUE_SOON_WINDOW_MS);
 
   const [byStatus, byPriority, total, breached, dueSoon] = await Promise.all([

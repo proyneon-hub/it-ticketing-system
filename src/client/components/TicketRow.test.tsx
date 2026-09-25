@@ -43,7 +43,7 @@ describe('status workflow', () => {
   it('offers only the moves the workflow allows from the current status', () => {
     renderRow({ role: 'technician', ticket: makeTicket({ status: 'open' }) });
 
-    expect(statusValues()).toEqual(['open', 'assigned', 'in-progress', 'closed']);
+    expect(statusValues()).toEqual(['open', 'assigned', 'in-progress', 'pending-user', 'closed']);
   });
 
   it('hides reopening a closed ticket from technicians', () => {
@@ -133,6 +133,7 @@ describe('display', () => {
     ['due-soon', 6, 'open'],
     ['healthy', 60, 'open'],
     ['met', -2, 'resolved'],
+    ['paused', -2, 'pending-user'],
   ])('shows the %s SLA state', (state, offsetHours, status) => {
     const dueAt = new Date(Date.now() + offsetHours * HOUR).toISOString();
     renderRow({ ticket: makeTicket({ dueAt, status }) });

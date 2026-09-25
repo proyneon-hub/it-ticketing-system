@@ -1,6 +1,6 @@
 import { priorities, type Priority } from '../../shared/ticket-constants';
 import type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
-import { DUE_SOON_WINDOW_MS, isTerminal } from './sla';
+import { DUE_SOON_WINDOW_MS, isSlaRunning } from './sla';
 
 // What the scheduled SLA job does to a ticket. The job runs every half hour and must be safe
 // to run at any time, any number of times: each step leaves a marker on the ticket
@@ -21,10 +21,10 @@ export function raisedPriority(priority: Priority): Priority {
 }
 
 // What, if anything, is due for this ticket at `now`. Finished tickets have stopped their
-// SLA clock, so they are left alone. A ticket past its deadline is breached whether or not it
-// was ever seen "at risk".
+// SLA clock, and tickets waiting on their requester have paused it, so both are left alone.
+// A ticket past its deadline is breached whether or not it was ever seen "at risk".
 export function escalationDue(ticket: Escalatable, now: Date): Escalation | null {
-  if (isTerminal(ticket.status) || !ticket.dueAt) return null;
+  if (!isSlaRunning(ticket.status) || !ticket.dueAt) return null;
 
   const due = new Date(ticket.dueAt).getTime();
   if (due < now.getTime()) return ticket.slaBreachedAt ? null : 'breached';

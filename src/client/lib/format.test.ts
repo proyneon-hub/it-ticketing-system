@@ -32,6 +32,11 @@ describe('getSlaState', () => {
     expect(getSlaState({ status, dueAt: due(-100) }, NOW)).toBe('met');
   });
 
+  it('is paused, not breached, while the ticket waits on its requester', () => {
+    expect(getSlaState({ status: 'pending-user', dueAt: due(-100) }, NOW)).toBe('paused');
+    expect(getSlaState({ status: 'pending-user', dueAt: due(5) }, NOW)).toBe('paused');
+  });
+
   it('is met when the ticket has no due date', () => {
     expect(getSlaState({ status: 'open' } as never, NOW)).toBe('met');
   });

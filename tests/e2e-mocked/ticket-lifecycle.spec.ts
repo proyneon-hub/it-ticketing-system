@@ -104,7 +104,7 @@ test(
     const options = await statusMenu.locator('option').allTextContents();
 
     // TKT-0001 is open: it cannot jump straight to resolved.
-    expect(options).toEqual(['Open', 'Assigned', 'In Progress', 'Closed']);
+    expect(options).toEqual(['Open', 'Assigned', 'In Progress', 'Pending User', 'Closed']);
   }
 );
 

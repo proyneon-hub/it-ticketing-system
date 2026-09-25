@@ -2,7 +2,8 @@ import type { Comment } from '../../shared/ticket-types';
 import type { CreateCommentInput } from '../../shared/schemas';
 import type { TokenPayload } from '../auth';
 import { assertCanPost, commentAddedEntry, readableVisibilities } from '../domain/comments';
-import { commentEvent } from '../domain/outbox';
+import { activityEntry } from '../domain/activity';
+import { commentEvent, patchEvents } from '../domain/outbox';
 import { assertAgentScope, requesterScope } from '../domain/permissions';
 import { NotFoundError, ValidationError } from '../errors';
 import * as comments from '../repositories/commentRepository';
@@ -63,6 +64,22 @@ export async function addComment(
     );
     await tickets.appendActivity(ticketId, commentAddedEntry(user, visibility), tx);
     await outbox.record([commentEvent(ticket, user, visibility)], tx);
+
+    // A ticket waiting on its requester goes back into work when the requester answers.
+    // Internal notes are staff-only, so this only ever follows a public reply.
+    if (user.role === 'user' && visibility === 'public' && ticket.status === 'pending-user') {
+      const resumed = await tickets.resumeFromPending(
+        ticketId,
+        activityEntry(user, {
+          action: 'status_changed',
+          from: 'pending-user',
+          to: 'in-progress',
+          detail: 'Requester replied',
+        }),
+        tx
+      );
+      if (resumed) await outbox.record(patchEvents(ticket, resumed, user), tx);
+    }
     return created;
   });
   return toComment(record);

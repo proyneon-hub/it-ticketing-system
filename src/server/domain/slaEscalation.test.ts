@@ -55,6 +55,11 @@ describe('escalationDue', () => {
     expect(escalationDue(ticket({ status, dueAt: at(-1) }), NOW)).toBe('breached');
   });
 
+  test('a ticket waiting on its requester has paused its clock: nothing is due, past or soon', () => {
+    expect(escalationDue(ticket({ status: 'pending-user', dueAt: at(-10) }), NOW)).toBeNull();
+    expect(escalationDue(ticket({ status: 'pending-user', dueAt: at(5) }), NOW)).toBeNull();
+  });
+
   test('a ticket with no deadline is left alone', () => {
     const { dueAt: _dueAt, ...withoutDue } = ticket();
     expect(escalationDue(withoutDue, NOW)).toBeNull();

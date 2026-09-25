@@ -1283,7 +1283,7 @@
       },
       "Status": {
         "type": "string",
-        "enum": ["open", "assigned", "in-progress", "resolved", "closed"]
+        "enum": ["open", "assigned", "in-progress", "pending-user", "resolved", "closed"]
       },
       "Priority": {
         "type": "string",
@@ -1674,7 +1674,7 @@
           },
           "byStatus": {
             "type": "object",
-            "required": ["open", "assigned", "in-progress", "resolved", "closed"],
+            "required": ["open", "assigned", "in-progress", "pending-user", "resolved", "closed"],
             "additionalProperties": {
               "type": "integer",
               "minimum": 0

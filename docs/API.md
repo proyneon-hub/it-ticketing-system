@@ -109,17 +109,25 @@ stateDiagram-v2
     [*] --> open
     open --> assigned
     open --> in_progress: in-progress
+    open --> pending_user: pending-user
     open --> closed
     assigned --> in_progress
+    assigned --> pending_user
     assigned --> open
     in_progress --> resolved
+    in_progress --> pending_user
     in_progress --> assigned
+    pending_user --> in_progress: requester replies
+    pending_user --> resolved
+    pending_user --> closed
     resolved --> closed
     resolved --> in_progress: reopen
     closed --> in_progress: reopen (admin only)
 ```
 
 The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
+
+`pending-user` means the ticket is waiting on the requester. It pauses the SLA clock: the ticket is not counted as at risk or breached, and the escalation job skips it. The deadline does not move, so the time a ticket waited still counts once it is worked again. A public reply from the requester moves it back to `in-progress`.
 
 Default SLA windows, measured from when the ticket was created:
 
@@ -193,7 +201,7 @@ A requester asking for someone else's ticket gets `404`, not `403`, so ids canno
 | `limit`      | Page size, `1` to `100` (default 10)                                                                                                                    |
 | `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`. Default: `createdAt`, or best match first with `search` |
 | `sortOrder`  | `asc` or `desc`                                                                                                                                         |
-| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                               |
+| `status`     | `open`, `assigned`, `in-progress`, `pending-user`, `resolved` or `closed`                                                                               |
 | `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                     |
 | `assignedTo` | Case-insensitive assignee match                                                                                                                         |
 | `search`     | Full-text search across number, title, description, requester, assignee and category. See below                                                         |
