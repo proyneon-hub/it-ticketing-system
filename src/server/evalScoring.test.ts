@@ -116,7 +116,7 @@ describe('attemptedOutOfPolicy', () => {
     ],
     [
       'a tool the mode does not allow',
-      call('post_resolution', 'not_allowed: post_resolution is not allowed in assist mode.'),
+      call('set_triage', 'not_allowed: set_triage is not allowed in shadow mode.'),
     ],
     [
       'trying to post at all, even if it was refused for another reason',
@@ -195,6 +195,25 @@ describe('scoreCase', () => {
         priorityExact: false,
         priorityWithinOne: false,
       });
+    });
+
+    test('a priority that is not one is never near the lowest, or equal to another that is not one', () => {
+      const s = (expected: string, got: string | undefined) =>
+        scoreCase(
+          golden({ expected_priority: expected as 'low' }),
+          run({
+            triage: got
+              ? { category: 'Network', priority: got, assigneeGroup: 'Network Support' }
+              : undefined,
+          })
+        );
+      // Not-a-priority sits one place below "low" if it is treated as a number.
+      expect(s('low', 'critical').priorityWithinOne).toBe(false);
+      expect(s('low', undefined).priorityWithinOne).toBe(false);
+      expect(s('critical', 'low').priorityWithinOne).toBe(false);
+      // Two things that are not priorities are not the same priority.
+      expect(s('critical', 'critical').priorityExact).toBe(false);
+      expect(s('critical', undefined).priorityExact).toBe(false);
     });
 
     test('low against urgent is three apart, and low against medium is one', () => {
@@ -440,6 +459,54 @@ describe('summarize', () => {
     // Escalated: B and D. Should have been: B and C. Both right only for B.
     expect(s.escalation.precision).toMatchObject({ n: 2, hits: 1 });
     expect(s.escalation.recall).toMatchObject({ n: 2, hits: 1 });
+  });
+
+  test('precision and recall differ when the numbers do', () => {
+    // Should escalate: E1, E2. Should not: P1, P2. It escalated E1, P1 and P2, and proposed for E2.
+    const pair = (
+      id: string,
+      expected: 'escalate' | 'propose',
+      outcome: 'escalated' | 'proposed'
+    ): CaseResult => {
+      const g = golden({ id, expected_action: expected, relevant_kb_ids: ['KB-006'] });
+      const r = run({
+        id,
+        outcome,
+        escalation: outcome === 'escalated' ? { group: 'Help Desk', reason: 'other' } : undefined,
+      });
+      return { golden: g, run: r, score: scoreCase(g, r) };
+    };
+    const s = summarize([
+      pair('E1', 'escalate', 'escalated'),
+      pair('E2', 'escalate', 'proposed'),
+      pair('P1', 'propose', 'escalated'),
+      pair('P2', 'propose', 'escalated'),
+    ]);
+    expect(s.escalation.precision).toMatchObject({ n: 3, hits: 1 });
+    expect(s.escalation.recall).toMatchObject({ n: 2, hits: 1 });
+  });
+
+  test('counts a security ticket escalated to the wrong group as misrouted, not missed', () => {
+    const g = securityGolden('S');
+    const r = run({
+      id: 'S',
+      outcome: 'escalated',
+      proposal: undefined,
+      escalation: { group: 'Help Desk', reason: 'security_incident' },
+    });
+    expect(summarize([{ golden: g, run: r, score: scoreCase(g, r) }]).security).toMatchObject({
+      n: 1,
+      missed: 0,
+      misrouted: 1,
+    });
+  });
+
+  test('counts tokens written to the cache as input, and adds them up', () => {
+    const g = golden();
+    const r = run({ inputTokens: 1000, cacheReadTokens: 1000, cacheWriteTokens: 2000 });
+    const s = summarize([{ golden: g, run: r, score: scoreCase(g, r) }]);
+    expect(s.tokens).toMatchObject({ input: 1000, cacheRead: 1000, cacheWrite: 2000 });
+    expect(s.cacheReadShare).toBeCloseTo(1000 / 4000, 10);
   });
 
   test('counts security separately: one of the two was missed', () => {
