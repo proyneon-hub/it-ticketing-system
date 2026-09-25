@@ -9,6 +9,8 @@ import path from 'path';
 //   services      orchestration: call repositories and the domain, never Mongoose
 //   repositories  storage: the only place that queries Mongoose
 //   domain        pure business rules: no framework, no database
+//   agent         the service desk agent: only the ticketing API, never the database, and
+//                 never the code that mints its token (docs/adr/009)
 //
 // (ESLint has a matching import restriction for the domain layer, which reports a
 // violation in the editor; this test covers every layer and runs in CI.)
@@ -41,6 +43,13 @@ const RULES: Rule[] = [
     layer: 'services',
     forbidden: new RegExp(String.raw`^(${FRAMEWORKS})$|(\.\./)+(models|db|routes|middleware)(/|$)`),
     why: 'services reach the database through repositories, never directly',
+  },
+  {
+    layer: 'agent',
+    forbidden: new RegExp(
+      String.raw`^(${FRAMEWORKS})$|${DATABASE}|(\.\./)+(services|routes|middleware|security)(/|$)`
+    ),
+    why: 'the agent reaches the ticketing system only through its API: no database, no layers above it, and no way to mint its own token',
   },
   {
     layer: 'routes',
@@ -85,5 +94,30 @@ describe('layer boundaries', () => {
     expect(domain.test('../repositories/ticketRepository')).toBe(true);
     expect(domain.test('../errors')).toBe(false);
     expect(domain.test('../../shared/ticket-constants')).toBe(false);
+
+    const agent = RULES.find((rule) => rule.layer === 'agent')?.forbidden as RegExp;
+    for (const forbidden of [
+      'mongoose',
+      'express',
+      '../models/Ticket',
+      '../repositories/ticketRepository',
+      '../db',
+      '../services/ticketService',
+      '../routes/tickets',
+      '../middleware/security',
+      '../security/accessToken',
+    ]) {
+      expect(agent.test(forbidden)).toBe(true);
+    }
+    for (const allowed of [
+      '../domain/agentPolicy',
+      '../../shared/ticket-constants',
+      '@anthropic-ai/sdk',
+      'zod',
+      './registry',
+      'fs',
+    ]) {
+      expect(agent.test(allowed)).toBe(false);
+    }
   });
 });

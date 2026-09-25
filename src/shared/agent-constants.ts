@@ -29,6 +29,20 @@ export type AgentOutcome = (typeof agentOutcomes)[number];
 export const agentToolTiers = ['read', 'write-low', 'write-draft', 'write-high'] as const;
 export type AgentToolTier = (typeof agentToolTiers)[number];
 
+// Why the agent handed a ticket to a person. Recorded with the escalation, and what the
+// evaluation checks the agent got right.
+export const agentEscalationReasons = [
+  'security_incident',
+  'hardware_damage',
+  'account_access_change',
+  'out_of_kb_scope',
+  'low_confidence',
+  'ambiguous_or_multi_issue',
+  'distressed_requester',
+  'other',
+] as const;
+export type AgentEscalationReason = (typeof agentEscalationReasons)[number];
+
 export const agentConfidences = ['low', 'medium', 'high'] as const;
 export type AgentConfidence = (typeof agentConfidences)[number];
 
