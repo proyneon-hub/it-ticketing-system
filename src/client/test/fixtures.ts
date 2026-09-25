@@ -142,7 +142,9 @@ export function makeProposal(overrides: Partial<ProposalView> = {}): ProposalVie
 }
 
 // A ticket the agent has drafted a reply for.
-export const withProposal = (status: 'pending' | 'approved' | 'edited' | 'rejected' = 'pending') =>
+export const withProposal = (
+  status: 'pending' | 'approved' | 'edited' | 'rejected' | 'posted' = 'pending'
+) =>
   makeTicket({
     agent: {
       lastRunId: '665f0f40d5d4f541f8ef3001',
