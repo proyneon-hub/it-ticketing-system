@@ -110,6 +110,7 @@ test.describe('the agent’s drafted reply', () => {
     page,
     loginPage,
     detailPage,
+    agentApi: _agentApi,
     agentPage,
   }) => {
     await loginPage.loginAs('technician');

@@ -11,7 +11,7 @@ export class AgentPage {
   async expectProposalShown(reply: string): Promise<void> {
     await expect(this.panel()).toBeVisible();
     await expect(this.panel().getByTestId('proposal-reply')).toHaveValue(reply);
-    await expect(this.panel().getByText('AI-generated')).toBeVisible();
+    await expect(this.panel().getByText('AI-generated', { exact: true })).toBeVisible();
   }
 
   async expectNoProposal(): Promise<void> {
