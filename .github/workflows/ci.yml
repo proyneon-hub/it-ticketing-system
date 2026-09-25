@@ -416,6 +416,8 @@ jobs:
       LIVE_BASE_URL: ${{ secrets.LIVE_BASE_URL }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      # Lets the jobs smoke test run against the deployed site (the same secret the deployment has).
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
       LIVE_SMOKE_ENABLED: 'true'
     steps:
       - name: Check out repository
