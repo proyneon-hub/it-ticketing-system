@@ -97,6 +97,16 @@ export const outboxEventTypes = [
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 
+// Who an event is for. Each event is written once per consumer that wants it: the webhook
+// sends notifications, the agent triages new tickets. Events written before consumers existed
+// have no value here and belong to the webhook.
+export const outboxConsumers = ['webhook', 'agent'] as const;
+export type OutboxConsumer = (typeof outboxConsumers)[number];
+
+// The events the agent acts on. It triages a ticket when it is created; nothing else it hears
+// about, and everything else stays with the webhook.
+export const agentEventTypes = ['ticket.created'] as const satisfies readonly OutboxEventType[];
+
 // pending: waiting to be sent (or to be retried). sending: claimed by a worker. delivered:
 // the webhook accepted it. dead: gave up after the last attempt; an admin can retry it.
 export const outboxStatuses = ['pending', 'sending', 'delivered', 'dead'] as const;

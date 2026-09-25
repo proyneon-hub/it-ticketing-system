@@ -44,6 +44,13 @@ export function hasStrongCronSecret(env: Env = process.env): boolean {
   return typeof env.CRON_SECRET === 'string' && env.CRON_SECRET.length >= MIN_CRON_SECRET_LENGTH;
 }
 
+// The service desk agent is off unless AGENT_ENABLED=true, so a deployment that does not use
+// it records nothing for it and behaves exactly as it did before the agent existed. Whether
+// the agent can actually run (an API key, a mode per category) is checked by the agent itself.
+export function agentEnabled(env: Env = process.env): boolean {
+  return env.AGENT_ENABLED?.trim().toLowerCase() === 'true';
+}
+
 // Where ticket events are sent: a Discord or Slack incoming-webhook URL, or any endpoint
 // that accepts a JSON POST. Unset means notifications are off: no events are recorded and
 // the delivery job does nothing. An unusable value is treated the same way (and the caller

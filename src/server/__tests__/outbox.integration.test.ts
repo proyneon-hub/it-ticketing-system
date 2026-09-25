@@ -310,7 +310,7 @@ describe('delivering', () => {
   test('an event a crashed worker was holding is picked up once its lock has run out', async () => {
     await createTicket();
     const now = new Date();
-    const claimed = await outboxRepository.claimNext(now, 60_000);
+    const claimed = await outboxRepository.claimNext('webhook', now, 60_000);
     expect(claimed?.status).toBe('sending');
 
     // Still locked: nothing to do.

@@ -2,7 +2,7 @@
 import express from 'express';
 import request from 'supertest';
 import app from '../app';
-import { assertProductionConfig, resolveTrustProxy } from '../config';
+import { agentEnabled, assertProductionConfig, resolveTrustProxy } from '../config';
 import { ConflictError, ValidationError } from '../errors';
 import { describeError } from '../middleware/errorHandler';
 import { corsPolicy } from '../middleware/security';
@@ -121,6 +121,20 @@ describe('startup configuration', () => {
     [{ VERCEL: '1', TRUST_PROXY: '' }, 1],
   ])('resolves trust proxy for %j', (env, expected) => {
     expect(resolveTrustProxy(env)).toEqual(expected);
+  });
+});
+
+describe('the agent switch', () => {
+  test.each([
+    [{}, false],
+    [{ AGENT_ENABLED: '' }, false],
+    [{ AGENT_ENABLED: 'false' }, false],
+    [{ AGENT_ENABLED: '1' }, false],
+    [{ AGENT_ENABLED: 'yes' }, false],
+    [{ AGENT_ENABLED: 'true' }, true],
+    [{ AGENT_ENABLED: ' TRUE ' }, true],
+  ])('is %j: %s', (env, expected) => {
+    expect(agentEnabled(env)).toBe(expected);
   });
 });
 

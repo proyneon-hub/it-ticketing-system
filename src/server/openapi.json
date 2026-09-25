@@ -2097,6 +2097,11 @@
               "ticket.sla_breached"
             ]
           },
+          "consumer": {
+            "type": "string",
+            "enum": ["webhook", "agent"],
+            "description": "Who the event is for. Absent on events recorded before consumers existed; those belong to the webhook."
+          },
           "payload": {
             "type": "object",
             "description": "What is sent to the webhook. Never contains comment text or ticket descriptions."

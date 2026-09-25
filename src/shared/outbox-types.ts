@@ -1,4 +1,4 @@
-import type { CommentVisibility, OutboxEventType } from './ticket-constants';
+import type { CommentVisibility, OutboxConsumer, OutboxEventType } from './ticket-constants';
 
 // What is sent about a ticket when something happens to it. Deliberately small and free of
 // long text a person typed (no descriptions, no comment bodies), because it leaves the system. The title is the one typed field included; the message writer neutralises anything in it that could ping a channel.
@@ -20,4 +20,6 @@ export interface OutboxPayload {
 export interface OutboxDraft {
   type: OutboxEventType;
   payload: OutboxPayload;
+  // Set when the event is routed (domain/outbox.ts withConsumers); the builders leave it out.
+  consumer?: OutboxConsumer;
 }

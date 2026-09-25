@@ -1,17 +1,22 @@
 import mongoose, { type Model, type Types } from 'mongoose';
 import {
+  outboxConsumers,
   outboxEventTypes,
   outboxStatuses,
+  type OutboxConsumer,
   type OutboxEventType,
   type OutboxStatus,
 } from '../../shared/ticket-constants';
 
 import type { OutboxPayload } from '../../shared/outbox-types';
 
-export type { OutboxEventType, OutboxPayload, OutboxStatus };
+export type { OutboxConsumer, OutboxEventType, OutboxPayload, OutboxStatus };
 
 export interface OutboxEventAttrs {
   type: OutboxEventType;
+  // Who the event is for. Absent on events written before consumers existed: those are the
+  // webhook's (see the consumer filter in outboxRepository).
+  consumer?: OutboxConsumer;
   payload: OutboxPayload;
   status: OutboxStatus;
   // Delivery attempts made so far (counted when an event is claimed).
@@ -29,6 +34,7 @@ export type OutboxEventRecord = OutboxEventAttrs & { _id: Types.ObjectId };
 
 const outboxSchema = new mongoose.Schema<OutboxEventAttrs>({
   type: { type: String, enum: outboxEventTypes, required: true },
+  consumer: { type: String, enum: outboxConsumers, default: 'webhook' },
   payload: { type: mongoose.Schema.Types.Mixed, required: true },
   status: { type: String, enum: outboxStatuses, default: 'pending', required: true },
   attempts: { type: Number, default: 0, required: true },
