@@ -67,6 +67,7 @@ Without Docker:
 - `npm test`, `npm run lint` and `npm run build` pass (CI runs them, plus coverage thresholds and an audit).
 - After deploying, check `/api/ready`, then sign in with each demo role and confirm the dashboard loads.
 - For a deployed environment that is safe to write to, run the smoke suite ([LIVE_SMOKE_TESTING.md](LIVE_SMOKE_TESTING.md)).
+- The knowledge base needs its articles in the database: run `npm run db:sync-indexes` once (it creates the article search index) and then `npm run kb:seed` against the same `MONGODB_URI`. Run `kb:seed` again whenever a file in `kb/` changes; an unchanged article is left alone. Nothing in the application needs the knowledge base until the agent is turned on (`AGENT_ENABLED`).
 
 ## Environment variables
 

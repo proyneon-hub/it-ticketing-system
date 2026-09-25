@@ -112,6 +112,36 @@ export const agentEventTypes = ['ticket.created'] as const satisfies readonly Ou
 export const outboxStatuses = ['pending', 'sending', 'delivered', 'dead'] as const;
 export type OutboxStatus = (typeof outboxStatuses)[number];
 
+// The categories the service desk agent chooses from. Ticket.category itself stays free text
+// (people type their own and existing tickets keep theirs), so this list constrains the agent and
+// the knowledge base, not the data. Security is here so a phishing report or a lost device has
+// somewhere to go.
+export const agentCategories = [
+  'Network',
+  'Access',
+  'Hardware',
+  'Software',
+  'Onboarding',
+  'Email',
+  'Security',
+  'General Support',
+] as const;
+export type AgentCategory = (typeof agentCategories)[number];
+
+// The queues the agent may hand a ticket to. A group, not a person: the agent triages, people
+// pick the ticket up.
+export const assigneeGroups = [
+  'Help Desk',
+  'Network Support',
+  'Security Team',
+  'Field Services',
+  'Access Management',
+] as const;
+export type AssigneeGroup = (typeof assigneeGroups)[number];
+
+// A knowledge-base article id, such as KB-006. Replies cite these.
+export const kbIdPattern = /^KB-\d{3}$/;
+
 export const slaFilters = ['breached', 'due-soon'] as const;
 export type SlaFilter = (typeof slaFilters)[number];
 

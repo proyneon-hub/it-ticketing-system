@@ -63,7 +63,9 @@ function assertValidObjectId(id: string): void {
 
 // What the caller asked for, limited to what their role may see.
 function criteriaFor(
-  query: Partial<Pick<ListQuery, 'status' | 'priority' | 'assignedTo' | 'sla' | 'search'>>,
+  query: Partial<
+    Pick<ListQuery, 'status' | 'priority' | 'assignedTo' | 'sla' | 'search' | 'requesterEmail'>
+  >,
   user: TokenPayload
 ): TicketCriteria {
   return {
@@ -72,7 +74,8 @@ function criteriaFor(
     assignedTo: query.assignedTo,
     sla: query.sla,
     search: query.search,
-    requesterEmail: requesterScope(user),
+    // A requester's own address always wins, so the filter can only narrow what staff see.
+    requesterEmail: requesterScope(user) ?? query.requesterEmail,
     now: new Date(),
   };
 }

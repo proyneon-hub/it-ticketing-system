@@ -25,6 +25,7 @@
     "src/server/**/*.ts",
     "src/shared/**/*.ts",
     "scripts/seed.ts",
+    "scripts/seed-kb.ts",
     "scripts/sync-indexes.ts",
     "scripts/worker.ts"
   ],

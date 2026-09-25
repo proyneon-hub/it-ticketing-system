@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { emptyTicketForm, priorities } from '../constants';
+import { agentCategories, emptyTicketForm, priorities } from '../constants';
 import { label } from '../lib/format';
 import type { Role, TicketForm as Form } from '../types';
 
@@ -103,7 +103,13 @@ export default function TicketForm({ role, saving, onCreate }: TicketFormProps) 
             value={form.category}
             onChange={(event) => updateField('category', event.target.value)}
             placeholder="Hardware, Access, Network"
+            list="ticket-categories"
           />
+          <datalist id="ticket-categories">
+            {agentCategories.map((category) => (
+              <option key={category} value={category} />
+            ))}
+          </datalist>
         </label>
       </div>
 

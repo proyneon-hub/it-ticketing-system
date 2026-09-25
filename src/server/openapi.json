@@ -28,6 +28,10 @@
       "description": "Ticket lifecycle. Requesters only see and change their own tickets; technicians work the whole queue; only admins delete."
     },
     {
+      "name": "Knowledge base",
+      "description": "Support articles the service desk and the agent look answers up in. Staff and the agent only. Read-only: the articles are files in `kb/`, loaded with `npm run kb:seed`."
+    },
+    {
       "name": "Administration",
       "description": "Admin-only: who has which role, and the security audit log."
     },
@@ -226,6 +230,9 @@
           },
           {
             "$ref": "#/components/parameters/Search"
+          },
+          {
+            "$ref": "#/components/parameters/RequesterEmail"
           }
         ],
         "responses": {
@@ -325,6 +332,9 @@
           },
           {
             "$ref": "#/components/parameters/Search"
+          },
+          {
+            "$ref": "#/components/parameters/RequesterEmail"
           }
         ],
         "responses": {
@@ -916,6 +926,117 @@
         }
       }
     },
+    "/kb": {
+      "get": {
+        "tags": ["Knowledge base"],
+        "summary": "Search the knowledge base",
+        "description": "Articles matching the search words, best match first, each with a short snippet from around the match. Without `search` the articles are listed in id order, so a category can be browsed. Matches whole words and their other forms, like the ticket search. Staff and the agent only; a requester receives 403.",
+        "operationId": "searchKb",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Plain words; search operators such as a leading `-` or quotes have no special meaning.",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/KbCategory"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The matching articles, possibly none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KbSearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/kb/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "The article's own id, such as `KB-006`.",
+          "schema": {
+            "type": "string",
+            "pattern": "^KB-\\d{3}$"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Knowledge base"],
+        "summary": "Read an article",
+        "description": "The whole article, as markdown. Staff and the agent only.",
+        "operationId": "getKbArticle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The article.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KbArticleEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/outbox": {
       "get": {
         "tags": ["Administration"],
@@ -1191,6 +1312,15 @@
         "schema": {
           "type": "string",
           "maxLength": 100
+        }
+      },
+      "RequesterEmail": {
+        "name": "requesterEmail",
+        "in": "query",
+        "description": "Only tickets raised under this address (case-insensitive). For staff and the agent, to see what one person has raised. A requester is always limited to their own address, whatever this says.",
+        "schema": {
+          "type": "string",
+          "maxLength": 254
         }
       },
       "TicketVersion": {
@@ -2070,6 +2200,94 @@
                 "description": "Share of resolved tickets that met their deadline, to one decimal place. Null when nothing was resolved."
               }
             }
+          }
+        }
+      },
+      "KbCategory": {
+        "type": "string",
+        "enum": [
+          "Network",
+          "Access",
+          "Hardware",
+          "Software",
+          "Onboarding",
+          "Email",
+          "Security",
+          "General Support"
+        ]
+      },
+      "KbSearchResult": {
+        "type": "object",
+        "required": ["id", "title", "category", "lastReviewed", "snippet"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^KB-\\d{3}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/KbCategory"
+          },
+          "lastReviewed": {
+            "type": "string",
+            "format": "date"
+          },
+          "snippet": {
+            "type": "string",
+            "description": "A short piece of the article, around the first search word that matches (or the start of the article)."
+          }
+        }
+      },
+      "KbSearchResponse": {
+        "type": "object",
+        "required": ["articles"],
+        "properties": {
+          "articles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KbSearchResult"
+            }
+          }
+        }
+      },
+      "KbArticle": {
+        "type": "object",
+        "required": ["id", "title", "category", "lastReviewed", "appliesTo", "body"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^KB-\\d{3}$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/KbCategory"
+          },
+          "lastReviewed": {
+            "type": "string",
+            "format": "date"
+          },
+          "appliesTo": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "body": {
+            "type": "string",
+            "description": "Markdown."
+          }
+        }
+      },
+      "KbArticleEnvelope": {
+        "type": "object",
+        "required": ["article"],
+        "properties": {
+          "article": {
+            "$ref": "#/components/schemas/KbArticle"
           }
         }
       },

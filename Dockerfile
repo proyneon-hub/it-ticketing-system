@@ -9,7 +9,7 @@ RUN npm ci
 COPY index.html vite.config.mjs tsconfig.server.json ./
 COPY server.ts ./
 COPY src ./src
-COPY scripts/seed.ts scripts/sampleData.ts scripts/sync-indexes.ts scripts/worker.ts ./scripts/
+COPY scripts/seed.ts scripts/seed-kb.ts scripts/sampleData.ts scripts/sync-indexes.ts scripts/worker.ts ./scripts/
 # Builds the React app to dist/ and compiles the API to dist-server/.
 RUN npm run build
 
@@ -35,6 +35,8 @@ COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --chown=node:node package.json ./
 COPY --from=build --chown=node:node /app/dist-server ./dist-server
 COPY --from=build --chown=node:node /app/dist ./dist
+# The knowledge-base articles, for `node dist-server/scripts/seed-kb.js` (it reads ./kb).
+COPY --chown=node:node kb ./kb
 
 # Never run as root inside the container.
 USER node

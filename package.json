@@ -53,7 +53,8 @@
     "build:server": "tsc -p tsconfig.server.json",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.client.json && tsc -p tsconfig.playwright.json",
     "perf": "k6 run perf/load.js",
-    "db:sync-indexes": "tsx scripts/sync-indexes.ts"
+    "db:sync-indexes": "tsx scripts/sync-indexes.ts",
+    "kb:seed": "tsx scripts/seed-kb.ts"
   },
   "keywords": [
     "it-ticketing",

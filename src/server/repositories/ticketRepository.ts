@@ -6,6 +6,7 @@ import {
   type SortField,
 } from '../../shared/ticket-constants';
 import type { ActivityEntry, TicketAttrs } from '../../shared/ticket-types';
+import { plainWords } from '../domain/search';
 import { DUE_SOON_WINDOW_MS } from '../domain/sla';
 import type { OpenedRow, ResolvedRow } from '../domain/trends';
 import type { TicketCriteria } from '../domain/ticketCriteria';
@@ -33,17 +34,6 @@ const TICKET_NUMBER_PREFIX = /^TKT-?\d*$/i;
 // can use the unique index on ticketNumber (a case-insensitive one cannot).
 function ticketNumberPrefix(search: string): string {
   return search.toUpperCase().replace(/^TKT(?!-)/, 'TKT-');
-}
-
-// Text-search syntax is meant for people writing queries, not for a search box: a
-// leading minus excludes a word and quotes demand a phrase. Strip both so the input is
-// just words.
-function plainWords(search: string): string {
-  const words = search
-    .replace(/["\\]/g, ' ')
-    .replace(/(^|\s)-+/g, '$1')
-    .trim();
-  return words || search;
 }
 
 // Translates criteria into a MongoDB filter.
