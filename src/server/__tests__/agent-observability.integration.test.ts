@@ -216,6 +216,22 @@ describe('what is read from the database when Prometheus scrapes', () => {
     expect(sample(text, 'agent_cost_usd_today', { model: 'claude-sonnet-5' })).toBe(0);
   });
 
+  test('what has stopped counting goes away: spend for a model with no runs today is not left behind', async () => {
+    const ticket = await createTicket();
+    await work(proposing(ticket._id));
+    expect(await scrape()).toContain('agent_cost_usd_today{model="claude-sonnet-5"}');
+
+    await AgentRun.deleteMany({});
+    const text = await scrape();
+    expect(sample(text, 'agent_cost_usd_today', { model: 'claude-sonnet-5' })).toBeUndefined();
+    expect(sample(text, 'agent_runs', { outcome: 'proposed' })).toBeUndefined();
+  });
+
+  test('proposals are counted by the statuses that mean something, not "none"', async () => {
+    const text = await scrape();
+    expect(text).not.toContain('agent_proposals{status="none"}');
+  });
+
   test('a dead event shows in the backlog', async () => {
     const ticket = await createTicket();
     await OutboxEvent.updateOne(
@@ -247,6 +263,8 @@ describe('what this process saw', () => {
     const after = await scrape();
     const delta = (name: string, labels: Record<string, string>) =>
       (sample(after, name, labels) ?? 0) - (sample(before, name, labels) ?? 0);
+    // Only tool calls are counted: the model's own turns are not a tool.
+    expect(after).not.toContain('tool="unknown"');
     expect(delta('agent_tool_calls_total', { tool: 'search_kb', is_error: 'false' })).toBe(1);
     expect(delta('agent_tool_calls_total', { tool: 'delete_everything', is_error: 'true' })).toBe(
       1
