@@ -32,6 +32,10 @@
       "description": "Support articles the service desk and the agent look answers up in. Staff and the agent only. Read-only: the articles are files in `kb/`, loaded with `npm run kb:seed`."
     },
     {
+      "name": "Agent",
+      "description": "The service desk agent: its settings and runs (for the team), the decisions on the replies it drafts (for staff), and the one write only the agent makes, handing a ticket to a person. See docs/adr/011-agent-rollout-shadow-assist-auto.md."
+    },
+    {
       "name": "Administration",
       "description": "Admin-only: who has which role, and the security audit log."
     },
@@ -1243,6 +1247,410 @@
           }
         }
       }
+    },
+    "/agent/settings": {
+      "get": {
+        "tags": ["Agent"],
+        "summary": "Read the agent's settings",
+        "description": "What the agent may do (mode, kill switch, allowlist), its limits, whether it is on in this deployment, and what it has spent today. Staff only.",
+        "operationId": "getAgentSettings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSettingsEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Agent"],
+        "summary": "Change the agent's settings",
+        "description": "Admin only. Only what is sent changes, and nothing else is accepted. The kill switch takes effect on the agent's very next step. Every change is audited (`agent_settings_changed`).",
+        "operationId": "updateAgentSettings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentSettingsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settings as they now are.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSettingsEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/agent/runs": {
+      "get": {
+        "tags": ["Agent"],
+        "summary": "List the agent's runs",
+        "description": "Newest first, with what each cost and how it ended. Admin only.",
+        "operationId": "listAgentRuns",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "outcome",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AgentOutcome"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of runs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunList"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/agent/runs/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Agent"],
+        "summary": "One run, with its proposal and every step",
+        "description": "Admin only. Steps are short summaries of each model call and tool call, in order; the ticket's own text is not repeated.",
+        "operationId": "getAgentRun",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The run and its steps.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentRunDetailEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/agent/escalations": {
+      "post": {
+        "tags": ["Agent"],
+        "summary": "Hand a ticket to a person (the agent only)",
+        "description": "Called by the agent with its run token. Assigns the ticket to the group (an unassigned ticket becomes `assigned`) and leaves the summary as an internal note, in one transaction. Only the agent may call it, and only for the ticket its token names (`403` for any other).",
+        "operationId": "agentEscalate",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentEscalation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The ticket as it now is.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TicketEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/tickets/{id}/proposal": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Agent"],
+        "summary": "Read the agent's drafted reply for a ticket",
+        "description": "The reply, its confidence, the articles it cites and the triage the agent chose, with where the proposal stands. Staff only (`403` for a requester or the agent). `404` when the agent proposed nothing for the ticket.",
+        "operationId": "getProposal",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The proposal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalEnvelope"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tickets/{id}/proposal/approve": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Agent"],
+        "summary": "Approve the drafted reply",
+        "description": "Posts the reply to the requester as a public comment (labelled as the agent's, with the approver's name) and moves the ticket to `pending-user`, in one transaction. A finished ticket keeps its status. Send `replyMarkdown` to post an edited reply. `409` `NO_PENDING_PROPOSAL` if nothing is waiting, or someone decided first. Staff only.",
+        "operationId": "approveProposal",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalApprove"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`approved`, or `edited` if the reply was changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalDecision"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/tickets/{id}/proposal/reject": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          }
+        }
+      ],
+      "post": {
+        "tags": ["Agent"],
+        "summary": "Reject the drafted reply",
+        "description": "Posts nothing and leaves the ticket as it was; the decision, and the reason if given, go in the ticket's history. `409` `NO_PENDING_PROPOSAL` if nothing is waiting. Staff only.",
+        "operationId": "rejectProposal",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposalReject"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "`rejected`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalDecision"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1548,6 +1956,7 @@
               "NOT_FOUND",
               "INVALID_TRANSITION",
               "VERSION_CONFLICT",
+              "NO_PENDING_PROPOSAL",
               "LAST_ADMIN",
               "DUPLICATE",
               "RATE_LIMITED",
@@ -1673,8 +2082,8 @@
           },
           "actorRole": {
             "type": "string",
-            "enum": ["admin", "technician", "user", "system"],
-            "description": "`system` for a change made by an automated job (such as SLA escalation) rather than a person."
+            "enum": ["admin", "technician", "user", "agent", "system"],
+            "description": "`system` for a change made by an automated job (such as SLA escalation); `agent` for the service desk agent."
           },
           "actorEmail": {
             "type": "string",
@@ -1794,6 +2203,9 @@
             "type": "string",
             "format": "date-time",
             "description": "When the SLA job first saw the deadline pass, and raised the priority one step. Set once."
+          },
+          "agent": {
+            "$ref": "#/components/schemas/TicketAgent"
           }
         }
       },
@@ -2029,7 +2441,8 @@
           "role_changed",
           "ticket_deleted",
           "permission_denied",
-          "outbox_retried"
+          "outbox_retried",
+          "agent_settings_changed"
         ]
       },
       "AuditEvent": {
@@ -2151,13 +2564,34 @@
                 "type": "string"
               },
               "role": {
-                "$ref": "#/components/schemas/Role"
+                "$ref": "#/components/schemas/ActorRole"
               }
             }
           },
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["agent"],
+            "description": "Present on a reply the service desk agent wrote. The web app labels these \"AI-generated\"."
+          },
+          "approvedBy": {
+            "type": "object",
+            "description": "The person who approved an agent reply before the requester saw it.",
+            "required": ["id", "name", "email"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -2505,6 +2939,559 @@
           "dead": {
             "type": "integer",
             "description": "Sent unsuccessfully for the last time."
+          }
+        }
+      },
+      "ActorRole": {
+        "type": "string",
+        "enum": ["admin", "technician", "user", "agent"],
+        "description": "The roles a person can have, and `agent`, the service desk agent's own identity. `agent` is never given to a user account."
+      },
+      "ProposalStatus": {
+        "type": "string",
+        "enum": ["none", "pending", "approved", "edited", "rejected"],
+        "description": "Where the agent's drafted reply stands. `pending` waits for a person; `edited` was posted after a person changed it."
+      },
+      "AgentMode": {
+        "type": "string",
+        "enum": ["off", "shadow", "assist", "auto"]
+      },
+      "AgentOutcome": {
+        "type": "string",
+        "enum": ["running", "triaged", "proposed", "posted", "escalated", "aborted", "error"]
+      },
+      "TicketAgent": {
+        "type": "object",
+        "description": "What the service desk agent has done with a ticket. Sent to staff only, and only if the agent has looked at the ticket.",
+        "properties": {
+          "lastRunId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$"
+          },
+          "triageSource": {
+            "type": "string",
+            "enum": ["agent", "human"],
+            "description": "Who set the category, priority and group last."
+          },
+          "proposalStatus": {
+            "$ref": "#/components/schemas/ProposalStatus"
+          }
+        }
+      },
+      "Proposal": {
+        "type": "object",
+        "required": ["replyMarkdown", "citedKbIds", "confidence", "reasoningSummary"],
+        "properties": {
+          "replyMarkdown": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "citedKbIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^KB-\\d{3}$"
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "reasoningSummary": {
+            "type": "string"
+          }
+        }
+      },
+      "Triage": {
+        "type": "object",
+        "required": ["category", "priority", "assigneeGroup"],
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "assigneeGroup": {
+            "type": "string"
+          }
+        }
+      },
+      "ProposalView": {
+        "type": "object",
+        "required": ["status", "runId", "proposal", "citedArticles"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ProposalStatus"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/Proposal"
+          },
+          "triage": {
+            "$ref": "#/components/schemas/Triage"
+          },
+          "citedArticles": {
+            "type": "array",
+            "description": "The articles the reply is based on, so a reviewer can check them.",
+            "items": {
+              "type": "object",
+              "required": ["id", "title"],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ProposalEnvelope": {
+        "type": "object",
+        "required": ["proposal"],
+        "properties": {
+          "proposal": {
+            "$ref": "#/components/schemas/ProposalView"
+          }
+        }
+      },
+      "ProposalDecision": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ProposalStatus"
+          }
+        }
+      },
+      "ProposalApprove": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "replyMarkdown": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 2000,
+            "description": "The reply to post, if a person has changed it. Omit to post the agent's own reply as it was."
+          }
+        }
+      },
+      "ProposalReject": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Recorded in the ticket's history."
+          }
+        }
+      },
+      "AgentSettings": {
+        "type": "object",
+        "required": [
+          "killSwitch",
+          "defaultMode",
+          "modeByCategory",
+          "autoAllowlist",
+          "dailyCostCapUsd",
+          "perRequesterHourlyLimit",
+          "enabled",
+          "model",
+          "spentTodayUsd"
+        ],
+        "properties": {
+          "killSwitch": {
+            "type": "boolean",
+            "description": "When true the agent does nothing, on its very next step."
+          },
+          "defaultMode": {
+            "$ref": "#/components/schemas/AgentMode"
+          },
+          "modeByCategory": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AgentMode"
+            },
+            "description": "A mode for a category, in place of the default."
+          },
+          "autoAllowlist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Categories the agent may act on alone in auto mode."
+          },
+          "dailyCostCapUsd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "perRequesterHourlyLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The most runs one requester's tickets may have in an hour."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether this deployment has the agent switched on and a key for the model. Not changeable here."
+          },
+          "model": {
+            "type": "string"
+          },
+          "spentTodayUsd": {
+            "type": "number",
+            "minimum": 0,
+            "description": "What runs started since 00:00 UTC have cost."
+          }
+        }
+      },
+      "AgentSettingsEnvelope": {
+        "type": "object",
+        "required": ["settings"],
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/AgentSettings"
+          }
+        }
+      },
+      "AgentSettingsUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "minProperties": 1,
+        "description": "Only what is sent changes.",
+        "properties": {
+          "killSwitch": {
+            "type": "boolean"
+          },
+          "defaultMode": {
+            "$ref": "#/components/schemas/AgentMode"
+          },
+          "modeByCategory": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AgentMode"
+            }
+          },
+          "autoAllowlist": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          },
+          "dailyCostCapUsd": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "perRequesterHourlyLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        }
+      },
+      "AgentRunSummary": {
+        "type": "object",
+        "required": [
+          "_id",
+          "ticketId",
+          "mode",
+          "model",
+          "promptVersion",
+          "outcome",
+          "attempts",
+          "steps",
+          "inputTokens",
+          "outputTokens",
+          "costUsd",
+          "latencyMs",
+          "hasProposal",
+          "startedAt"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "ticketId": {
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["shadow", "assist", "auto"]
+          },
+          "model": {
+            "type": "string"
+          },
+          "promptVersion": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AgentOutcome"
+          },
+          "outcomeReason": {
+            "type": "string",
+            "description": "Why it stopped, when it did not finish normally (`kill_switch`, `daily_cost_cap`, `requester_rate_limited`, `ticket_changed`, `budget_exceeded`, ...)."
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "steps": {
+            "type": "integer"
+          },
+          "inputTokens": {
+            "type": "integer"
+          },
+          "outputTokens": {
+            "type": "integer"
+          },
+          "cacheReadTokens": {
+            "type": "integer"
+          },
+          "costUsd": {
+            "type": "number"
+          },
+          "latencyMs": {
+            "type": "integer"
+          },
+          "triage": {
+            "$ref": "#/components/schemas/Triage"
+          },
+          "hasProposal": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AgentRunList": {
+        "type": "object",
+        "required": ["runs", "pagination"],
+        "properties": {
+          "runs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentRunSummary"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        }
+      },
+      "AgentStepRecord": {
+        "type": "object",
+        "required": ["attempt", "index", "kind", "latencyMs"],
+        "description": "One model call or tool call. Short summaries only: never the ticket's own text.",
+        "properties": {
+          "attempt": {
+            "type": "integer"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["model", "tool"]
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "input": {
+            "type": "string"
+          },
+          "outputSummary": {
+            "type": "string"
+          },
+          "isError": {
+            "type": "boolean"
+          },
+          "dryRun": {
+            "type": "boolean"
+          },
+          "stopReason": {
+            "type": "string"
+          },
+          "inputTokens": {
+            "type": "integer"
+          },
+          "outputTokens": {
+            "type": "integer"
+          },
+          "latencyMs": {
+            "type": "integer"
+          }
+        }
+      },
+      "AgentRunDetail": {
+        "type": "object",
+        "required": [
+          "_id",
+          "ticketId",
+          "mode",
+          "model",
+          "promptVersion",
+          "outcome",
+          "attempts",
+          "steps",
+          "inputTokens",
+          "outputTokens",
+          "costUsd",
+          "latencyMs",
+          "hasProposal",
+          "startedAt"
+        ],
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "ticketId": {
+            "type": "string"
+          },
+          "ticketNumber": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["shadow", "assist", "auto"]
+          },
+          "model": {
+            "type": "string"
+          },
+          "promptVersion": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/AgentOutcome"
+          },
+          "outcomeReason": {
+            "type": "string",
+            "description": "Why it stopped, when it did not finish normally (`kill_switch`, `daily_cost_cap`, `requester_rate_limited`, `ticket_changed`, `budget_exceeded`, ...)."
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "steps": {
+            "type": "integer"
+          },
+          "inputTokens": {
+            "type": "integer"
+          },
+          "outputTokens": {
+            "type": "integer"
+          },
+          "cacheReadTokens": {
+            "type": "integer"
+          },
+          "costUsd": {
+            "type": "number"
+          },
+          "latencyMs": {
+            "type": "integer"
+          },
+          "triage": {
+            "$ref": "#/components/schemas/Triage"
+          },
+          "hasProposal": {
+            "type": "boolean"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/Proposal"
+          },
+          "escalationSummary": {
+            "type": "string"
+          },
+          "intendedActions": {
+            "type": "array",
+            "description": "What a shadow run would have done.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tool": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AgentRunDetailEnvelope": {
+        "type": "object",
+        "required": ["run", "steps"],
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/AgentRunDetail"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentStepRecord"
+            }
+          }
+        }
+      },
+      "AgentEscalation": {
+        "type": "object",
+        "required": ["ticketId", "assigneeGroup", "reason", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "ticketId": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{24}$",
+            "description": "Must be the ticket the agent's token names."
+          },
+          "assigneeGroup": {
+            "type": "string",
+            "enum": [
+              "Help Desk",
+              "Network Support",
+              "Security Team",
+              "Field Services",
+              "Access Management"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "security_incident",
+              "hardware_damage",
+              "account_access_change",
+              "out_of_kb_scope",
+              "low_confidence",
+              "ambiguous_or_multi_issue",
+              "distressed_requester",
+              "other"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1800
           }
         }
       }

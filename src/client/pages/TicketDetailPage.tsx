@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import ActivityTimeline from '../components/ActivityTimeline';
+import AgentProposalPanel from '../components/AgentProposalPanel';
 import Alert from '../components/Alert';
 import CommentThread from '../components/CommentThread';
 import { AssigneeInput, PrioritySelect, StatusSelect } from '../components/TicketControls';
@@ -73,7 +74,12 @@ export default function TicketDetailPage() {
         </div>
         <div>
           <dt>Category</dt>
-          <dd>{ticket.category || 'General Support'}</dd>
+          <dd>
+            {ticket.category || 'General Support'}
+            {ticket.agent?.triageSource === 'agent' ? (
+              <span className="ai-badge subtle">Triaged by the agent</span>
+            ) : null}
+          </dd>
         </div>
         <div>
           <dt>SLA</dt>
@@ -116,6 +122,8 @@ export default function TicketDetailPage() {
           </button>
         ) : null}
       </div>
+
+      {user.role !== 'user' ? <AgentProposalPanel ticket={ticket} /> : null}
 
       <CommentThread ticketId={ticket._id} role={user.role} />
 

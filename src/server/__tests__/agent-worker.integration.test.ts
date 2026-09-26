@@ -547,36 +547,6 @@ describe('stopping the agent', () => {
     }
   );
 
-  test('assist and auto are honoured as shadow until the agent can write, so nothing is changed', async () => {
-    await updateSettings({ defaultMode: 'auto', autoAllowlist: ['Email'] }, 'admin@demo.local');
-    const ticket = await createTicket({ category: 'Email' });
-    const before = await snapshot(ticket._id);
-
-    // Even a model that tries to post gets nowhere: posting is not enabled in a shadow run.
-    const attempt: ScriptStep[] = [
-      calls(read()),
-      calls(
-        toolUse('set_triage', triage(ticket._id, { category: 'Email' })),
-        toolUse('post_resolution', proposal(ticket._id))
-      ),
-      calls(
-        toolUse('escalate', {
-          ticket_id: ticket._id,
-          assignee_group: 'Help Desk',
-          reason: 'other',
-          summary: { reported: 'r', checked: 'c', ruled_out: 'n', why_escalating: 'w' },
-        })
-      ),
-    ];
-    const result = await work(models(attempt).factory);
-
-    expect(result.ran).toBe(1);
-    const run = await AgentRun.findOne().lean();
-    expect(run).toMatchObject({ mode: 'shadow', outcome: 'escalated' });
-    expect(run?.intendedActions.map((a) => a.tool)).not.toContain('post_resolution');
-    expect(await snapshot(ticket._id)).toEqual(before);
-  });
-
   test('stops at the daily cost cap, without asking the model, and says why', async () => {
     await updateSettings({ dailyCostCapUsd: 0.01 }, 'admin@demo.local');
     const ticket = await createTicket();

@@ -132,6 +132,20 @@ export function fakeApi(
         return found;
       });
     },
+    async setTriage(id, triage) {
+      return track(
+        'setTriage',
+        `${id} ${triage.category}/${triage.priority}/${triage.assigneeGroup}`,
+        () => {
+          if (id !== ticket._id) throw new ApiError(403, 'FORBIDDEN', 'forbidden');
+        }
+      );
+    },
+    async escalate(input) {
+      return track('escalate', `${input.ticketId} ${input.assigneeGroup} ${input.reason}`, () => {
+        if (input.ticketId !== ticket._id) throw new ApiError(403, 'FORBIDDEN', 'forbidden');
+      });
+    },
   };
 
   // Records the call, and applies a queued failure to the next call of that method.

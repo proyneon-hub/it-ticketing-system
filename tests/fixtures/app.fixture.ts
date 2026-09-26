@@ -1,5 +1,7 @@
 import { expect, test as base } from '@playwright/test';
+import { installAgentMocks, type AgentMockState } from '../e2e-mocked/agentSupport';
 import { installApiMocks } from '../e2e-mocked/support';
+import { AgentPage } from '../pages/AgentPage';
 import { AdminPage } from '../pages/AdminPage';
 import { LoginPage } from '../pages/LoginPage';
 import { TicketDetailPage } from '../pages/TicketDetailPage';
@@ -9,6 +11,8 @@ import { TrendsPage } from '../pages/TrendsPage';
 
 type AppFixtures = {
   mockedApi: void;
+  agentApi: AgentMockState;
+  agentPage: AgentPage;
   loginPage: LoginPage;
   dashboardPage: TicketDashboardPage;
   ticketFormPage: TicketFormPage;
@@ -25,6 +29,13 @@ export const test = base.extend<AppFixtures>({
     },
     { auto: true },
   ],
+  // Only for the tests that ask for it: the agent's endpoints, added on top of the mocked API.
+  agentApi: async ({ page, mockedApi: _mockedApi }, use) => {
+    await use(await installAgentMocks(page));
+  },
+  agentPage: async ({ page }, use) => {
+    await use(new AgentPage(page));
+  },
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },

@@ -127,6 +127,50 @@ describe('requests', () => {
   });
 });
 
+describe('the agent', () => {
+  it('reads a proposal, and posts a decision as JSON', async () => {
+    const api = await loadApi();
+    fetchMock.mockResolvedValue(json({ status: 'approved' }));
+
+    await api.fetchProposal('abc');
+    await api.approveProposal('abc');
+    await api.approveProposal('abc', { replyMarkdown: 'Edited reply that is long enough.' });
+    await api.rejectProposal('abc', { reason: 'Wrong article.' });
+
+    const calls = fetchMock.mock.calls;
+    expect(calls[0][0]).toBe('/api/tickets/abc/proposal');
+    expect(calls[0][1].method).toBeUndefined();
+    expect(calls[1][0]).toBe('/api/tickets/abc/proposal/approve');
+    expect(calls[1][1].method).toBe('POST');
+    expect(JSON.parse(calls[1][1].body)).toEqual({});
+    expect(JSON.parse(calls[2][1].body)).toEqual({
+      replyMarkdown: 'Edited reply that is long enough.',
+    });
+    expect(calls[3][0]).toBe('/api/tickets/abc/proposal/reject');
+    expect(JSON.parse(calls[3][1].body)).toEqual({ reason: 'Wrong article.' });
+  });
+
+  it('reads and changes the settings, and lists runs with only the filters that are set', async () => {
+    const api = await loadApi();
+    fetchMock.mockResolvedValue(json({}));
+
+    await api.fetchAgentSettings();
+    await api.updateAgentSettings({ killSwitch: true });
+    await api.fetchAgentRuns({ outcome: '', page: 2, limit: 15 });
+    await api.fetchAgentRuns({ outcome: 'error', page: 1, limit: 15 });
+    await api.fetchAgentRun('run1');
+
+    const calls = fetchMock.mock.calls;
+    expect(calls[0][0]).toBe('/api/agent/settings');
+    expect(calls[1][0]).toBe('/api/agent/settings');
+    expect(calls[1][1].method).toBe('PUT');
+    expect(JSON.parse(calls[1][1].body)).toEqual({ killSwitch: true });
+    expect(calls[2][0]).toBe('/api/agent/runs?page=2&limit=15');
+    expect(calls[3][0]).toBe('/api/agent/runs?outcome=error&page=1&limit=15');
+    expect(calls[4][0]).toBe('/api/agent/runs/run1');
+  });
+});
+
 describe('errors', () => {
   it('raises an ApiError with the message, status and request id from the body', async () => {
     const api = await loadApi();

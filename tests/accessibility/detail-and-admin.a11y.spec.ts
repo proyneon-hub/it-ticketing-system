@@ -1,3 +1,4 @@
+import { PROPOSAL_TICKET_ID, REPLY } from '../e2e-mocked/agentSupport';
 import { expect, test } from '../fixtures/app.fixture';
 import { scanForSeriousViolations } from '../utils/accessibility';
 
@@ -72,6 +73,56 @@ test(
     await trendsPage.showTable();
     await trendsPage.readDayFromKeyboard();
     await trendsPage.expectReadout();
+
+    const violations = await scanForSeriousViolations(page);
+
+    expect(violations, JSON.stringify(violations, null, 2)).toEqual([]);
+  }
+);
+
+test(
+  'the agent’s drafted reply panel has no serious or critical Axe violations',
+  { tag: ['@a11y'] },
+  async ({ page, loginPage, detailPage, agentApi: _agentApi, agentPage }) => {
+    await loginPage.loginAs('technician');
+    await page.goto(`/tickets/${PROPOSAL_TICKET_ID}`);
+    await detailPage.expectLoaded('TKT-0003');
+    await agentPage.expectProposalShown(REPLY);
+
+    const violations = await scanForSeriousViolations(page);
+
+    expect(violations, JSON.stringify(violations, null, 2)).toEqual([]);
+  }
+);
+
+test(
+  'the panel has no serious or critical Axe violations while a rejection is being written, and after a decision',
+  { tag: ['@a11y'] },
+  async ({ page, loginPage, detailPage, agentApi: _agentApi, agentPage }) => {
+    await loginPage.loginAs('technician');
+    await page.goto(`/tickets/${PROPOSAL_TICKET_ID}`);
+    await detailPage.expectLoaded('TKT-0003');
+
+    await page.getByRole('button', { name: 'Reject' }).click();
+    await expect(page.getByLabel(/Why\?/)).toBeVisible();
+    expect(await scanForSeriousViolations(page)).toEqual([]);
+
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await agentPage.approve();
+    await agentPage.expectAiComment(REPLY);
+    expect(await scanForSeriousViolations(page)).toEqual([]);
+  }
+);
+
+test(
+  'the agent admin page has no serious or critical Axe violations, with a run open',
+  { tag: ['@a11y'] },
+  async ({ page, loginPage, dashboardPage, agentApi: _agentApi, agentPage }) => {
+    await loginPage.loginAs('admin');
+    await dashboardPage.expectLoaded();
+    await agentPage.gotoAdmin();
+    await page.getByRole('button', { name: 'Details of the run for TKT-0003' }).click();
+    await expect(page.getByRole('region', { name: 'Run details' })).toBeVisible();
 
     const violations = await scanForSeriousViolations(page);
 

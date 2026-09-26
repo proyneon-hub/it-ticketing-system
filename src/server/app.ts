@@ -13,6 +13,7 @@ import auditRoutes from './routes/audit';
 import authRoutes, { demoAccountsRouter } from './routes/auth';
 import commentRoutes from './routes/comments';
 import jobRoutes from './routes/jobs';
+import agentRoutes from './routes/agent';
 import kbRoutes from './routes/kb';
 import metricsRoutes from './routes/metrics';
 import outboxRoutes from './routes/outbox';
@@ -94,6 +95,7 @@ app.use('/api', commentRoutes);
 app.use('/api', jobRoutes);
 app.use('/api', outboxRoutes);
 app.use('/api', kbRoutes);
+app.use('/api', agentRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   // The built React app. Relative to the working directory rather than this file,

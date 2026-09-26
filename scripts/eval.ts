@@ -39,7 +39,7 @@ import type { EvalReport, EvalSource } from './eval/types';
 
 // Runs the service desk agent against the golden tickets and scores it (docs/EVAL_HISTORY.md).
 //
-//   npm run eval                              live: the real model, all 50 tickets (needs ANTHROPIC_API_KEY)
+//   npm run eval                              live: the real model, all 108 tickets (needs ANTHROPIC_API_KEY)
 //   npm run eval -- --subset smoke            the small set that runs on every change
 //   npm run eval -- --offline                 no model: the oracle answers from the key, to check the evaluation itself
 //   npm run eval -- --record                  live, and save each run as a cassette in eval/cassettes

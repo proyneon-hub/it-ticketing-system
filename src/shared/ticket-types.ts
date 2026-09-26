@@ -1,3 +1,4 @@
+import type { CommentSource, ProposalStatus, TriageSource } from './agent-constants';
 import type { ActorRole, CommentVisibility, Priority, Role, Status } from './ticket-constants';
 
 // One entry in a ticket's history. Written by the service on every change.
@@ -13,6 +14,14 @@ export interface ActivityEntry {
   // True for entries about an internal note: staff see them, requesters do not.
   internal?: boolean | undefined;
   createdAt?: Date | undefined;
+}
+
+// What the service desk agent has done with a ticket. Absent on a ticket it never looked at.
+export interface TicketAgent {
+  // The run that last worked on it (a run's id, as a string).
+  lastRunId?: string | undefined;
+  triageSource?: TriageSource | undefined;
+  proposalStatus?: ProposalStatus | undefined;
 }
 
 // The fields stored for a ticket. Plain data: no database types, so the domain
@@ -34,6 +43,7 @@ export interface TicketAttrs {
   slaAtRiskAt?: Date;
   slaBreachedAt?: Date;
   activity: ActivityEntry[];
+  agent?: TicketAgent | undefined;
   // Only people create tickets (the agent is refused), so this is never 'agent'.
   createdByRole: Role;
   createdAt?: Date;
@@ -64,6 +74,9 @@ export interface Comment {
   body: string;
   visibility: CommentVisibility;
   author: { id: string; name: string; email: string; role: ActorRole };
+  // 'agent' for a reply the service desk agent drafted and a person approved.
+  source?: CommentSource | undefined;
+  approvedBy?: { id: string; name: string; email: string } | undefined;
   createdAt: string;
 }
 

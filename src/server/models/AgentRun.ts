@@ -46,6 +46,10 @@ export interface AgentRunAttrs {
   latencyMs: number;
   // The request that created the ticket, so one id links the ticket, the event and the run.
   requestId?: string;
+  // The ticket's number and requester, kept on the run so the runs can be listed, and one person's
+  // counted, without reading the tickets.
+  ticketNumber?: string;
+  requesterEmail?: string;
   triage?: { category: string; priority: string; assigneeGroup: string };
   proposal?: AgentProposal;
   escalationSummary?: string;
@@ -74,6 +78,8 @@ const agentRunSchema = new mongoose.Schema<AgentRunAttrs>({
   costUsd: { type: Number, default: 0, required: true },
   latencyMs: { type: Number, default: 0, required: true },
   requestId: { type: String, maxlength: 64 },
+  ticketNumber: { type: String, maxlength: 40 },
+  requesterEmail: { type: String, lowercase: true, maxlength: 254 },
   triage: {
     category: { type: String, maxlength: 80 },
     priority: { type: String, maxlength: 20 },
@@ -102,6 +108,8 @@ const agentRunSchema = new mongoose.Schema<AgentRunAttrs>({
 
 // A ticket's runs, newest first (the proposal panel and the admin view read this).
 agentRunSchema.index({ ticketId: 1, startedAt: -1 });
+// How many runs a requester's tickets have had since a given time (the per-requester limit).
+agentRunSchema.index({ requesterEmail: 1, startedAt: -1 });
 // What was spent since a given time: the daily cost cap sums over this.
 agentRunSchema.index({ startedAt: -1 });
 

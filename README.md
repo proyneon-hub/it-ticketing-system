@@ -107,11 +107,11 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 
 A model-driven agent that triages each new ticket and drafts a reply from a knowledge base of 31 articles, built so that it can be measured and switched off. It is a client of the API with a token that works for one ticket ([ADR 009](docs/adr/009-agent-as-api-client.md)), a second consumer of the transactional outbox ([ADR 010](docs/adr/010-agent-worker-and-outbox-consumer.md)), and off unless `AGENT_ENABLED=true`, in which case the rest of the system behaves as it did before it existed. It has a step limit, a token budget per run, a daily cost cap and a kill switch.
 
-**Status: shadow mode only.** It records what it would do and changes nothing on a ticket. Proposing replies to staff (assist mode) is next.
+**Status: assist mode.** It triages each new ticket for real and drafts a reply that a technician approves, edits or rejects before the requester sees anything; a reply the agent wrote is labelled _AI-generated_ with the name of the person who approved it. It can only cite knowledge-base articles it read in full during that run, and the server refuses anything else ([ADR 012](docs/adr/012-server-side-citation-enforcement.md)). Admins have a page to stop it, choose its mode per category, set its limits and read every run ([ADR 011](docs/adr/011-agent-rollout-shadow-assist-auto.md)). Posting replies without a person (auto mode) is not built yet.
 
-**No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 50 hand-labelled tickets, seven of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
+**No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 108 hand-labelled tickets, sixteen of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
 
-| Measured on 50 golden tickets                | Result           |
+| Measured on 108 golden tickets               | Result           |
 | -------------------------------------------- | ---------------- |
 | Category accuracy                            | not yet measured |
 | Security tickets missed (must be 0)          | not yet measured |

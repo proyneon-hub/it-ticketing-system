@@ -97,13 +97,13 @@ const evaluate = (
 
 describe('the oracle, which answers from the answer key', () => {
   test(
-    'scores every one of the 50 golden tickets perfectly, so each can be answered through the real tools',
+    'scores every one of the 108 golden tickets perfectly, so each can be answered through the real tools',
     async () => {
       const { results, truncated } = await evaluate();
       const s = summarize(results);
 
       expect(truncated).toBeUndefined();
-      expect(results).toHaveLength(50);
+      expect(results).toHaveLength(108);
       // Nothing failed, and nothing was missed.
       expect(s.errors).toBe(0);
       const wrong = results.filter(
@@ -119,12 +119,12 @@ describe('the oracle, which answers from the answer key', () => {
       expect(s.group.rate).toBe(1);
       expect(s.escalation.precision.rate).toBe(1);
       expect(s.escalation.recall.rate).toBe(1);
-      expect(s.security).toMatchObject({ n: 7, missed: 0, misrouted: 0 });
-      expect(s.citationValidity).toMatchObject({ n: 29, hits: 29 });
-      expect(s.injection).toMatchObject({ n: 2, violations: 0 });
+      expect(s.security).toMatchObject({ n: 16, missed: 0, misrouted: 0 });
+      expect(s.citationValidity).toMatchObject({ n: 62, hits: 62 });
+      expect(s.injection).toMatchObject({ n: 6, violations: 0 });
       // Each escalation gave its expected reason.
       const reasons = results.filter((r) => r.score.reasonOk !== null);
-      expect(reasons).toHaveLength(21);
+      expect(reasons).toHaveLength(46);
       expect(reasons.every((r) => r.score.reasonOk === true)).toBe(true);
     },
     BIG
@@ -169,7 +169,7 @@ describe('the oracle, which answers from the answer key', () => {
           measured: false,
           model: 'claude-sonnet-5',
           promptVersion: 'triage.v1',
-          dataset: { file: 'eval/tickets.jsonl', total: 50, run: 2, subset: 'full' },
+          dataset: { file: 'eval/tickets.jsonl', total: 108, run: 2, subset: 'full' },
         },
         summary: summarize(results),
         cases: [],
@@ -250,13 +250,13 @@ describe('two bad agents, to show that the scoring can tell good from bad', () =
       const { results } = await evaluate(golden, () => new ScriptedModelClient(alwaysEscalate()));
       const s = summarize(results);
 
-      // It escalated all 50, so 21 were right (escalations) and 29 were wrong (should have been resolved).
+      // It escalated all 108, so 46 were right (escalations) and 62 were wrong (should have been resolved).
       expect(s.errors).toBe(0);
-      expect(s.action).toMatchObject({ n: 50, hits: 21 });
+      expect(s.action).toMatchObject({ n: 108, hits: 46 });
       expect(s.escalation.recall.rate).toBe(1);
-      expect(s.escalation.precision).toMatchObject({ n: 50, hits: 21 });
-      // It never missed a security ticket, but sent every one of the 7 to the wrong group.
-      expect(s.security).toMatchObject({ n: 7, missed: 0, misrouted: 7 });
+      expect(s.escalation.precision).toMatchObject({ n: 108, hits: 46 });
+      // It never missed a security ticket, but sent every one of the 16 to the wrong group.
+      expect(s.security).toMatchObject({ n: 16, missed: 0, misrouted: 16 });
       // "General Support / medium" is right only where the answer key says exactly that.
       expect(s.category.rate).toBeLessThan(0.1);
       expect(s.citationValidity.n).toBe(0);
@@ -270,12 +270,12 @@ describe('two bad agents, to show that the scoring can tell good from bad', () =
       const { results } = await evaluate(golden, () => new ScriptedModelClient(alwaysProposeVpn()));
       const s = summarize(results);
 
-      // The check that must be zero is not: all 7 security tickets were "resolved" with the VPN article.
-      expect(s.security).toMatchObject({ n: 7, missed: 7 });
+      // The check that must be zero is not: all 16 security tickets were "resolved" with the VPN article.
+      expect(s.security).toMatchObject({ n: 16, missed: 16 });
       expect(s.security.recall.rate).toBe(0);
       expect(s.escalation.recall.rate).toBe(0);
-      // Only the VPN tickets were cited validly (T001, T048), of 50 proposals.
-      expect(s.citationValidity).toMatchObject({ n: 50, hits: 2 });
+      // Only the VPN tickets were cited validly (T001, T048), of 108 proposals.
+      expect(s.citationValidity).toMatchObject({ n: 108, hits: 2 });
     },
     BIG
   );
@@ -289,7 +289,7 @@ describe('the run', () => {
       const { results, truncated } = await evaluate(golden, undefined, { maxCostUsd: 0.02 });
       expect(results.length).toBeGreaterThan(0);
       expect(results.length).toBeLessThan(golden.length);
-      expect(truncated).toMatch(/Stopped after \d+ of 50 tickets/);
+      expect(truncated).toMatch(/Stopped after \d+ of 108 tickets/);
       expect(truncated).toContain('$0.02');
     },
     BIG
@@ -515,7 +515,7 @@ describe('how the harness runs a case', () => {
     async () => {
       const { results, truncated } = await evaluate(golden, undefined, { maxCostUsd: 0 });
       expect(results).toEqual([]);
-      expect(truncated).toMatch(/Stopped after 0 of 50/);
+      expect(truncated).toMatch(/Stopped after 0 of 108/);
     },
     BIG
   );

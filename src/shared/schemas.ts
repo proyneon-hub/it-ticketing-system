@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { agentEscalationReasons, agentModes, agentOutcomes } from './agent-constants';
 import {
   agentCategories,
+  assigneeGroups,
   auditTypes,
   commentVisibilities,
   outboxStatuses,
@@ -174,3 +176,70 @@ export const listOutboxQuerySchema = z.object({
   limit: integerParam('limit', { defaultValue: 25, min: 1, max: 100 }),
 });
 export type ListOutboxQuery = z.output<typeof listOutboxQuerySchema>;
+
+// --- The service desk agent -----------------------------------------------------
+
+// Approving a proposal: optionally with the reply a person has edited it to. Without one, the
+// agent's own reply is posted as it was.
+export const approveProposalSchema = z.object({
+  replyMarkdown: z
+    .string({ error: 'The reply must be text.' })
+    .trim()
+    .min(20, { error: 'The reply is too short to help.' })
+    .max(2000, { error: 'The reply must be 2000 characters or fewer.' })
+    .optional(),
+});
+export type ApproveProposalInput = z.output<typeof approveProposalSchema>;
+
+export const rejectProposalSchema = z.object({
+  reason: z
+    .string({ error: 'The reason must be text.' })
+    .trim()
+    .max(200, { error: 'The reason must be 200 characters or fewer.' })
+    .optional(),
+});
+export type RejectProposalInput = z.output<typeof rejectProposalSchema>;
+
+// What the agent sends when it hands a ticket to a person. The ticket id is the run's own; the API
+// refuses any other.
+export const agentEscalationSchema = z.object({
+  ticketId: z.string({ error: 'ticketId is required.' }).regex(/^[a-f\d]{24}$/i, {
+    error: 'Invalid ticket id.',
+  }),
+  assigneeGroup: z.enum(assigneeGroups, { error: 'Invalid assignee group.' }),
+  reason: z.enum(agentEscalationReasons, { error: 'Invalid escalation reason.' }),
+  summary: z
+    .string({ error: 'A summary is required.' })
+    .trim()
+    .min(1, { error: 'A summary is required.' })
+    .max(1800, { error: 'The summary must be 1800 characters or fewer.' }),
+});
+export type AgentEscalationInput = z.output<typeof agentEscalationSchema>;
+
+// Changing the agent's settings. Only what is sent changes, and nothing else is accepted.
+export const updateAgentSettingsSchema = z
+  .object({
+    killSwitch: z.boolean({ error: 'killSwitch must be true or false.' }),
+    defaultMode: z.enum(agentModes, { error: 'Invalid mode.' }),
+    modeByCategory: z.record(z.string(), z.enum(agentModes, { error: 'Invalid mode.' })),
+    autoAllowlist: z.array(z.string().max(80)).max(20),
+    dailyCostCapUsd: z
+      .number({ error: 'dailyCostCapUsd must be a number.' })
+      .min(0, { error: 'dailyCostCapUsd must be zero or more.' })
+      .max(10000, { error: 'dailyCostCapUsd is too large.' }),
+    perRequesterHourlyLimit: z
+      .number({ error: 'perRequesterHourlyLimit must be a number.' })
+      .int({ error: 'perRequesterHourlyLimit must be a whole number.' })
+      .min(0, { error: 'perRequesterHourlyLimit must be zero or more.' })
+      .max(1000, { error: 'perRequesterHourlyLimit is too large.' }),
+  })
+  .partial()
+  .strict();
+export type UpdateAgentSettingsInput = z.output<typeof updateAgentSettingsSchema>;
+
+export const listAgentRunsQuerySchema = z.object({
+  outcome: optionalFilter(z.enum(agentOutcomes, { error: 'Invalid outcome.' })),
+  page: integerParam('page', { defaultValue: 1, min: 1, max: 100000 }),
+  limit: integerParam('limit', { defaultValue: 25, min: 1, max: 100 }),
+});
+export type ListAgentRunsQuery = z.output<typeof listAgentRunsQuerySchema>;

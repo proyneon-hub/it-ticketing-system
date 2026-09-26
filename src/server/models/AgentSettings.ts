@@ -14,6 +14,8 @@ export interface AgentSettingsAttrs {
   // In auto mode, only these categories may be acted on without a person.
   autoAllowlist?: string[];
   dailyCostCapUsd?: number;
+  // The most runs one requester's tickets may have in an hour; past it, tickets wait for a person.
+  perRequesterHourlyLimit?: number;
   updatedAt?: Date;
   updatedBy?: string;
 }
@@ -28,6 +30,7 @@ const agentSettingsSchema = new mongoose.Schema<AgentSettingsAttrs>({
   modeByCategory: { type: mongoose.Schema.Types.Mixed },
   autoAllowlist: { type: [String], default: undefined },
   dailyCostCapUsd: { type: Number, min: 0 },
+  perRequesterHourlyLimit: { type: Number, min: 0 },
   updatedAt: { type: Date },
   updatedBy: { type: String, maxlength: 254 },
 });

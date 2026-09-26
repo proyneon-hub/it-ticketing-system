@@ -1,4 +1,11 @@
 import type {
+  AgentRunDetail,
+  AgentRunsPage,
+  AgentRunsQuery,
+  AgentSettings,
+  AgentSettingsChanges,
+  ProposalStatus,
+  ProposalView,
   AuditPage,
   AuditQuery,
   Comment,
@@ -304,4 +311,57 @@ export function fetchAudit(
   { signal }: Cancellable = {}
 ): Promise<AuditPage> {
   return request(`/audit${toQueryString(query)}`, { signal });
+}
+
+// --- The service desk agent ---------------------------------------------------------------
+
+export function fetchProposal(
+  ticketId: string,
+  { signal }: Cancellable = {}
+): Promise<{ proposal: ProposalView }> {
+  return request(`/tickets/${ticketId}/proposal`, { signal });
+}
+
+// Posts the agent's drafted reply, or `replyMarkdown` if a person has edited it.
+export function approveProposal(
+  ticketId: string,
+  edit: { replyMarkdown?: string } = {}
+): Promise<{ status: ProposalStatus }> {
+  return request(`/tickets/${ticketId}/proposal/approve`, {
+    method: 'POST',
+    body: JSON.stringify(edit),
+  });
+}
+
+export function rejectProposal(
+  ticketId: string,
+  decision: { reason?: string } = {}
+): Promise<{ status: ProposalStatus }> {
+  return request(`/tickets/${ticketId}/proposal/reject`, {
+    method: 'POST',
+    body: JSON.stringify(decision),
+  });
+}
+
+export function fetchAgentSettings({ signal }: Cancellable = {}): Promise<{
+  settings: AgentSettings;
+}> {
+  return request('/agent/settings', { signal });
+}
+
+export function updateAgentSettings(
+  changes: AgentSettingsChanges
+): Promise<{ settings: AgentSettings }> {
+  return request('/agent/settings', { method: 'PUT', body: JSON.stringify(changes) });
+}
+
+export function fetchAgentRuns(
+  query: Partial<AgentRunsQuery> = {},
+  { signal }: Cancellable = {}
+): Promise<AgentRunsPage> {
+  return request(`/agent/runs${toQueryString(query)}`, { signal });
+}
+
+export function fetchAgentRun(id: string, { signal }: Cancellable = {}): Promise<AgentRunDetail> {
+  return request(`/agent/runs/${id}`, { signal });
 }

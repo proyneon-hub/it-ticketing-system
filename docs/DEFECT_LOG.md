@@ -33,6 +33,7 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 | [DEF-025](#def-025-the-layer-rules-could-not-see-bare-or-dynamic-imports)                         | Medium   | The layer rules could not see bare or dynamic imports                          | Original test, found while adding the agent rule         |
 | [DEF-026](#def-026-knowledge-base-lookups-had-no-rate-limit)                                      | Medium   | Knowledge-base lookups had no rate limit                                       | Introduced and caught by CodeQL                          |
 | [DEF-027](#def-027-an-evaluation-run-left-the-agent-switched-on-in-its-process)                   | Low      | An evaluation run left the agent switched on in its process                    | Introduced and caught by mutation testing                |
+| [DEF-028](#def-028-an-agent-token-with-a-run-id-that-is-not-a-database-id-broke-its-first-edit)   | Low      | An agent token whose run id is not a database id broke the agent's edits       | Introduced and caught during the agent work              |
 
 ---
 
@@ -314,3 +315,12 @@ Severity follows impact: **High** breaks a security boundary or core workflow, *
 - **Fix:** the runner records the value once at the start and restores it when the whole run ends, including when it throws.
 - **Regression tests:** `puts the agent switch back as it found it`, for a value that was `false` and one that was unset.
 - **Why the tests missed it:** they checked the results of a run and not what it left behind.
+
+## DEF-028: An agent token with a run id that is not a database id broke its first edit
+
+- **Severity:** Low (a run id is always a database id when the worker mints the token; it needed a token made another way)
+- **Found by:** the assist-mode integration tests. The existing access test for the agent (whose token carries `run-1`) started answering `400` to the agent's triage edit.
+- **Root cause:** an edit by the agent now records the run on the ticket (`agent.lastRunId`, stored as a database id). Copying the token's run id in as it was made Mongoose reject the write, and the error surfaced as a validation failure of an edit that was otherwise valid.
+- **Fix:** the run id is only recorded if it looks like a database id, otherwise it is left out; the edit itself always goes through. The same check is made when the agent hands a ticket over.
+- **Regression tests:** `agentTicket.test.ts` (a run id that is `run-1`, empty, too short, too long or not hexadecimal is left out and the triage is still the agent's) and the existing agent access test, which is what found it.
+- **Why the tests missed it:** nothing had recorded the run on the ticket before, so nothing depended on what the id looked like.

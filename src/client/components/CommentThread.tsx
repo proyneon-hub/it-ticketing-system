@@ -7,6 +7,9 @@ import Alert from './Alert';
 
 const MAX_LENGTH = 2000;
 
+const roleLabel = (role: string): string =>
+  role === 'user' ? 'Requester' : role === 'agent' ? 'Agent' : 'Staff';
+
 // A ticket's conversation. Everyone signed in who can see the ticket reads and writes public
 // comments; staff can also leave internal notes. The server decides what each role receives,
 // so a requester's list simply never contains a note; the label below only explains it to staff.
@@ -56,7 +59,13 @@ export default function CommentThread({ ticketId, role }: { ticketId: string; ro
             >
               <div className="comment-meta">
                 <strong>{comment.author.name}</strong>
-                <span>{comment.author.role === 'user' ? 'Requester' : 'Staff'}</span>
+                <span>{roleLabel(comment.author.role)}</span>
+                {comment.source === 'agent' ? (
+                  <span className="ai-badge">
+                    AI-generated
+                    {comment.approvedBy ? ` · approved by ${comment.approvedBy.name}` : ''}
+                  </span>
+                ) : null}
                 {comment.visibility === 'internal' ? (
                   <span className="comment-badge">
                     Internal note · not visible to the requester

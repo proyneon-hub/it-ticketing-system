@@ -94,7 +94,7 @@ const resolutionFields = {
   reply_markdown: z
     .string()
     .min(20, 'The reply is too short to help.')
-    .max(4000)
+    .max(2000)
     .describe(
       'The reply to the requester: short, plain and kind, with the numbered steps taken from the cited article, and what to do if they do not work.'
     ),
@@ -160,10 +160,10 @@ const decisionFor = (
   },
 });
 
-// Writing to the ticket arrives with the assist mode. Until then every write is recorded by the
-// shadow mode and refused everywhere else.
+// Posting a reply without a person is the auto mode's, and it does not exist yet: the tool is defined
+// so the model is told about it, and refused everywhere it could run.
 const notYet = async (): Promise<never> => {
-  throw new ToolUnavailable('Changing tickets is not available yet.');
+  throw new ToolUnavailable('Posting replies without a person is not available yet.');
 };
 
 // What a ticket looks like in a list of similar tickets: enough to recognise it, without the
@@ -313,7 +313,14 @@ const setTriage = defineTool({
       assigneeGroup: input.assignee_group,
     };
   },
-  execute: notYet,
+  async execute(input, ctx) {
+    await ctx.api.setTriage(ctx.ticketId, {
+      category: input.category,
+      priority: input.priority,
+      assigneeGroup: input.assignee_group,
+    });
+    return { done: true, note: 'The triage is set on the ticket.' };
+  },
 });
 
 const proposeResolution = defineTool({
@@ -326,7 +333,14 @@ const proposeResolution = defineTool({
   check: checkResolution,
   summarize: summarizeResolution,
   decide: (input) => decisionFor('proposed', input),
-  execute: notYet,
+  // Nothing is sent anywhere: the draft is kept on the run, and the worker marks the ticket as waiting
+  // for a person once the run ends. Only a person's approval posts it.
+  async execute() {
+    return {
+      done: true,
+      note: 'Your draft is saved. A person will review it before the requester sees it.',
+    };
+  },
 });
 
 const postResolution = defineTool({
@@ -351,6 +365,19 @@ const postResolution = defineTool({
   decide: (input) => decisionFor('posted', input),
   execute: notYet,
 });
+
+// The four parts of an escalation, as lines a person reads without opening the ticket.
+const summaryLines = (summary: {
+  reported: string;
+  checked: string;
+  ruled_out: string;
+  why_escalating: string;
+}): string[] => [
+  `Reported: ${summary.reported}`,
+  `Checked: ${summary.checked}`,
+  `Ruled out: ${summary.ruled_out}`,
+  `Why escalating: ${summary.why_escalating}`,
+];
 
 const summaryField = (what: string) => z.string().min(1).max(500).describe(what);
 
@@ -383,15 +410,17 @@ const escalate = defineTool({
   decide: (input) => ({
     kind: 'escalated',
     escalationGroup: input.assignee_group,
-    escalationSummary: [
-      `Why: ${input.reason}`,
-      `Reported: ${input.summary.reported}`,
-      `Checked: ${input.summary.checked}`,
-      `Ruled out: ${input.summary.ruled_out}`,
-      `Why escalating: ${input.summary.why_escalating}`,
-    ].join('\n'),
+    escalationSummary: [`Why: ${input.reason}`, ...summaryLines(input.summary)].join('\n'),
   }),
-  execute: notYet,
+  async execute(input, ctx) {
+    await ctx.api.escalate({
+      ticketId: ctx.ticketId,
+      assigneeGroup: input.assignee_group,
+      reason: input.reason,
+      summary: summaryLines(input.summary).join('\n'),
+    });
+    return { done: true, note: 'The ticket has been handed to a person.' };
+  },
 });
 
 export const TOOLS: readonly ToolDefinition[] = [

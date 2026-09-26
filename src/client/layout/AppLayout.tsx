@@ -45,6 +45,7 @@ function MainNav() {
       {user.role !== 'user' ? <NavLink to="/trends">Trends</NavLink> : null}
       {user.role === 'admin' ? (
         <>
+          <NavLink to="/admin/agent">Agent</NavLink>
           <NavLink to="/admin/users">Users</NavLink>
           <NavLink to="/admin/audit">Audit log</NavLink>
         </>

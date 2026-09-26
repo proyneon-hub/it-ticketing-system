@@ -50,3 +50,17 @@ export type AgentConfidence = (typeof agentConfidences)[number];
 // never make a run look free (see domain/agentPricing.ts).
 export const agentModels = ['claude-haiku-4-5', 'claude-sonnet-5'] as const;
 export type AgentModel = (typeof agentModels)[number];
+
+// Where a ticket's proposed reply stands. none: the agent has not proposed one. pending: waiting for
+// a person. approved: posted as it was. edited: posted after a person changed it. rejected: a person
+// declined it, and the ticket carries on as any other.
+export const proposalStatuses = ['none', 'pending', 'approved', 'edited', 'rejected'] as const;
+export type ProposalStatus = (typeof proposalStatuses)[number];
+
+// Who last set a ticket's category, priority and group: the agent, or a person after it.
+export const triageSources = ['agent', 'human'] as const;
+export type TriageSource = (typeof triageSources)[number];
+
+// The comments the agent's replies become carry this, so the interface can say where they came from.
+export const commentSources = ['agent'] as const;
+export type CommentSource = (typeof commentSources)[number];

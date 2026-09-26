@@ -11,6 +11,7 @@ import type { RunContext, RunOutcome, RunState, StepRecord } from './types';
 //
 //   decided        the model called propose_resolution, post_resolution or escalate: the run ends
 //                  at once, without another model call
+//   ticket_changed a person edited the ticket while the agent worked on it: aborted at once
 //   kill_switch    the settings say stop: aborted before the next step
 //   daily_cost_cap today's spend has reached the cap: aborted before the next step
 //   budget_exceeded  the run used its token budget: escalated to a person
@@ -198,6 +199,7 @@ export async function runAgent(ctx: RunContext): Promise<RunOutcome> {
 
     // All results of one turn go back in a single message.
     const results: Anthropic.ToolResultBlockParam[] = [];
+    let stopBecause: string | undefined;
     for (const call of toolCalls) {
       const toolStarted = ctx.now();
       const outcome = await executeTool(call.name, call.input, toolContext);
@@ -216,8 +218,15 @@ export async function runAgent(ctx: RunContext): Promise<RunOutcome> {
         content: resultText(outcome.content),
         is_error: outcome.isError,
       });
+      if (outcome.abort) {
+        stopBecause = outcome.abort;
+        break;
+      }
     }
     messages.push({ role: 'user', content: results });
+
+    // A person is on the ticket: step back, without another word to the model.
+    if (stopBecause) return abort(stopBecause);
 
     // Decided: nothing more to ask the model, so no more is spent.
     if (state.decision) return finish(state.decision.kind);

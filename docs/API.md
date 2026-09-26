@@ -30,36 +30,44 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 
 ## Endpoints
 
-| Method | Endpoint                | Auth          | Purpose                                                           |
-| ------ | ----------------------- | ------------- | ----------------------------------------------------------------- |
-| GET    | `/health`               | Public        | Liveness: the process is up (no database)                         |
-| GET    | `/ready`                | Public        | Readiness: the database answers; version and commit               |
-| GET    | `/metrics`              | Metrics token | Prometheus metrics (off unless `METRICS_TOKEN` is set)            |
-| POST   | `/auth/login`           | Public        | Sign in; returns an access token and sets the `rt` cookie         |
-| POST   | `/auth/refresh`         | Cookie        | Trade the refresh cookie for a new access token                   |
-| POST   | `/auth/logout`          | Cookie        | End the session and clear the cookie                              |
-| GET    | `/auth/me`              | Bearer token  | Return the current session                                        |
-| GET    | `/auth/demo-users`      | Public        | List seeded demo accounts                                         |
-| GET    | `/tickets`              | Bearer token  | List tickets with filters, sorting and pagination                 |
-| GET    | `/tickets/export`       | Bearer token  | Export visible tickets as CSV                                     |
-| GET    | `/tickets/stats`        | Bearer token  | Dashboard, priority and SLA stats                                 |
-| GET    | `/tickets/stats/trends` | Bearer token  | Opened and resolved per day, mean time to resolve, SLA compliance |
-| GET    | `/tickets/:id`          | Bearer token  | Fetch one visible ticket                                          |
-| POST   | `/tickets`              | Bearer token  | Create a ticket                                                   |
-| PATCH  | `/tickets/:id`          | Bearer token  | Update ticket fields                                              |
-| DELETE | `/tickets/:id`          | Admin only    | Delete a ticket (and its comments)                                |
-| GET    | `/tickets/:id/comments` | Bearer token  | A ticket's comments, oldest first                                 |
-| POST   | `/tickets/:id/comments` | Bearer token  | Add a comment, or an internal note (staff only)                   |
-| GET    | `/kb`                   | Staff, agent  | Search the knowledge base (best match first, with a snippet)      |
-| GET    | `/kb/:id`               | Staff, agent  | Read one knowledge-base article                                   |
-| GET    | `/users`                | Admin only    | List users (never their password hashes)                          |
-| PATCH  | `/users/:id`            | Admin only    | Change a user's role                                              |
-| GET    | `/audit`                | Admin only    | Read the security audit log                                       |
-| GET    | `/outbox`               | Admin only    | List events waiting to be sent to the webhook                     |
-| POST   | `/outbox/:id/retry`     | Admin only    | Put a dead event back in the queue                                |
-| POST   | `/jobs/sla-escalation`  | Job secret    | Mark tickets that reached an SLA milestone                        |
-| POST   | `/jobs/outbox-delivery` | Job secret    | Send due events to the webhook                                    |
-| POST   | `/jobs/agent-runs`      | Job secret    | Run the service desk agent on new tickets                         |
+| Method | Endpoint                        | Auth          | Purpose                                                               |
+| ------ | ------------------------------- | ------------- | --------------------------------------------------------------------- |
+| GET    | `/health`                       | Public        | Liveness: the process is up (no database)                             |
+| GET    | `/ready`                        | Public        | Readiness: the database answers; version and commit                   |
+| GET    | `/metrics`                      | Metrics token | Prometheus metrics (off unless `METRICS_TOKEN` is set)                |
+| POST   | `/auth/login`                   | Public        | Sign in; returns an access token and sets the `rt` cookie             |
+| POST   | `/auth/refresh`                 | Cookie        | Trade the refresh cookie for a new access token                       |
+| POST   | `/auth/logout`                  | Cookie        | End the session and clear the cookie                                  |
+| GET    | `/auth/me`                      | Bearer token  | Return the current session                                            |
+| GET    | `/auth/demo-users`              | Public        | List seeded demo accounts                                             |
+| GET    | `/tickets`                      | Bearer token  | List tickets with filters, sorting and pagination                     |
+| GET    | `/tickets/export`               | Bearer token  | Export visible tickets as CSV                                         |
+| GET    | `/tickets/stats`                | Bearer token  | Dashboard, priority and SLA stats                                     |
+| GET    | `/tickets/stats/trends`         | Bearer token  | Opened and resolved per day, mean time to resolve, SLA compliance     |
+| GET    | `/tickets/:id`                  | Bearer token  | Fetch one visible ticket                                              |
+| POST   | `/tickets`                      | Bearer token  | Create a ticket                                                       |
+| PATCH  | `/tickets/:id`                  | Bearer token  | Update ticket fields                                                  |
+| DELETE | `/tickets/:id`                  | Admin only    | Delete a ticket (and its comments)                                    |
+| GET    | `/tickets/:id/comments`         | Bearer token  | A ticket's comments, oldest first                                     |
+| POST   | `/tickets/:id/comments`         | Bearer token  | Add a comment, or an internal note (staff only)                       |
+| GET    | `/kb`                           | Staff, agent  | Search the knowledge base (best match first, with a snippet)          |
+| GET    | `/kb/:id`                       | Staff, agent  | Read one knowledge-base article                                       |
+| GET    | `/tickets/:id/proposal`         | Staff         | The agent's drafted reply for a ticket, its sources and triage        |
+| POST   | `/tickets/:id/proposal/approve` | Staff         | Post the drafted reply (optionally edited) and wait for the requester |
+| POST   | `/tickets/:id/proposal/reject`  | Staff         | Decline the drafted reply; nothing is posted                          |
+| GET    | `/agent/settings`               | Staff         | What the agent may do, its limits and today's spend                   |
+| PUT    | `/agent/settings`               | Admin only    | Change the agent's mode, kill switch, allowlist and limits            |
+| GET    | `/agent/runs`                   | Admin only    | The agent's runs, newest first                                        |
+| GET    | `/agent/runs/:id`               | Admin only    | One run with its proposal and steps                                   |
+| POST   | `/agent/escalations`            | Agent only    | The agent hands its ticket to a person                                |
+| GET    | `/users`                        | Admin only    | List users (never their password hashes)                              |
+| PATCH  | `/users/:id`                    | Admin only    | Change a user's role                                                  |
+| GET    | `/audit`                        | Admin only    | Read the security audit log                                           |
+| GET    | `/outbox`                       | Admin only    | List events waiting to be sent to the webhook                         |
+| POST   | `/outbox/:id/retry`             | Admin only    | Put a dead event back in the queue                                    |
+| POST   | `/jobs/sla-escalation`          | Job secret    | Mark tickets that reached an SLA milestone                            |
+| POST   | `/jobs/outbox-delivery`         | Job secret    | Send due events to the webhook                                        |
+| POST   | `/jobs/agent-runs`              | Job secret    | Run the service desk agent on new tickets                             |
 
 ## Administration
 
@@ -69,7 +77,7 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 - A role change **ends the user's sessions**, so it applies at their next refresh. An access token already issued keeps its old role until it expires, at most 15 minutes.
 - Technicians and requesters get `403`, and the denial is recorded.
 
-`GET /audit` returns security events newest first, with `type` (one of `login_success`, `login_failure`, `logout`, `refresh_reuse`, `role_changed`, `ticket_deleted`, `permission_denied`), `page` and `limit`. Each event carries the actor, address, user agent, outcome, and the `requestId` that matches the server log. It is read-only: no endpoint writes or deletes events.
+`GET /audit` returns security events newest first, with `type` (one of `login_success`, `login_failure`, `logout`, `refresh_reuse`, `role_changed`, `ticket_deleted`, `permission_denied`, `outbox_retried`, `agent_settings_changed`), `page` and `limit`. Each event carries the actor, address, user agent, outcome, and the `requestId` that matches the server log. It is read-only: no endpoint writes or deletes events.
 
 ## Errors and request ids
 
@@ -200,9 +208,28 @@ A requester asking for someone else's ticket gets `404`, not `403`, so ids canno
 The agent is not a user account and cannot be given to anyone through `PATCH /users/:id`. It signs in with a token minted for one agent run: it lasts 10 minutes and names the single ticket the run is about. The API enforces that scope in the services, so no route can forget it.
 
 - It **can** read that ticket, comment on it (public replies and internal notes), and set its `category`, `priority` and `assignee`. It can also move it to `pending-user`, and to no other status.
+- It **hands the ticket to a person** with `POST /agent/escalations` (`ticketId`, `assigneeGroup`, `reason`, `summary`): the ticket is assigned to the group (an unassigned one becomes `assigned`) and the summary is left as an internal note, in one transaction. Only the agent's own token may call it, and only for its own ticket.
 - It **can** list tickets (to find similar ones or a requester's history, with `requesterEmail`), and search and read the knowledge base.
 - It **cannot** open, change or comment on any other ticket (`403`), create or delete tickets, read stats, trends or the CSV export, change a title or description, or touch `/users`, `/audit` or `/outbox`.
 - A token that claims the agent role but names no ticket is not a valid token (`401`).
+
+## Proposals: the agent's drafted replies
+
+In assist mode the agent does not reply to the requester. It saves a draft on its run, and the ticket says so: staff see `agent: { lastRunId, triageSource, proposalStatus }` on the ticket (a requester never receives `agent`, or the history entries about it).
+
+- `GET /tickets/:id/proposal` returns `{ proposal: { status, runId, proposal: { replyMarkdown, citedKbIds, confidence, reasoningSummary }, triage, citedArticles: [{ id, title }] } }`. `status` is `pending`, `approved`, `edited` or `rejected`. `404` when the agent proposed nothing for the ticket.
+- `POST /tickets/:id/proposal/approve` posts the reply as a public comment written by "Service Desk Agent", marked `source: "agent"` with `approvedBy` (the person), and moves the ticket to `pending-user`, in one transaction. A ticket that is already finished keeps its status. Send `{ "replyMarkdown": "..." }` (20 to 2000 characters) to post an edited reply; the response is `{ "status": "edited" }` if it differs from the draft, and `{ "status": "approved" }` otherwise. When the requester answers, the ticket goes back to `in-progress`.
+- `POST /tickets/:id/proposal/reject` posts nothing and leaves the ticket where it was. An optional `{ "reason": "..." }` (up to 200 characters) goes in the ticket's history.
+- Both decisions are `409` with code `NO_PENDING_PROPOSAL` if nothing is waiting, or if someone else decided first. Of two people deciding at the same moment exactly one succeeds.
+- All three are staff only: a requester or the agent itself gets `403`.
+
+## Agent settings and runs
+
+`GET /agent/settings` (staff) returns `{ settings: { killSwitch, defaultMode, modeByCategory, autoAllowlist, dailyCostCapUsd, perRequesterHourlyLimit, enabled, model, spentTodayUsd } }`. `enabled` says whether this deployment has the agent switched on and a key for the model; it is not changeable here.
+
+`PUT /agent/settings` (admin) changes only the fields sent (`killSwitch`, `defaultMode`, `modeByCategory`, `autoAllowlist`, `dailyCostCapUsd`, `perRequesterHourlyLimit`) and accepts nothing else. Categories must be ones the agent chooses from. The kill switch takes effect on the agent's very next step, and every change is audited as `agent_settings_changed`.
+
+`GET /agent/runs` (admin) lists runs newest first, filterable with `outcome`, paged with `page` and `limit`. `GET /agent/runs/:id` adds the proposal, the escalation summary and every step in order. Steps are short summaries; the ticket's own text is not repeated.
 
 ## Knowledge base
 

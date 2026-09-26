@@ -1,4 +1,8 @@
 import type {
+  AgentRunDetail,
+  AgentRunSummary,
+  AgentSettings,
+  ProposalView,
   Comment,
   DemoUser,
   Pagination,
@@ -119,4 +123,88 @@ export function deferred<T = unknown>() {
     reject = rej;
   });
   return { promise, resolve, reject };
+}
+
+export function makeProposal(overrides: Partial<ProposalView> = {}): ProposalView {
+  return {
+    status: 'pending',
+    runId: '665f0f40d5d4f541f8ef3001',
+    proposal: {
+      replyMarkdown: 'Reconnect the VPN, then restart your laptop if it still drops.',
+      citedKbIds: ['KB-006'],
+      confidence: 'high',
+      reasoningSummary: 'The article covers exactly this problem.',
+    },
+    triage: { category: 'Network', priority: 'high', assigneeGroup: 'Network Support' },
+    citedArticles: [{ id: 'KB-006', title: 'VPN keeps disconnecting' }],
+    ...overrides,
+  };
+}
+
+// A ticket the agent has drafted a reply for.
+export const withProposal = (status: 'pending' | 'approved' | 'edited' | 'rejected' = 'pending') =>
+  makeTicket({
+    agent: {
+      lastRunId: '665f0f40d5d4f541f8ef3001',
+      triageSource: 'agent',
+      proposalStatus: status,
+    },
+  });
+
+export function makeAgentSettings(overrides: Partial<AgentSettings> = {}): AgentSettings {
+  return {
+    killSwitch: false,
+    defaultMode: 'assist',
+    modeByCategory: {},
+    autoAllowlist: [],
+    dailyCostCapUsd: 1,
+    perRequesterHourlyLimit: 5,
+    enabled: true,
+    model: 'claude-sonnet-5',
+    spentTodayUsd: 0.0234,
+    ...overrides,
+  };
+}
+
+export function makeRun(overrides: Partial<AgentRunSummary> = {}): AgentRunSummary {
+  return {
+    _id: '665f0f40d5d4f541f8ef3001',
+    ticketId: '665f0f40d5d4f541f8ef1001',
+    ticketNumber: 'TKT-0001',
+    mode: 'assist',
+    model: 'claude-sonnet-5',
+    promptVersion: 'triage.v1',
+    outcome: 'proposed',
+    attempts: 1,
+    steps: 3,
+    inputTokens: 3000,
+    outputTokens: 300,
+    costUsd: 0.009,
+    latencyMs: 4200,
+    hasProposal: true,
+    startedAt: '2026-06-02T09:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function makeRunDetail(overrides: Partial<AgentRunDetail> = {}): AgentRunDetail {
+  return {
+    run: {
+      ...makeRun(),
+      triage: { category: 'Network', priority: 'high', assigneeGroup: 'Network Support' },
+      proposal: makeProposal().proposal,
+    },
+    steps: [
+      { attempt: 1, index: 0, kind: 'model', stopReason: 'tool_use', latencyMs: 900 },
+      {
+        attempt: 1,
+        index: 1,
+        kind: 'tool',
+        toolName: 'search_kb',
+        outputSummary: 'articles: KB-006',
+        latencyMs: 12,
+      },
+    ],
+    ...overrides,
+  };
 }

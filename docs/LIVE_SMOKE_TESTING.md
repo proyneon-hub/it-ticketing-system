@@ -15,6 +15,7 @@ It runs in two places:
 - The suite skips unless `LIVE_SMOKE_ENABLED=true` is set explicitly.
 - Tests that sign in also skip unless their `E2E_*` credentials are configured.
 - The ticket test creates one uniquely named `PW-LIVE-<timestamp>` record and deletes only that record in a `finally` block.
+- The agent test (`LIVE-AGENT-001`) raises a `PW-LIVE-AGENT-<timestamp>` ticket as the requester and waits up to 90 seconds for the agent to look at it. It **skips itself** unless the agent is switched on in that deployment (with a key), in assist mode and not stopped, so a deployment that has not turned the agent on is not a failure. It checks that a drafted reply is waiting for a person and that the requester's own view shows nothing of it, then deletes the ticket. It makes one real model call, about a cent.
 - Every other test is read-only.
 - Run it only against a resettable demo or non-production environment. The deployed site this project points at is a public demo with no real data; do not point the `live-smoke` job at a system that holds real tickets, because the ticket tests create and delete records.
 
