@@ -5,7 +5,7 @@
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fproyneon-hub.github.io%2Fit-ticketing-system%2Fcoverage.json)](https://proyneon-hub.github.io/it-ticketing-system/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 723 automated tests across six layers, a Dockerised stack with metrics, and the operational tooling a support team needs to trace a user's error to a log line.
+A role-based IT service desk with SLA tracking, built and tested the way a production service would be: a layered TypeScript/Express API on MongoDB, a TypeScript React client, an OpenAPI contract, 1,813 automated tests across six layers, a Dockerised stack with metrics, a model-driven triage agent that has a kill switch and an evaluation harness, and the operational tooling a support team needs to trace a user's error to a log line.
 
 **[Live demo](https://it-ticketing-system-pi.vercel.app/)** · **[API docs](https://it-ticketing-system-pi.vercel.app/api/docs)** · **[Test and coverage reports](https://proyneon-hub.github.io/it-ticketing-system/)** · **[Defect log](docs/DEFECT_LOG.md)** · **[Decision records](docs/adr)**
 
@@ -14,7 +14,7 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 ## What it does
 
 - **Three roles.** Requesters see and edit only their own tickets; technicians work the whole queue; admins also delete tickets, manage roles and read the audit log.
-- **Found by testing the deployed site, not the code.** Smoke-testing production for the first time found three failures that no local test could see, all on Vercel: an ES-module-only dependency that crashed the app on an older Node 22 (every route answered 500), most routes answering a platform 404, and the platform answering 412 to every saved edit ([DEF-020 to DEF-022](docs/DEFECT_LOG.md)). Each now has a guard: a CI step that loads the compiled app on Node 22.11, a routing check, and a live smoke suite that runs after every deploy.
+- **An AI triage agent.** It triages each new ticket and drafts a reply that cites knowledge-base articles; a technician approves, edits or rejects it before the requester sees anything ([the agent](#the-service-desk-agent)).
 - **A workflow the API enforces.** `open`, `assigned`, `in-progress`, `pending-user`, `resolved`, `closed`, with an explicit table of legal moves, an assignee rule and versioned edits.
 - **SLA tracking and escalation.** Every priority has a deadline. A scheduled job marks tickets that are close to or past it, and raises an overdue ticket's priority once.
 - **Comments and internal notes.** Staff can reply publicly or leave a staff-only note; a requester never receives one.
@@ -22,28 +22,28 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 - **Notifications.** Ticket events go to a Discord, Slack or JSON webhook through a transactional outbox.
 - **Search and export.** Ranked full-text search, filters, sorting, and a CSV export that streams.
 
-| Building software                                                                                          | Testing and quality                                                                                                           | Operating and supporting                                                                                                            |
-| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 723 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                                       |
-| Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 22 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))         | Prometheus metrics with a provisioned Grafana dashboard, liveness and readiness probes, a non-root Docker image with a health check |
-| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint, CodeQL and audit gate every pull request                                                           | A runbook, and an hourly check of the live site that opens an incident issue when it fails and closes it on recovery                |
-| Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                          | A staged pipeline that publishes the image and smoke-tests the deployed site; Dependabot; reports published to GitHub Pages         |
+| Building software                                                                                          | Testing and quality                                                                                                             | Operating and supporting                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| API split into routes, Zod validation, services and models, so business rules are testable on their own    | 1,813 tests in six layers, including API tests on a real (in-memory) MongoDB and a Docker Compose smoke run with nothing mocked | Every request has an id that appears in the response, the JSON logs and the error a user sees                                       |
+| Typed React client with real routes, cached server state and optimistic edits that roll back on a conflict | 29 real defects found, each pinned by a regression test that fails without the fix ([Defect log](docs/DEFECT_LOG.md))           | Prometheus metrics with a provisioned Grafana dashboard, liveness and readiness probes, a non-root Docker image with a health check |
+| OpenAPI 3.1 spec, served as interactive docs and enforced by contract tests                                | Coverage thresholds, lint, CodeQL and audit gate every pull request                                                             | A runbook, and an hourly check of the live site that opens an incident issue when it fails and closes it on recovery                |
+| Role-based access enforced in the API and in the database query, not just the UI                           | Playwright page objects, typed fixtures, three browsers and Axe accessibility checks                                            | A staged pipeline that publishes the image and smoke-tests the deployed site; Dependabot; reports published to GitHub Pages         |
 
 ## By the numbers
 
 Every figure comes from a run you can repeat; the source is in the last column.
 
-| What                     | Value                                                                                         | Source                                                                                        |
-| ------------------------ | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Automated tests          | 723 (443 API, 193 client, 42 mocked browser, 8 accessibility, 16 real-stack smoke, 21 pytest) | `npm run test:coverage`, `npm run test:e2e`, `pytest`                                         |
-| Browser runs per push    | 150 (126 regression and 24 Axe, in Chromium, Firefox and WebKit)                              | `npx playwright test --list`                                                                  |
-| Coverage (statements)    | 96.7% API, 93.6% client                                                                       | `npm run test:coverage`, thresholds enforced in CI                                            |
-| API operations           | 25, every one exercised against its OpenAPI schema                                            | `src/server/openapi.json`, contract test                                                      |
-| Defects found and fixed  | 22, each with a regression test                                                               | [DEFECT_LOG.md](docs/DEFECT_LOG.md)                                                           |
-| Search on 10,000 tickets | p50 68.5 ms to 9.2 ms, p95 112.6 ms to 14.4 ms after the switch to a text index               | [PERFORMANCE.md](docs/PERFORMANCE.md), raw k6 runs in `perf/`                                 |
-| Sign-in cost             | 85 ms at the median (argon2id), and it lowers overall throughput; not yet fixed               | [PERFORMANCE.md](docs/PERFORMANCE.md#final-run-after-authentication-transactions-and-metrics) |
-| Client bundle            | 676 kB, 193 kB gzipped (React 19, one chunk)                                                  | `npm run build`                                                                               |
-| Decision records         | 8                                                                                             | [docs/adr](docs/adr)                                                                          |
+| What                     | Value                                                                                              | Source                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Automated tests          | 1,813 (1,443 API, 268 client, 53 mocked browser, 11 accessibility, 17 real-stack smoke, 21 pytest) | `npm run test:coverage`, `npm run test:e2e`, `pytest`                                         |
+| Browser runs per push    | 192 (159 regression and 33 Axe, in Chromium, Firefox and WebKit)                                   | `npx playwright test --list`                                                                  |
+| Coverage (statements)    | 97.0% API, 94.5% client                                                                            | `npm run test:coverage`, thresholds enforced in CI                                            |
+| API operations           | 37, every one exercised against its OpenAPI schema                                                 | `src/server/openapi.json`, contract test                                                      |
+| Defects found and fixed  | 29, each with a regression test                                                                    | [DEFECT_LOG.md](docs/DEFECT_LOG.md)                                                           |
+| Search on 10,000 tickets | p50 68.5 ms to 9.2 ms, p95 112.6 ms to 14.4 ms after the switch to a text index                    | [PERFORMANCE.md](docs/PERFORMANCE.md), raw k6 runs in `perf/`                                 |
+| Sign-in cost             | 85 ms at the median (argon2id), and it lowers overall throughput; not yet fixed                    | [PERFORMANCE.md](docs/PERFORMANCE.md#final-run-after-authentication-transactions-and-metrics) |
+| Client bundle            | 717 kB, 198 kB gzipped (React 19, one chunk)                                                       | `npm run build`                                                                               |
+| Decision records         | 14                                                                                                 | [docs/adr](docs/adr)                                                                          |
 
 ## Try it
 
@@ -76,7 +76,7 @@ Open <http://localhost:5000> (API docs at `/api/docs`). To also run Prometheus a
 docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build --detach --wait
 ```
 
-The scheduled jobs and webhook notifications are off until you set `CRON_SECRET` and `WEBHOOK_URL` (see [`.env.example`](.env.example) and the [runbook](docs/RUNBOOK.md#scheduled-jobs-and-notifications)); `docker compose --profile worker up worker` runs them on a timer.
+The scheduled jobs and webhook notifications are off until you set `CRON_SECRET` and `WEBHOOK_URL` (see [`.env.example`](.env.example) and the [runbook](docs/RUNBOOK.md#scheduled-jobs-and-notifications)); `docker compose --profile worker up worker` runs them on a timer. The service desk agent is off until you set `AGENT_ENABLED=true` and `ANTHROPIC_API_KEY`; run `npm run kb:seed` to load its knowledge base (the settings are in [`.env.example`](.env.example), the steps in the [runbook](docs/RUNBOOK.md)).
 
 Without Docker (Node.js 24; `.nvmrc` is included):
 
@@ -89,7 +89,7 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 
 ## Engineering highlights
 
-- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-022](docs/DEFECT_LOG.md)).
+- **Bugs found by tests, not luck.** Running the new integration tests against the previous commit failed 16 of 44, exposing alphabetical priority sorting, an SLA filter that silently replaced the status filter, and a requester being able to reassign their own ticket into another user's queue ([DEF-001 to DEF-029](docs/DEFECT_LOG.md)).
 - **A bug every mock missed.** The real-stack smoke test caught a regression that all 66 mocked browser runs and 88 unit tests passed: sign-in returns the user as `id`, `/auth/me` returns `sub`, and the mocks had used `sub` for both. The fix, and the fidelity rule that came out of it, are in [ADR 002](docs/adr/002-layered-test-strategy.md).
 - **Found by testing the deployed site, not the code.** Smoke-testing production for the first time found three failures that no local test could see, all on Vercel: an ES-module-only dependency that crashed the app on an older Node 22 (every route answered 500), most routes answering a platform 404, and the platform answering 412 to every saved edit ([DEF-020 to DEF-022](docs/DEFECT_LOG.md)). Each now has a guard: a CI step that loads the compiled app on Node 22.11, a routing check, and a live smoke suite that runs after every deploy.
 - **A workflow the API enforces.** Status moves follow an explicit transition table shared by the API and the UI; an illegal move is a `409`. Edits are atomic and versioned: `If-Match` refuses a stale edit, and a lost race can never write an activity entry built from out-of-date data ([ADR 005](docs/adr/005-workflow-state-machine-and-optimistic-concurrency.md), [API notes](docs/API.md#editing-a-ticket-safely)).
@@ -121,7 +121,7 @@ A model-driven agent that triages each new ticket and drafts a reply from a know
 
 Measured without a model: the knowledge-base search puts the right article first for 88.7% of the 62 golden tickets an article resolves, and in the top five for 91.9% (by ticket title; the misses are listed in [`eval/results/retrieval.md`](eval/results/retrieval.md)).
 
-**What it does not do.** It does not reset passwords, change anyone's access, disable accounts, close or delete tickets, or touch any ticket but the one it was started for; those stay with people, and the API refuses the agent all of them. It never answers a Security ticket. It reads English well and other languages poorly (a ticket in French finds no article). It has never been run against a real model here, so there is no accuracy to quote yet.
+**What it does not do.** It does not reset passwords, change anyone's access, disable accounts, close or delete tickets, or touch any ticket but the one it was started for; those stay with people, and the API refuses the agent all of them. It never answers a Security ticket. It reads English well and other languages poorly (a ticket in French finds no article). It has not been scored against the golden tickets with a real model, so there is no accuracy to quote yet.
 
 ## Architecture
 
@@ -133,6 +133,10 @@ flowchart LR
   Routes --> Services[Services<br/>roles, workflow, SLA, activity]
   Services --> DB[(MongoDB<br/>replica set)]
   Services -->|same transaction| Outbox[(Outbox)]
+  Outbox -->|its own consumer| Agent[Agent worker<br/>one-ticket token]
+  Agent -->|same API as a technician| Routes
+  Agent --> KB[(Knowledge base)]
+  Agent --> Model[Claude API]
   Cron[Scheduler or worker<br/>every 30 min] -->|CRON_SECRET| Jobs[Jobs: SLA escalation,<br/>outbox delivery]
   Jobs --> DB
   Jobs -->|retries with backoff| Hook[Discord, Slack or JSON webhook]
@@ -150,19 +154,19 @@ flowchart LR
   Push --> CodeQL
 ```
 
-Details: [Architecture](docs/ARCHITECTURE.md) and the eight [decision records](docs/adr).
+Details: [Architecture](docs/ARCHITECTURE.md) and the fourteen [decision records](docs/adr).
 
 ## Test strategy
 
-| Layer                       | Tooling                                  | Tests              | What it proves                                                                  | Run                                  |
-| --------------------------- | ---------------------------------------- | ------------------ | ------------------------------------------------------------------------------- | ------------------------------------ |
-| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 443                | Scoping, filters, SLA rules, validation and persistence against a real database | `npm run test:api`                   |
-| Frontend unit and component | Vitest, Testing Library                  | 192                | Route guards, session restore, optimistic edits and rollback, components, `App` | `npm run test:unit`                  |
-| Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                           | `npm run test:api`                   |
-| Mocked browser regression   | Playwright, page objects, typed fixtures | 42 (126 runs)      | Workflows in Chromium, Firefox and WebKit                                       | `npm run test:e2e`                   |
-| Accessibility               | Playwright and Axe                       | 8 (24 runs)        | No serious or critical WCAG A/AA findings                                       | `npm run test:a11y`                  |
-| Real-stack smoke            | Playwright against Docker Compose        | 16                 | The production image, a real database and a real browser together               | `npm run test:smoke:live`            |
-| Support monitoring          | pytest                                   | 21                 | The Python health, sign-in, report and incident-issue tooling                   | `pytest` in `Support-Ops-Automation` |
+| Layer                       | Tooling                                  | Tests              | What it proves                                                                           | Run                                  |
+| --------------------------- | ---------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------ |
+| API unit and integration    | Vitest, Supertest, in-memory MongoDB     | 1,443              | Scoping, filters, SLA rules, validation, persistence, and the agent's evaluation scoring | `npm run test:api`                   |
+| Frontend unit and component | Vitest, Testing Library                  | 268                | Route guards, session restore, optimistic edits and rollback, components, `App`          | `npm run test:unit`                  |
+| Contract                    | Ajv against OpenAPI                      | (in the API suite) | Responses match the published schemas                                                    | `npm run test:api`                   |
+| Mocked browser regression   | Playwright, page objects, typed fixtures | 53 (159 runs)      | Workflows in Chromium, Firefox and WebKit                                                | `npm run test:e2e`                   |
+| Accessibility               | Playwright and Axe                       | 11 (33 runs)       | No serious or critical WCAG A/AA findings                                                | `npm run test:a11y`                  |
+| Real-stack smoke            | Playwright against Docker Compose        | 17                 | The production image, a real database and a real browser together                        | `npm run test:smoke:live`            |
+| Support monitoring          | pytest                                   | 21                 | The Python health, sign-in, report and incident-issue tooling                            | `pytest` in `Support-Ops-Automation` |
 
 `npm test` runs the API and frontend suites; `npm run test:coverage` adds coverage thresholds. The strategy, and why each layer exists, is in [ADR 002](docs/adr/002-layered-test-strategy.md); the map from requirement to test is in the [Test plan](docs/TEST_PLAN.md).
 
@@ -175,6 +179,7 @@ Details: [Architecture](docs/ARCHITECTURE.md) and the eight [decision records](d
 | `support-ops-*.yml`  | Tests the Python tooling, and every hour checks the live site, opening (then closing) an `incident` issue when it fails                                                                                                                                                                                                                       |
 | `codeql.yml`         | GitHub code scanning for JavaScript, TypeScript and Python                                                                                                                                                                                                                                                                                    |
 | `scheduled-jobs.yml` | Every 30 minutes calls the SLA escalation and notification jobs                                                                                                                                                                                                                                                                               |
+| `agent-eval.yml`     | On a change to the agent, its prompt, the knowledge base or the evaluation: checks the harness and measures knowledge-base search without a model, and runs the 15-ticket smoke set against the model when a key is set. Every Monday: the whole golden set, recorded so later changes can be scored for free                                 |
 
 Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 
@@ -182,10 +187,11 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 
 | Layer             | Tooling                                                                  |
 | ----------------- | ------------------------------------------------------------------------ |
-| Frontend          | React 18, TypeScript (strict), React Router, TanStack Query, Vite        |
+| Frontend          | React 19, TypeScript (strict), React Router, TanStack Query, Vite        |
 | Backend           | TypeScript (strict), Express, Mongoose, Zod, helmet, pino                |
 | Database          | MongoDB                                                                  |
 | Contract and docs | OpenAPI 3.1, Swagger UI, Ajv                                             |
+| Agent             | Anthropic Claude API, a knowledge base on MongoDB text search            |
 | Tests             | Vitest, Supertest, Testing Library, Playwright (TypeScript), Axe, pytest |
 | Delivery          | GitHub Actions, Docker, GHCR, Vercel                                     |
 | Quality           | ESLint, Prettier, Dependabot                                             |
@@ -195,7 +201,12 @@ Dependabot proposes weekly updates for npm, pip, GitHub Actions and Docker.
 ```text
 src/server/       TypeScript Express API: routes, validation, services, domain rules, models, middleware, OpenAPI spec
 src/client/       TypeScript React app: pages, components, queries, auth, API client, unit tests
+src/server/agent/ The service desk agent: loop, tools, prompt loading, model clients
 src/shared/       Typed constants used by both (statuses, transitions, priorities, SLA windows)
+kb/               The 31 knowledge-base articles the agent cites
+eval/             Golden tickets and evaluation results
+prompts/          Versioned agent prompts
+scripts/          Seed, worker, index sync, and the evaluation harness (scripts/eval)
 tests/            Playwright: mocked regression, accessibility, real-stack smoke, page objects
 Support-Ops-Automation/   Python health, sign-in and status-report tooling with its own tests
 api/              Vercel serverless adapters that load the compiled Express app
@@ -204,12 +215,12 @@ docs/             Architecture, decisions, test plan, runbook, security notes, d
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md) and the [decision records](docs/adr): [001 document model](docs/adr/001-ticket-document-model.md), [002 test strategy](docs/adr/002-layered-test-strategy.md), [003 operability](docs/adr/003-operability-and-request-tracing.md), [004 authentication](docs/adr/004-authentication-and-sessions.md), [005 workflow and concurrency](docs/adr/005-workflow-state-machine-and-optimistic-concurrency.md), [006 outbox](docs/adr/006-transactional-outbox.md), [007 text search](docs/adr/007-text-search.md), [008 TypeScript build and Vitest](docs/adr/008-typescript-build-and-vitest.md)
+- [Architecture](docs/ARCHITECTURE.md) and the [decision records](docs/adr): [001 document model](docs/adr/001-ticket-document-model.md), [002 test strategy](docs/adr/002-layered-test-strategy.md), [003 operability](docs/adr/003-operability-and-request-tracing.md), [004 authentication](docs/adr/004-authentication-and-sessions.md), [005 workflow and concurrency](docs/adr/005-workflow-state-machine-and-optimistic-concurrency.md), [006 outbox](docs/adr/006-transactional-outbox.md), [007 text search](docs/adr/007-text-search.md), [008 TypeScript build and Vitest](docs/adr/008-typescript-build-and-vitest.md), [009 agent as an API client](docs/adr/009-agent-as-api-client.md), [010 agent worker](docs/adr/010-agent-worker-and-outbox-consumer.md), [011 rollout modes](docs/adr/011-agent-rollout-shadow-assist-auto.md), [012 citation enforcement](docs/adr/012-server-side-citation-enforcement.md), [013 knowledge-base retrieval](docs/adr/013-knowledge-base-retrieval.md), [014 auto mode and the circuit breaker](docs/adr/014-auto-mode-and-the-circuit-breaker.md)
 - [API reference](docs/API.md) (interactive version at `/api/docs`)
 - [Test plan](docs/TEST_PLAN.md), [automated cases](docs/TEST_CASES.md), [QA architecture](docs/QA_ARCHITECTURE.md), [live smoke testing](docs/LIVE_SMOKE_TESTING.md), [accessibility testing](docs/ACCESSIBILITY_TESTING.md)
 - [Defect log](docs/DEFECT_LOG.md) and [performance](docs/PERFORMANCE.md)
 - [Runbook](docs/RUNBOOK.md), [deployment](DEPLOYMENT.md), [security notes](docs/SECURITY_NOTES.md), [GitHub secrets setup](docs/GITHUB_SECRETS_SETUP.md)
-- [Evaluation history](docs/EVAL_HISTORY.md) for the service desk agent, and [ADR 009](docs/adr/009-agent-as-api-client.md) and [ADR 010](docs/adr/010-agent-worker-and-outbox-consumer.md) for how it is built
+- [Evaluation history](docs/EVAL_HISTORY.md) for the service desk agent
 - [Support-Ops-Automation](Support-Ops-Automation/README.md)
 
 ## Security and limitations
