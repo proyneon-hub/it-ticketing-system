@@ -32,9 +32,14 @@ const actorOf = (user: TokenPayload): OutboxPayload['actor'] => ({
   role: user.role,
 });
 
-export const createdEvent = (ticket: TicketFacts, user: TokenPayload): OutboxDraft => ({
+export const createdEvent = (
+  ticket: TicketFacts,
+  user: TokenPayload,
+  requestId?: string
+): OutboxDraft => ({
   type: 'ticket.created',
   payload: { ticket: snapshot(ticket), actor: actorOf(user) },
+  ...(requestId ? { requestId } : {}),
 });
 
 // The events an edit produces, by comparing the ticket before and after it. Moving a

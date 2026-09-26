@@ -18,6 +18,8 @@ export interface OutboxEventAttrs {
   // webhook's (see the consumer filter in outboxRepository).
   consumer?: OutboxConsumer;
   payload: OutboxPayload;
+  // The request that caused the event (see the x-request-id header and the log line).
+  requestId?: string;
   status: OutboxStatus;
   // Delivery attempts made so far (counted when an event is claimed).
   attempts: number;
@@ -36,6 +38,7 @@ const outboxSchema = new mongoose.Schema<OutboxEventAttrs>({
   type: { type: String, enum: outboxEventTypes, required: true },
   consumer: { type: String, enum: outboxConsumers, default: 'webhook' },
   payload: { type: mongoose.Schema.Types.Mixed, required: true },
+  requestId: { type: String, maxlength: 64 },
   status: { type: String, enum: outboxStatuses, default: 'pending', required: true },
   attempts: { type: Number, default: 0, required: true },
   nextAttemptAt: { type: Date, required: true },

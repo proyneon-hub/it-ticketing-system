@@ -88,7 +88,10 @@ router.get(
 router.post(
   '/tickets',
   asyncHandler(async (req, res) => {
-    const ticket = await tickets.createTicket(actor(req), parseCreateTicket(req.body));
+    // The request id goes with the event, so the agent's run can be traced back to this request.
+    const ticket = await tickets.createTicket(actor(req), parseCreateTicket(req.body), {
+      requestId: auditContext(req).requestId,
+    });
     // Nudges the agent (on platforms with no worker loop); never delays or fails the response.
     kickAgent();
     res.status(201).json({ ticket });

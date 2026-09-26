@@ -158,7 +158,8 @@ export async function getTrends(
 
 export async function createTicket(
   user: TokenPayload,
-  payload: CreateTicketInput
+  payload: CreateTicketInput,
+  { requestId }: { requestId?: string | undefined } = {}
 ): Promise<TicketRecord> {
   assertHuman(user);
   const data: Partial<TicketAttrs> = {
@@ -175,7 +176,7 @@ export async function createTicket(
   // The ticket and the event that announces it commit together, or neither does.
   const created = await transaction(async (tx) => {
     const ticket = await repository.create(data, tx);
-    await outbox.record([createdEvent(ticket, user)], tx);
+    await outbox.record([createdEvent(ticket, user, requestId)], tx);
     return present(ticket, user);
   });
   ticketsCreated.inc();

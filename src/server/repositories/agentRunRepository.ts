@@ -197,3 +197,24 @@ export async function listRuns(
   ]);
   return { runs, total };
 }
+
+// Runs started since `since`, by mode, outcome and model. The metrics show the last day of them.
+export const countRunsSince = (
+  since: Date
+): Promise<{ _id: { mode: string; outcome: string; model: string }; count: number }[]> =>
+  AgentRun.aggregate([
+    { $match: { startedAt: { $gte: since } } },
+    {
+      $group: {
+        _id: { mode: '$mode', outcome: '$outcome', model: '$model' },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+// What runs started since `since` have cost, by model, in US dollars.
+export const costByModelSince = (since: Date): Promise<{ _id: string; total: number }[]> =>
+  AgentRun.aggregate([
+    { $match: { startedAt: { $gte: since } } },
+    { $group: { _id: '$model', total: { $sum: '$costUsd' } } },
+  ]);
