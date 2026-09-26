@@ -17,8 +17,10 @@ import type { CaseResult, CaseRun, GoldenTicket, Judgement } from './types';
 export interface RunOptions {
   tickets: GoldenTicket[];
   baseUrl: string;
-  // A technician's token, used to create tickets on behalf of a requester.
-  staffToken: string;
+  // A technician's token, used to create tickets on behalf of a requester. A function is asked for a
+  // token before each call, so a long run can keep signing in again: access tokens last 15 minutes and
+  // a full run takes longer than that.
+  staffToken: string | (() => string | Promise<string>);
   model: string;
   prompt?: Prompt;
   // The model for one run. Called once the ticket exists, so a replay can be given its id.
@@ -57,6 +59,9 @@ async function api<T>(
   return (await response.json()) as T;
 }
 
+const tokenOf = async (options: RunOptions): Promise<string> =>
+  typeof options.staffToken === 'function' ? options.staffToken() : options.staffToken;
+
 // The statuses an earlier ticket is walked through, following the workflow's own rules.
 const PATH_TO: Record<string, { status: string; assignee?: string }[]> = {
   open: [],
@@ -83,7 +88,7 @@ async function createCase(golden: GoldenTicket, options: RunOptions): Promise<st
   for (const earlier of golden.history ?? []) {
     const created = await api<{ ticket: { _id: string } }>(
       options.baseUrl,
-      options.staffToken,
+      await tokenOf(options),
       'POST',
       '/tickets',
       {
@@ -96,7 +101,7 @@ async function createCase(golden: GoldenTicket, options: RunOptions): Promise<st
     for (const step of PATH_TO[earlier.status] ?? []) {
       await api(
         options.baseUrl,
-        options.staffToken,
+        await tokenOf(options),
         'PATCH',
         `/tickets/${created.ticket._id}`,
         step
@@ -108,7 +113,7 @@ async function createCase(golden: GoldenTicket, options: RunOptions): Promise<st
   process.env.AGENT_ENABLED = 'true';
   const created = await api<{ ticket: { _id: string } }>(
     options.baseUrl,
-    options.staffToken,
+    await tokenOf(options),
     'POST',
     '/tickets',
     { title: golden.title, description: golden.description, ...requester }
