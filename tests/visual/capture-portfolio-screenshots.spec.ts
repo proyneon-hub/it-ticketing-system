@@ -1,4 +1,5 @@
-import { test } from '../fixtures/app.fixture';
+import { PROPOSAL_TICKET_ID, REPLY } from '../e2e-mocked/agentSupport';
+import { expect, test } from '../fixtures/app.fixture';
 import { testTickets } from '../test-data/tickets';
 
 test('captures role dashboards and workflow screenshots', async ({
@@ -34,4 +35,28 @@ test('captures role dashboards and workflow screenshots', async ({
   await loginPage.logout();
   await loginPage.loginAs('user');
   await page.screenshot({ path: testInfo.outputPath('user-dashboard.png'), fullPage: true });
+});
+
+// The service desk agent: the reply it drafted for a technician to approve, and the admin page
+// that runs it. Both come from the mocked agent API in tests/e2e-mocked/agentSupport.ts.
+test('captures the agent screenshots', async ({
+  page,
+  loginPage,
+  detailPage,
+  agentPage,
+  agentApi,
+}, testInfo) => {
+  await loginPage.loginAs('technician');
+  await page.goto(`/tickets/${PROPOSAL_TICKET_ID}`);
+  await detailPage.expectLoaded('TKT-0003');
+  await agentPage.expectProposalShown(REPLY);
+  await page.screenshot({ path: testInfo.outputPath('agent-proposal.png'), fullPage: true });
+
+  await loginPage.logout();
+  await loginPage.loginAs('admin');
+  await agentPage.gotoAdmin();
+  await expect(page.getByText('The agent is running.')).toBeVisible();
+  await expect(page.getByTestId('agent-run-row')).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath('agent-admin.png'), fullPage: true });
+  expect(agentApi.requests).toEqual([]);
 });
