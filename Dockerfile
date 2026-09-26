@@ -37,6 +37,8 @@ COPY --from=build --chown=node:node /app/dist-server ./dist-server
 COPY --from=build --chown=node:node /app/dist ./dist
 # The knowledge-base articles, for `node dist-server/scripts/seed-kb.js` (it reads ./kb).
 COPY --chown=node:node kb ./kb
+# The service desk agent's system prompt (it reads ./prompts).
+COPY --chown=node:node prompts ./prompts
 
 # Never run as root inside the container.
 USER node

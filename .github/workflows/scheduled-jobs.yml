@@ -2,7 +2,7 @@ name: Scheduled jobs
 
 # Vercel's free plan only runs a cron job once a day, so the half-hourly work is scheduled
 # here instead: mark tickets that reached an SLA milestone, then send any webhook
-# notifications that are due. Both endpoints are safe to call at any time and as often as you
+# notifications that are due, then let the service desk agent work on any new tickets. All three endpoints are safe to call at any time and as often as you
 # like (see docs/API.md).
 #
 # It does nothing until two repository secrets exist:
@@ -54,3 +54,13 @@ jobs:
           curl --fail-with-body --silent --show-error --max-time 60 --retry 2 --retry-delay 5 \
             -X POST -H "Authorization: Bearer $CRON_SECRET" \
             "${BASE_URL%/}/api/jobs/outbox-delivery"
+
+      # A backstop: new tickets normally start the agent themselves within moments. This picks up any
+      # that were missed, and retries runs that failed. It answers `configured: false` and does
+      # nothing while the agent is off, so it is safe to leave on.
+      - name: Run the service desk agent
+        if: steps.config.outputs.configured == 'true'
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 290 --retry 1 --retry-delay 5 \
+            -X POST -H "Authorization: Bearer $CRON_SECRET" \
+            "${BASE_URL%/}/api/jobs/agent-runs"

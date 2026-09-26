@@ -1,5 +1,8 @@
 import 'dotenv/config';
 import { connectToDatabase } from '../src/server/db';
+import AgentRun from '../src/server/models/AgentRun';
+import AgentSettings from '../src/server/models/AgentSettings';
+import AgentStep from '../src/server/models/AgentStep';
 import AuditEvent from '../src/server/models/AuditEvent';
 import Comment from '../src/server/models/Comment';
 import Counter from '../src/server/models/Counter';
@@ -18,7 +21,19 @@ import User from '../src/server/models/User';
 //
 //   npm run db:sync-indexes                   (from source)
 //   node dist-server/scripts/sync-indexes.js  (from a build or the Docker image)
-const MODELS = [Ticket, User, RefreshToken, AuditEvent, OutboxEvent, Comment, Counter, KbArticle];
+const MODELS = [
+  Ticket,
+  User,
+  RefreshToken,
+  AuditEvent,
+  OutboxEvent,
+  Comment,
+  Counter,
+  KbArticle,
+  AgentRun,
+  AgentStep,
+  AgentSettings,
+];
 
 async function main(): Promise<void> {
   await connectToDatabase();

@@ -2,10 +2,11 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { connectToDatabase } from '../src/server/db';
 import { logger } from '../src/server/logger';
+import { processAgentEvents } from '../src/server/services/agentWorkerService';
 import { deliverPending } from '../src/server/services/outboxService';
 import { escalate } from '../src/server/services/slaService';
 
-// The same two jobs the scheduler calls over HTTP (SLA escalation, outbox delivery), run on
+// The same three jobs the scheduler calls over HTTP (SLA escalation, outbox delivery, the agent), run on
 // a timer inside a container: `docker compose up worker`. Both are safe to run at the same
 // time as the API or another worker, so this can be scaled or restarted freely.
 
@@ -18,7 +19,13 @@ async function runOnce(): Promise<void> {
     await connectToDatabase();
     const escalation = await escalate();
     const delivery = await deliverPending();
-    logger.info({ escalation, delivery }, 'Worker run finished');
+    // The service desk agent (does nothing unless AGENT_ENABLED=true). A failure here is logged and
+    // must not stop the other two jobs from running next time.
+    const agent = await processAgentEvents().catch((error: unknown) => {
+      logger.error({ err: error }, 'Agent job failed');
+      return null;
+    });
+    logger.info({ escalation, delivery, agent }, 'Worker run finished');
   } catch (error) {
     // Keep going: a database blip or a failing webhook must not stop the loop.
     logger.error({ err: error }, 'Worker run failed');

@@ -11,7 +11,10 @@
     "src/server/**/*.ts",
     "src/shared/**/*.ts",
     "scripts/seed.ts",
-    "scripts/sync-indexes.ts"
+    "scripts/seed-kb.ts",
+    "scripts/sync-indexes.ts",
+    "scripts/eval.ts",
+    "scripts/eval/**/*.ts"
   ],
   "exclude": []
 }

@@ -54,7 +54,8 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.client.json && tsc -p tsconfig.playwright.json",
     "perf": "k6 run perf/load.js",
     "db:sync-indexes": "tsx scripts/sync-indexes.ts",
-    "kb:seed": "tsx scripts/seed-kb.ts"
+    "kb:seed": "tsx scripts/seed-kb.ts",
+    "eval": "tsx scripts/eval.ts"
   },
   "keywords": [
     "it-ticketing",
@@ -71,7 +72,9 @@
     "github-actions"
   ],
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "@tanstack/react-query": "^5.103.2",
+    "@vercel/functions": "^3.9.9",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

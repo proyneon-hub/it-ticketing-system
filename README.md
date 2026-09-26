@@ -94,6 +94,7 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 - **Found by testing the deployed site, not the code.** Smoke-testing production for the first time found three failures that no local test could see, all on Vercel: an ES-module-only dependency that crashed the app on an older Node 22 (every route answered 500), most routes answering a platform 404, and the platform answering 412 to every saved edit ([DEF-020 to DEF-022](docs/DEFECT_LOG.md)). Each now has a guard: a CI step that loads the compiled app on Node 22.11, a routing check, and a live smoke suite that runs after every deploy.
 - **A workflow the API enforces.** Status moves follow an explicit transition table shared by the API and the UI; an illegal move is a `409`. Edits are atomic and versioned: `If-Match` refuses a stale edit, and a lost race can never write an activity entry built from out-of-date data ([ADR 005](docs/adr/005-workflow-state-machine-and-optimistic-concurrency.md), [API notes](docs/API.md#editing-a-ticket-safely)).
 - **Measured, not claimed.** Replacing a regex search with a text index cut search from 68 ms to 9 ms (p50) and 113 ms to 14 ms (p95) on 10,000 tickets. The same document also records what got slower afterwards (real password hashing, transactions) and that the sign-in cost is not yet fixed ([PERFORMANCE.md](docs/PERFORMANCE.md), [ADR 007](docs/adr/007-text-search.md)).
+- **An agent that is fenced by the system, not the prompt.** The service desk agent may not import the database, calls the same API as a technician with a token for one ticket, and has hard limits on steps, tokens, spend and a kill switch ([ADR 009](docs/adr/009-agent-as-api-client.md)). Its evaluation harness is checked with a deliberately good and two deliberately bad stand-in agents, and mutation-tested, before any model is scored with it.
 - **Layers that are enforced.** Routes, services, a pure domain layer and a repository each have one job, and a test fails the build if a route touches the database or the domain imports a framework ([Architecture](docs/ARCHITECTURE.md#backend)).
 - **Sessions that survive theft attempts.** Refresh tokens are single use and rotate, so replaying a used one ends the whole session and is audited; two admins demoting each other at the same instant cannot leave the system with none (a test reproduces the failure when the guard is removed). The [threat model](docs/SECURITY_NOTES.md#threat-model) lists what is and is not covered ([ADR 004](docs/adr/004-authentication-and-sessions.md)).
 - **Notifications that cannot get out of step with the data.** A ticket change and the event announcing it are written in one MongoDB transaction and sent later by a worker that claims events atomically, retries with backoff and marks an event dead after six attempts; tests force each failure, including two workers racing and a rolled-back change ([ADR 006](docs/adr/006-transactional-outbox.md)).
@@ -101,6 +102,22 @@ npm run seed && npm run dev   # terminal 2: API and Vite, then open http://local
 - **Docs that cannot drift.** A contract test validates every real API response against the OpenAPI schemas and fails if an operation is added without being exercised; another compares the documented request bodies with the Zod schemas the API enforces; a third checks that the Grafana dashboard only queries metrics the API exports.
 - **Support-friendly by design.** A user sees `Reference: <id>`; `grep <id>` finds the request and, for a failure, its stack ([ADR 003](docs/adr/003-operability-and-request-tracing.md), [runbook](docs/RUNBOOK.md#tracing-a-user-reported-error)).
 - **Security that fits a demo honestly.** Helmet and a strict CSP, failed-login rate limiting that never locks out demo visitors, CSV formula neutralisation, and a plain list of what is not production-grade ([Security notes](docs/SECURITY_NOTES.md)).
+
+## The service desk agent
+
+A model-driven agent that triages each new ticket and drafts a reply from a knowledge base of 31 articles, built so that it can be measured and switched off. It is a client of the API with a token that works for one ticket ([ADR 009](docs/adr/009-agent-as-api-client.md)), a second consumer of the transactional outbox ([ADR 010](docs/adr/010-agent-worker-and-outbox-consumer.md)), and off unless `AGENT_ENABLED=true`, in which case the rest of the system behaves as it did before it existed. It has a step limit, a token budget per run, a daily cost cap and a kill switch.
+
+**Status: shadow mode only.** It records what it would do and changes nothing on a ticket. Proposing replies to staff (assist mode) is next.
+
+**No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 50 hand-labelled tickets, seven of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
+
+| Measured on 50 golden tickets                | Result           |
+| -------------------------------------------- | ---------------- |
+| Category accuracy                            | not yet measured |
+| Security tickets missed (must be 0)          | not yet measured |
+| Citation validity                            | not yet measured |
+| Injection tickets with no out-of-policy call | not yet measured |
+| Median cost per ticket                       | not yet measured |
 
 ## Architecture
 
@@ -188,6 +205,7 @@ docs/             Architecture, decisions, test plan, runbook, security notes, d
 - [Test plan](docs/TEST_PLAN.md), [automated cases](docs/TEST_CASES.md), [QA architecture](docs/QA_ARCHITECTURE.md), [live smoke testing](docs/LIVE_SMOKE_TESTING.md), [accessibility testing](docs/ACCESSIBILITY_TESTING.md)
 - [Defect log](docs/DEFECT_LOG.md) and [performance](docs/PERFORMANCE.md)
 - [Runbook](docs/RUNBOOK.md), [deployment](DEPLOYMENT.md), [security notes](docs/SECURITY_NOTES.md), [GitHub secrets setup](docs/GITHUB_SECRETS_SETUP.md)
+- [Evaluation history](docs/EVAL_HISTORY.md) for the service desk agent, and [ADR 009](docs/adr/009-agent-as-api-client.md) and [ADR 010](docs/adr/010-agent-worker-and-outbox-consumer.md) for how it is built
 - [Support-Ops-Automation](Support-Ops-Automation/README.md)
 
 ## Security and limitations

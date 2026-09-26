@@ -4,6 +4,7 @@ import { pipeline } from 'stream/promises';
 import asyncHandler from '../asyncHandler';
 import { requireAuth, requireRole } from '../auth';
 import { actorOf as actor, auditContext } from '../http';
+import { kickAgent } from '../services/agentKickService';
 import { recordAudit } from '../services/auditService';
 import * as tickets from '../services/ticketService';
 import {
@@ -88,6 +89,8 @@ router.post(
   '/tickets',
   asyncHandler(async (req, res) => {
     const ticket = await tickets.createTicket(actor(req), parseCreateTicket(req.body));
+    // Nudges the agent (on platforms with no worker loop); never delays or fails the response.
+    kickAgent();
     res.status(201).json({ ticket });
   })
 );

@@ -17,3 +17,6 @@ yarn-debug.log*
 yarn-error.log*
 dev-server*.log
 perf/results/latest.json
+
+# Results from the offline oracle: they check the evaluation and measure no model, so they are not kept.
+eval/results/offline/

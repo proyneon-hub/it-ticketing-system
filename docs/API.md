@@ -59,6 +59,7 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 | POST   | `/outbox/:id/retry`     | Admin only    | Put a dead event back in the queue                                |
 | POST   | `/jobs/sla-escalation`  | Job secret    | Mark tickets that reached an SLA milestone                        |
 | POST   | `/jobs/outbox-delivery` | Job secret    | Send due events to the webhook                                    |
+| POST   | `/jobs/agent-runs`      | Job secret    | Run the service desk agent on new tickets                         |
 
 ## Administration
 
@@ -175,6 +176,7 @@ Every ticket carries a version, `__v`, that increases by one on each update. `PA
 Two scheduled jobs, called with `Authorization: Bearer <CRON_SECRET>` (not a user token):
 
 - `POST /jobs/sla-escalation` looks at unresolved tickets. One **past its deadline** gets `slaBreachedAt` and its priority raised one step (an urgent ticket is only marked); one **within 24 hours** of its deadline gets `slaAtRiskAt`. Each step writes a history entry by `SLA automation` (`actorRole: "system"`) and bumps the ticket version, and happens once per ticket: the markers make a second run change nothing. The deadline (`dueAt`) is deliberately **not** recomputed, so a breached ticket keeps showing how late it is; this is the one exception to "a priority change resets the deadline". Response: `{ "breached": 1, "atRisk": 2, "more": false }`.
+- `POST /jobs/agent-runs` works through the events the service desk agent listens for (new tickets), one run each. Response: `{ "configured": true, "ran": 1, "skipped": 0, "failed": 0, "more": false }`; `configured: false` with a `reason` (`disabled`, `no_api_key` or `bad_model`) means it did nothing. A ticket version is run at most once, and every path leaves the ticket with people.
 - `POST /jobs/outbox-delivery` sends due events to `WEBHOOK_URL`. Response: `{ "configured": true, "delivered": 3, "retried": 0, "dead": 0 }`; `configured: false` means no webhook is set and nothing was done.
 
 The events are `ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ticket.comment_added`, `ticket.sla_at_risk` and `ticket.sla_breached`. Each is recorded in the same transaction as the change, sent at least once, and retried with exponential backoff (about 30 s, 1, 2, 4 and 8 minutes) up to six attempts, then marked `dead`. Statuses: `pending`, `sending`, `delivered`, `dead`. Delivered events are removed after 14 days (`OUTBOX_RETENTION_DAYS`); dead ones stay until an admin retries them (`POST /outbox/:id/retry`). With no `WEBHOOK_URL`, nothing is recorded or sent.
