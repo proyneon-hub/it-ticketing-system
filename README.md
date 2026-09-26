@@ -109,6 +109,10 @@ A model-driven agent that triages each new ticket and drafts a reply from a know
 
 **Status: assist mode in production, auto mode built.** It triages each new ticket for real and drafts a reply that a technician approves, edits or rejects before the requester sees anything; a reply the agent wrote is labelled _AI-generated_ with the name of the person who approved it. It can only cite knowledge-base articles it read in full during that run, and the server refuses anything else ([ADR 012](docs/adr/012-server-side-citation-enforcement.md)). Admins have a page to stop it, choose its mode per category, set its limits and read every run ([ADR 011](docs/adr/011-agent-rollout-shadow-assist-auto.md)). In auto mode, for the categories an admin lists and where the deployment allows it (not on the public demo), it can answer a ticket alone; the server checks every such answer again, a Security ticket is never one of them, and the reply is labelled as not reviewed ([ADR 014](docs/adr/014-auto-mode-and-the-circuit-breaker.md)). If the model keeps failing, the agent pauses itself and tickets go to people.
 
+![A technician reading the reply the agent drafted, with its confidence, the article it is based on, and Approve and Reject](docs/screenshots/agent-proposal.png)
+
+![The admin page for the agent: kill switch, mode per category, spend against the daily cap, and every run](docs/screenshots/agent-admin.png)
+
 **No model has been measured yet**, so the table below is empty on purpose. The evaluation (`npm run eval`: 108 hand-labelled tickets, sixteen of them security incidents) is built and its scoring is tested; the numbers arrive with the first live run and are added to [docs/EVAL_HISTORY.md](docs/EVAL_HISTORY.md) by the command, never by hand.
 
 | Measured on 108 golden tickets               | Result           |
