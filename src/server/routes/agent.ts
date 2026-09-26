@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
 import asyncHandler from '../asyncHandler';
 import { requireAuth, requireRole } from '../auth';
 import { actorOf as actor, auditContext } from '../http';
+import { agentIpRateLimitOptions, agentRateLimitOptions } from '../middleware/security';
 import * as admin from '../services/agentAdminService';
 import { escalateTicket } from '../services/agentEscalationService';
 import { postResolution } from '../services/agentResolutionService';
@@ -21,7 +23,13 @@ import * as proposals from '../services/proposalService';
 // only translate HTTP; the rules are in the services (docs/adr/011).
 const router = Router();
 
-router.use('/agent', requireAuth);
+// Two limits: a coarse one by address before anyone is authenticated, then one for each caller (an
+// agent run counts on its own). They cover the agent's routes and the decisions on its proposals.
+const ipLimiter = rateLimit(agentIpRateLimitOptions());
+const callerLimiter = rateLimit(agentRateLimitOptions());
+
+router.use('/agent', ipLimiter, requireAuth, callerLimiter);
+router.use('/tickets/:id/proposal', ipLimiter, requireAuth, callerLimiter);
 
 router.get(
   '/agent/settings',
@@ -94,7 +102,6 @@ router.post(
 
 router.get(
   '/tickets/:id/proposal',
-  requireAuth,
   asyncHandler(async (req, res) => {
     res.json({ proposal: await proposals.getProposal(actor(req), String(req.params.id)) });
   })
@@ -102,7 +109,6 @@ router.get(
 
 router.post(
   '/tickets/:id/proposal/approve',
-  requireAuth,
   asyncHandler(async (req, res) => {
     res.json(
       await proposals.approveProposal(
@@ -116,7 +122,6 @@ router.post(
 
 router.post(
   '/tickets/:id/proposal/reject',
-  requireAuth,
   asyncHandler(async (req, res) => {
     res.json(
       await proposals.rejectProposal(

@@ -105,3 +105,52 @@ export function kbIpRateLimitOptions(): Partial<Options> {
     },
   };
 }
+
+// The agent's own routes (settings, runs, handover, answers) and the decisions on its proposals.
+// Each does real work (a database read or a transaction), and a person's or an agent run's runaway
+// client must not be able to hammer them. Counted per caller, and per agent run on its own, like the
+// knowledge base. The options only; routes/agent.ts calls rateLimit() with them.
+export function agentRateLimitOptions(): Partial<Options> {
+  return {
+    windowMs: Number(process.env.AGENT_API_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+    limit: () => Number(process.env.AGENT_API_RATE_LIMIT_MAX) || 120,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    keyGenerator: (req) =>
+      req.user
+        ? req.user.runId
+          ? `run:${req.user.runId}`
+          : `user:${req.user.sub}`
+        : ipKeyGenerator(req.ip ?? ''),
+    // Tests make many requests; they opt in by setting AGENT_API_RATE_LIMIT_MAX.
+    skip: () => process.env.NODE_ENV === 'test' && !process.env.AGENT_API_RATE_LIMIT_MAX,
+    handler: (req, res) => {
+      res.status(429).json({
+        message: 'Too many requests. Try again shortly.',
+        code: 'RATE_LIMITED',
+        requestId: req.id,
+      });
+    },
+  };
+}
+
+// A coarse limit by address, in front of authentication, far above the per-caller limit (an address
+// can be a whole office, or the server's own address when the agent calls back), so it only stops a
+// flood before it is known who is asking.
+export function agentIpRateLimitOptions(): Partial<Options> {
+  return {
+    windowMs: Number(process.env.AGENT_API_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+    limit: () => Number(process.env.AGENT_API_IP_RATE_LIMIT_MAX) || 600,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    keyGenerator: (req) => ipKeyGenerator(req.ip ?? ''),
+    skip: () => process.env.NODE_ENV === 'test' && !process.env.AGENT_API_IP_RATE_LIMIT_MAX,
+    handler: (req, res) => {
+      res.status(429).json({
+        message: 'Too many requests. Try again shortly.',
+        code: 'RATE_LIMITED',
+        requestId: req.id,
+      });
+    },
+  };
+}
