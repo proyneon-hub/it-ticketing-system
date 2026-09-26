@@ -2,7 +2,7 @@
 
 # Stage 1: build the React frontend. Needs the dev dependencies (Vite), which
 # never reach the final image.
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -15,7 +15,7 @@ RUN npm run build
 
 # Stage 2: production dependencies only, so the runtime image carries no test
 # runners, linters or browsers.
-FROM node:24-alpine AS prod-deps
+FROM node:26-alpine AS prod-deps
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
@@ -23,7 +23,7 @@ RUN npm ci --omit=dev
 
 # Stage 3: the image that runs. Express serves the API and the built frontend
 # from one origin.
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=5000
