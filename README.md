@@ -15,7 +15,7 @@ A role-based IT service desk with SLA tracking, built and tested the way a produ
 
 - **Three roles.** Requesters see and edit only their own tickets; technicians work the whole queue; admins also delete tickets, manage roles and read the audit log.
 - **Found by testing the deployed site, not the code.** Smoke-testing production for the first time found three failures that no local test could see, all on Vercel: an ES-module-only dependency that crashed the app on an older Node 22 (every route answered 500), most routes answering a platform 404, and the platform answering 412 to every saved edit ([DEF-020 to DEF-022](docs/DEFECT_LOG.md)). Each now has a guard: a CI step that loads the compiled app on Node 22.11, a routing check, and a live smoke suite that runs after every deploy.
-- **A workflow the API enforces.** `open`, `assigned`, `in-progress`, `resolved`, `closed`, with an explicit table of legal moves, an assignee rule and versioned edits.
+- **A workflow the API enforces.** `open`, `assigned`, `in-progress`, `pending-user`, `resolved`, `closed`, with an explicit table of legal moves, an assignee rule and versioned edits.
 - **SLA tracking and escalation.** Every priority has a deadline. A scheduled job marks tickets that are close to or past it, and raises an overdue ticket's priority once.
 - **Comments and internal notes.** Staff can reply publicly or leave a staff-only note; a requester never receives one.
 - **Trends.** Opened and resolved per day, mean time to resolve and SLA compliance, in the viewer's time zone.

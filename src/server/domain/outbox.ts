@@ -1,5 +1,9 @@
 import type { TokenPayload } from '../auth';
-import type { CommentVisibility, OutboxEventType } from '../../shared/ticket-constants';
+import {
+  agentEventTypes,
+  type CommentVisibility,
+  type OutboxEventType,
+} from '../../shared/ticket-constants';
 import type { OutboxDraft, OutboxPayload } from '../../shared/outbox-types';
 import type { TicketAttrs } from '../../shared/ticket-types';
 
@@ -85,6 +89,24 @@ export const slaEvent = (
   type: kind === 'breached' ? 'ticket.sla_breached' : 'ticket.sla_at_risk',
   payload: { ticket: snapshot(ticket), actor: null, ...(change ? { change } : {}) },
 });
+
+// --- Routing ----------------------------------------------------------------------
+
+// Gives each event to the consumers that want it. The webhook takes every event when it is
+// configured; the agent takes only the events it acts on, when it is enabled. An event two
+// consumers want is written twice, one copy each, so they claim, retry and finish
+// independently: a failing webhook cannot hold up the agent, and the reverse.
+export function withConsumers(
+  drafts: OutboxDraft[],
+  enabled: { webhook: boolean; agent: boolean }
+): OutboxDraft[] {
+  return drafts.flatMap((draft): OutboxDraft[] => [
+    ...(enabled.webhook ? [{ ...draft, consumer: 'webhook' as const }] : []),
+    ...(enabled.agent && (agentEventTypes as readonly string[]).includes(draft.type)
+      ? [{ ...draft, consumer: 'agent' as const }]
+      : []),
+  ]);
+}
 
 // --- Retrying ---------------------------------------------------------------------
 

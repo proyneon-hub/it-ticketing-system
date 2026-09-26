@@ -5,9 +5,17 @@ import Ajv2020 from 'ajv/dist/2020';
 import addFormats from 'ajv-formats';
 import mongoose from 'mongoose';
 import request from 'supertest';
-import { priorities, roles, slaFilters, sortFields, statuses } from '../../shared/ticket-constants';
+import {
+  agentCategories,
+  priorities,
+  roles,
+  slaFilters,
+  sortFields,
+  statuses,
+} from '../../shared/ticket-constants';
 import app from '../app';
 import { connectToDatabase } from '../db';
+import KbArticle from '../models/KbArticle';
 import OutboxEvent from '../models/OutboxEvent';
 import Ticket from '../models/Ticket';
 import spec from '../openapi.json';
@@ -69,6 +77,7 @@ beforeAll(async () => {
   mongod = await startTestDatabase();
   await connectToDatabase();
   await Ticket.init();
+  await KbArticle.init();
   tokens = await signInAll(app);
 }, 300000);
 
@@ -83,6 +92,7 @@ describe('the document stays in step with the code', () => {
     expect(schemas.Status.enum).toEqual([...statuses]);
     expect(schemas.Priority.enum).toEqual([...priorities]);
     expect(schemas.Role.enum).toEqual([...roles]);
+    expect(schemas.KbCategory.enum).toEqual([...agentCategories]);
     expect(parameters.SortBy.schema.enum).toEqual([...sortFields]);
     expect(parameters.SlaFilter.schema.enum).toEqual([...slaFilters]);
   });
@@ -394,6 +404,33 @@ describe('responses match their documented schemas', () => {
     conforms('TicketEnvelope', fetched.body);
     expect(fetched.body.ticket.slaBreachedAt).toBeDefined();
     expect(fetched.body.ticket.activity.at(-1).actorRole).toBe('system');
+  });
+
+  test('the knowledge base matches its schemas', async () => {
+    await KbArticle.create({
+      articleId: 'KB-006',
+      title: 'VPN keeps disconnecting',
+      category: 'Network',
+      body: ['The VPN connects, then drops every few minutes.', '', '1. Restart the router.'].join(
+        '\n'
+      ),
+      lastReviewed: new Date('2026-09-01T00:00:00Z'),
+      appliesTo: ['Windows', 'macOS'],
+    });
+
+    const found = await request(app).get('/api/kb?search=vpn').set(as('tech')).expect(200);
+    conforms('KbSearchResponse', found.body);
+    expect(found.body.articles).toHaveLength(1);
+    used('searchKb');
+
+    const article = await request(app).get('/api/kb/KB-006').set(as('tech')).expect(200);
+    conforms('KbArticleEnvelope', article.body);
+    used('getKbArticle');
+
+    conforms('Error', (await request(app).get('/api/kb/KB-999').set(as('tech')).expect(404)).body);
+    conforms('Error', (await request(app).get('/api/kb/nope').set(as('tech')).expect(400)).body);
+    conforms('Error', (await request(app).get('/api/kb').set(as('user')).expect(403)).body);
+    conforms('Error', (await request(app).get('/api/kb').expect(401)).body);
   });
 
   test('every documented operation is exercised above', () => {

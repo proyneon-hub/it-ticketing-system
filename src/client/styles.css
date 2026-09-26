@@ -467,6 +467,11 @@ th {
   background: #eef2f7;
 }
 
+.pill.pending-user,
+.sla-chip.paused {
+  background: #efe9ff;
+}
+
 .pill.urgent,
 .sla-chip.breached {
   background: #fee2e2;

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  agentCategories,
   auditTypes,
   commentVisibilities,
   outboxStatuses,
@@ -57,6 +58,14 @@ export const listQuerySchema = z.object({
       error: 'Search text must be 100 characters or fewer.',
     })
   ),
+  // Tickets raised under one address: what the agent uses to see a requester's recent history.
+  // Staff and the agent only; a requester is always limited to their own address whatever this says.
+  requesterEmail: optionalFilter(
+    z
+      .string({ error: 'Invalid requesterEmail filter.' })
+      .max(254, { error: 'requesterEmail must be 254 characters or fewer.' })
+      .toLowerCase()
+  ),
 });
 
 // Exports always return the whole filtered set, so paging parameters are ignored.
@@ -103,7 +112,18 @@ export const createTicketSchema = z
   .extend({ title: ticketFields.title });
 export const patchTicketSchema = z.object(ticketFields).partial();
 
+export const kbSearchQuerySchema = z.object({
+  search: optionalFilter(
+    z.string({ error: 'Invalid search text.' }).max(100, {
+      error: 'Search text must be 100 characters or fewer.',
+    })
+  ),
+  category: optionalFilter(z.enum(agentCategories, { error: 'Invalid category.' })),
+  limit: integerParam('limit', { defaultValue: 5, min: 1, max: 25 }),
+});
+
 export type ListQuery = z.output<typeof listQuerySchema>;
+export type KbSearchQuery = z.output<typeof kbSearchQuerySchema>;
 export type ExportQuery = z.output<typeof exportQuerySchema>;
 export type CreateTicketInput = z.output<typeof createTicketSchema>;
 export type PatchTicketInput = z.output<typeof patchTicketSchema>;

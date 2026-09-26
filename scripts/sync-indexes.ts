@@ -3,6 +3,7 @@ import { connectToDatabase } from '../src/server/db';
 import AuditEvent from '../src/server/models/AuditEvent';
 import Comment from '../src/server/models/Comment';
 import Counter from '../src/server/models/Counter';
+import KbArticle from '../src/server/models/KbArticle';
 import OutboxEvent from '../src/server/models/OutboxEvent';
 import RefreshToken from '../src/server/models/RefreshToken';
 import Ticket from '../src/server/models/Ticket';
@@ -17,7 +18,7 @@ import User from '../src/server/models/User';
 //
 //   npm run db:sync-indexes                   (from source)
 //   node dist-server/scripts/sync-indexes.js  (from a build or the Docker image)
-const MODELS = [Ticket, User, RefreshToken, AuditEvent, OutboxEvent, Comment, Counter];
+const MODELS = [Ticket, User, RefreshToken, AuditEvent, OutboxEvent, Comment, Counter, KbArticle];
 
 async function main(): Promise<void> {
   await connectToDatabase();

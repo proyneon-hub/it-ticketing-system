@@ -1,4 +1,9 @@
-import { slaHoursByPriority, terminalStatuses, type Priority } from '../../shared/ticket-constants';
+import {
+  slaHoursByPriority,
+  slaPausedStatuses,
+  terminalStatuses,
+  type Priority,
+} from '../../shared/ticket-constants';
 import type { TicketAttrs } from '../../shared/ticket-types';
 import type { PatchTicketInput } from '../../shared/schemas';
 
@@ -9,17 +14,22 @@ export const DUE_SOON_WINDOW_MS = 24 * HOUR_MS;
 export const isTerminal = (status: string): boolean =>
   (terminalStatuses as readonly string[]).includes(status);
 
+// Whether the SLA clock is being counted: not for finished tickets, and not for tickets
+// waiting on their requester.
+export const isSlaRunning = (status: string): boolean =>
+  !isTerminal(status) && !(slaPausedStatuses as readonly string[]).includes(status);
+
 // The SLA deadline for a ticket of `priority` raised at `raisedAt`.
 export const dueAtFor = (priority: Priority, raisedAt: Date): Date =>
   new Date(raisedAt.getTime() + slaHoursByPriority[priority] * HOUR_MS);
 
-// SLA risk only applies to unresolved work.
+// SLA risk only applies to work the team can act on.
 export function isSlaBreached(
   ticket: Pick<TicketAttrs, 'status' | 'dueAt'>,
   now: number = Date.now()
 ): boolean {
   return Boolean(
-    ticket.dueAt && !isTerminal(ticket.status) && new Date(ticket.dueAt).getTime() < now
+    ticket.dueAt && isSlaRunning(ticket.status) && new Date(ticket.dueAt).getTime() < now
   );
 }
 

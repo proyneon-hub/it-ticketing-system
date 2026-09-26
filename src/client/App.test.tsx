@@ -427,7 +427,7 @@ describe('editing a ticket in the queue', () => {
       screen.getByTestId('ticket-status-select').querySelectorAll('option')
     ).map((option) => option.value);
 
-    expect(options).toEqual(['open', 'assigned', 'in-progress', 'closed']);
+    expect(options).toEqual(['open', 'assigned', 'in-progress', 'pending-user', 'closed']);
   });
 });
 

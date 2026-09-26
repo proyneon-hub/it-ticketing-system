@@ -1,9 +1,10 @@
-import { webhookConfig } from '../config';
+import { agentEnabled, webhookConfig } from '../config';
 import {
   MAX_ATTEMPTS,
   backoffMs,
   webhookBody,
   webhookFormat,
+  withConsumers,
   type OutboxDraft,
 } from '../domain/outbox';
 import { NotFoundError, ValidationError } from '../errors';
@@ -18,13 +19,18 @@ import type { Tx } from '../repositories/transaction';
 // afterwards. A failed or slow webhook can therefore never fail or slow a ticket change, and
 // a committed change is never left without its event.
 
-export const outboxEnabled = (): boolean => webhookConfig() !== null;
+// Whether anything is listening: the webhook, the agent, or both.
+export const outboxEnabled = (): boolean => webhookConfig() !== null || agentEnabled();
 
-// Records events in the caller's transaction. Does nothing when no webhook is configured,
-// so a deployment that does not use notifications collects nothing.
+// Records events in the caller's transaction, one copy for each consumer that wants the event
+// (see withConsumers). Does nothing when neither the webhook nor the agent is on, so a
+// deployment that uses neither collects nothing.
 export async function record(drafts: OutboxDraft[], tx: Tx, now: Date = new Date()): Promise<void> {
-  if (!outboxEnabled()) return;
-  await repository.enqueue(drafts, tx, now);
+  const routed = withConsumers(drafts, {
+    webhook: webhookConfig() !== null,
+    agent: agentEnabled(),
+  });
+  await repository.enqueue(routed, tx, now);
 }
 
 // How long an event stays claimed while it is being sent. Longer than the request timeout,
@@ -98,7 +104,7 @@ export async function deliverPending(options: DeliveryOptions = {}): Promise<Del
   const startedAt = Date.now();
 
   for (let sent = 0; sent < limit && Date.now() - startedAt < budgetMs; sent += 1) {
-    const event = await repository.claimNext(now, LOCK_MS);
+    const event = await repository.claimNext('webhook', now, LOCK_MS);
     if (!event) break;
 
     try {

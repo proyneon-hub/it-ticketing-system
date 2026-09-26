@@ -1,16 +1,16 @@
 import mongoose, { type Model, type Types } from 'mongoose';
 import {
+  actorRoles,
   commentVisibilities,
-  roles,
+  type ActorRole,
   type CommentVisibility,
-  type Role,
 } from '../../shared/ticket-constants';
 
 export interface CommentAttrs {
   ticketId: Types.ObjectId;
   body: string;
   visibility: CommentVisibility;
-  author: { id: string; name: string; email: string; role: Role };
+  author: { id: string; name: string; email: string; role: ActorRole };
   createdAt: Date;
 }
 
@@ -26,7 +26,7 @@ const commentSchema = new mongoose.Schema<CommentAttrs>({
     id: { type: String, required: true },
     name: { type: String, required: true, maxlength: 80 },
     email: { type: String, required: true, lowercase: true, maxlength: 254 },
-    role: { type: String, enum: roles, required: true },
+    role: { type: String, enum: actorRoles, required: true },
   },
   createdAt: { type: Date, default: Date.now, required: true },
 });

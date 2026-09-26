@@ -62,13 +62,13 @@ export const outboxDeliveries = new Counter({
 // (and a database outage does not stop the other metrics from being served).
 new Gauge({
   name: 'outbox_events',
-  help: 'Outbox events by status. A growing "dead" count needs an admin.',
+  help: 'Webhook outbox events by status. A growing "dead" count needs an admin.',
   labelNames: ['status'],
   registers: [registry],
   async collect() {
     if (mongoose.connection.readyState !== 1) return;
     try {
-      const counts = new Map((await countByStatus()).map((row) => [row._id, row.count]));
+      const counts = new Map((await countByStatus('webhook')).map((row) => [row._id, row.count]));
       for (const status of outboxStatuses) this.set({ status }, counts.get(status) ?? 0);
     } catch (error) {
       logger.warn({ err: error }, 'Could not read outbox counts for metrics');

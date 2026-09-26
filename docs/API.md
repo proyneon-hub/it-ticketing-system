@@ -50,6 +50,8 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 | DELETE | `/tickets/:id`          | Admin only    | Delete a ticket (and its comments)                                |
 | GET    | `/tickets/:id/comments` | Bearer token  | A ticket's comments, oldest first                                 |
 | POST   | `/tickets/:id/comments` | Bearer token  | Add a comment, or an internal note (staff only)                   |
+| GET    | `/kb`                   | Staff, agent  | Search the knowledge base (best match first, with a snippet)      |
+| GET    | `/kb/:id`               | Staff, agent  | Read one knowledge-base article                                   |
 | GET    | `/users`                | Admin only    | List users (never their password hashes)                          |
 | PATCH  | `/users/:id`            | Admin only    | Change a user's role                                              |
 | GET    | `/audit`                | Admin only    | Read the security audit log                                       |
@@ -109,17 +111,25 @@ stateDiagram-v2
     [*] --> open
     open --> assigned
     open --> in_progress: in-progress
+    open --> pending_user: pending-user
     open --> closed
     assigned --> in_progress
+    assigned --> pending_user
     assigned --> open
     in_progress --> resolved
+    in_progress --> pending_user
     in_progress --> assigned
+    pending_user --> in_progress: requester replies
+    pending_user --> resolved
+    pending_user --> closed
     resolved --> closed
     resolved --> in_progress: reopen
     closed --> in_progress: reopen (admin only)
 ```
 
 The transition table is `statusTransitions` in [`src/shared/ticket-constants.ts`](../src/shared/ticket-constants.ts). The API enforces it ([`ticketWorkflow.ts`](../src/server/domain/ticketWorkflow.ts)) and the status menu offers only the moves it allows. A move the table does not list returns `409`; reopening a closed ticket without the admin role returns `403`. Sending the ticket's current status is accepted and changes nothing.
+
+`pending-user` means the ticket is waiting on the requester. It pauses the SLA clock: the ticket is not counted as at risk or breached, and the escalation job skips it. The deadline does not move, so the time a ticket waited still counts once it is worked again. A public reply from the requester moves it back to `in-progress`.
 
 Default SLA windows, measured from when the ticket was created:
 
@@ -183,21 +193,37 @@ The events are `ticket.created`, `ticket.status_changed`, `ticket.assigned`, `ti
 
 A requester asking for someone else's ticket gets `404`, not `403`, so ids cannot be probed. Tickets a requester creates always carry their identity, `open` status and `Unassigned` owner, whatever the request says.
 
+## The service desk agent
+
+The agent is not a user account and cannot be given to anyone through `PATCH /users/:id`. It signs in with a token minted for one agent run: it lasts 10 minutes and names the single ticket the run is about. The API enforces that scope in the services, so no route can forget it.
+
+- It **can** read that ticket, comment on it (public replies and internal notes), and set its `category`, `priority` and `assignee`. It can also move it to `pending-user`, and to no other status.
+- It **can** list tickets (to find similar ones or a requester's history, with `requesterEmail`), and search and read the knowledge base.
+- It **cannot** open, change or comment on any other ticket (`403`), create or delete tickets, read stats, trends or the CSV export, change a title or description, or touch `/users`, `/audit` or `/outbox`.
+- A token that claims the agent role but names no ticket is not a valid token (`401`).
+
+## Knowledge base
+
+`GET /kb?search=...&category=...&limit=...` returns `{ "articles": [{ id, title, category, lastReviewed, snippet }] }`, best match first. `limit` is `1` to `25` (default 5). Without `search`, articles are listed in id order, so a category can be browsed. Like the ticket search it matches whole words and their other forms and treats the input as plain words. `GET /kb/KB-006` returns the whole article (`body` is markdown, with `appliesTo` and `lastReviewed`). A malformed id is `400` and an unknown one `404`. Staff and the agent only: a requester gets `403`. Lookups are limited to 120 a minute for each caller (each agent run counts separately); beyond that the answer is `429` with code `RATE_LIMITED`.
+
+The articles are the markdown files in [`kb/`](../kb), one per file, with front matter (`id`, `title`, `category`, `last_reviewed`, `applies_to`). `npm run kb:seed` loads them into the database and is safe to run again; `npm run kb:seed -- --prune` also removes articles whose file has gone. `category` is one of the agent's categories: Network, Access, Hardware, Software, Onboarding, Email, Security, General Support.
+
 ## Listing tickets
 
 `GET /tickets` supports:
 
-| Query        | Description                                                                                                                                             |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `page`       | Page number, `1` to `100000`                                                                                                                            |
-| `limit`      | Page size, `1` to `100` (default 10)                                                                                                                    |
-| `sortBy`     | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`. Default: `createdAt`, or best match first with `search` |
-| `sortOrder`  | `asc` or `desc`                                                                                                                                         |
-| `status`     | `open`, `assigned`, `in-progress`, `resolved` or `closed`                                                                                               |
-| `priority`   | `low`, `medium`, `high` or `urgent`                                                                                                                     |
-| `assignedTo` | Case-insensitive assignee match                                                                                                                         |
-| `search`     | Full-text search across number, title, description, requester, assignee and category. See below                                                         |
-| `sla`        | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                           |
+| Query            | Description                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `page`           | Page number, `1` to `100000`                                                                                                                                       |
+| `limit`          | Page size, `1` to `100` (default 10)                                                                                                                               |
+| `sortBy`         | `ticketNumber`, `title`, `status`, `priority`, `assignee`, `dueAt`, `createdAt` or `updatedAt`. Default: `createdAt`, or best match first with `search`            |
+| `sortOrder`      | `asc` or `desc`                                                                                                                                                    |
+| `status`         | `open`, `assigned`, `in-progress`, `pending-user`, `resolved` or `closed`                                                                                          |
+| `priority`       | `low`, `medium`, `high` or `urgent`                                                                                                                                |
+| `assignedTo`     | Case-insensitive assignee match                                                                                                                                    |
+| `search`         | Full-text search across number, title, description, requester, assignee and category. See below                                                                    |
+| `sla`            | `breached` or `due-soon`. Combines with `status`; a resolved or closed status matches nothing                                                                      |
+| `requesterEmail` | Only tickets raised under this address (case-insensitive, exact). Staff and the agent only: a requester is always limited to their own address, whatever this says |
 
 - Sorting by `priority` ranks by severity: descending gives urgent, high, medium, low.
 - **Search matches whole words, not fragments.** `connecting` finds "Cannot connect to Wi-Fi", but `conn` and `prin` do not find "connect" or "printer". A hit in the title or ticket number ranks above one in the description, and with no `sortBy` the best match comes first. Case is ignored.

@@ -1,5 +1,11 @@
 import type { TokenPayload } from '../auth';
-import { assertCanMutateTicket, requesterOverrides, requesterScope } from './permissions';
+import {
+  assertAgentScope,
+  assertCanMutateTicket,
+  assertHuman,
+  requesterOverrides,
+  requesterScope,
+} from './permissions';
 
 const user = (role: TokenPayload['role'], email = 'una@demo.local'): TokenPayload => ({
   sub: `usr_${role}`,
@@ -7,6 +13,59 @@ const user = (role: TokenPayload['role'], email = 'una@demo.local'): TokenPayloa
   email,
   role,
   exp: 0,
+});
+
+const TICKET = '665f0f40d5d4f541f8ef2002';
+const OTHER = '665f0f40d5d4f541f8ef2003';
+const agent = (): TokenPayload => ({ ...user('agent'), ticketId: TICKET, runId: 'run-1' });
+
+describe('the agent', () => {
+  test('may work on the ticket in its token and no other', () => {
+    expect(() => assertAgentScope(agent(), TICKET)).not.toThrow();
+    expect(() => assertAgentScope(agent(), OTHER)).toThrow(
+      expect.objectContaining({ statusCode: 403, message: expect.stringMatching(/started for/) })
+    );
+  });
+
+  test('is refused a ticket if its token somehow names none', () => {
+    const unscoped: TokenPayload = { ...user('agent'), runId: 'run-1' };
+    expect(() => assertAgentScope(unscoped, TICKET)).toThrow(
+      expect.objectContaining({ statusCode: 403 })
+    );
+  });
+
+  test('the scope check leaves people alone', () => {
+    expect(() => assertAgentScope(user('technician'), OTHER)).not.toThrow();
+    expect(() => assertAgentScope(user('user'), OTHER)).not.toThrow();
+  });
+
+  test('assertHuman refuses the agent and lets everyone else through', () => {
+    expect(() => assertHuman(agent())).toThrow(expect.objectContaining({ statusCode: 403 }));
+    for (const role of ['admin', 'technician', 'user'] as const) {
+      expect(() => assertHuman(user(role))).not.toThrow();
+    }
+  });
+
+  test.each(['category', 'priority', 'assignee'])('may set %s', (field) => {
+    expect(() =>
+      assertCanMutateTicket(agent(), { requesterEmail: 'other@x.com' }, { [field]: 'x' })
+    ).not.toThrow();
+  });
+
+  test.each(['status', 'title', 'description', 'requesterEmail', 'requesterName', 'dueAt'])(
+    'cannot change %s',
+    (field) => {
+      expect(() =>
+        assertCanMutateTicket(agent(), { requesterEmail: 'other@x.com' }, { [field]: 'x' })
+      ).toThrow(
+        expect.objectContaining({ statusCode: 403, message: expect.stringMatching(/only set/) })
+      );
+    }
+  );
+
+  test('is not restricted to one requester the way a requester is', () => {
+    expect(requesterScope(agent())).toBeUndefined();
+  });
 });
 
 describe('requesterScope', () => {

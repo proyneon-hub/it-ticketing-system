@@ -1,4 +1,5 @@
 import type { TokenPayload } from '../auth';
+import { agentStatus, type Role } from '../../shared/ticket-constants';
 import type { TicketAttrs } from '../../shared/ticket-types';
 import { ForbiddenError } from '../errors';
 
@@ -12,6 +13,27 @@ const REQUESTER_EDITABLE_FIELDS: readonly string[] = [
   'category',
 ];
 
+// The service desk agent triages: it may set what a triager sets, and hand a ticket to the
+// requester (status pending-user, when it posts a resolution). Nothing else. It cannot
+// rewrite what the requester wrote, or close, resolve or reopen a ticket.
+const AGENT_EDITABLE_FIELDS: readonly string[] = ['category', 'priority', 'assignee', 'status'];
+
+// The agent's token names one ticket, and that is the only one it may read or change.
+// Checked in the services, so a route added later cannot forget it.
+export function assertAgentScope(user: TokenPayload, ticketId: string): void {
+  if (user.role === 'agent' && user.ticketId !== String(ticketId)) {
+    throw new ForbiddenError('The agent can only work on the ticket it was started for.');
+  }
+}
+
+// For everything the agent has no business doing at all: creating tickets, and the
+// reports and exports that cover the whole queue. Narrows the caller to a person.
+export function assertHuman(user: TokenPayload): asserts user is TokenPayload & { role: Role } {
+  if (user.role === 'agent') {
+    throw new ForbiddenError('This action is not available to the agent.');
+  }
+}
+
 // Requesters only ever see tickets raised under their own email address. Returns
 // that address for a requester, and undefined for staff, who see everything.
 export const requesterScope = (user: TokenPayload): string | undefined =>
@@ -23,6 +45,16 @@ export function assertCanMutateTicket(
   ticket: Pick<TicketAttrs, 'requesterEmail'>,
   patch: object
 ): void {
+  if (user.role === 'agent') {
+    const disallowed = Object.keys(patch).filter((field) => !AGENT_EDITABLE_FIELDS.includes(field));
+    const status = (patch as { status?: unknown }).status;
+    if (disallowed.length > 0 || (status !== undefined && status !== agentStatus)) {
+      throw new ForbiddenError(
+        'The agent can only set category, priority and assignee, and move a ticket to pending-user.'
+      );
+    }
+    return;
+  }
   if (user.role !== 'user') return;
 
   if (String(ticket.requesterEmail || '').toLowerCase() !== user.email.toLowerCase()) {

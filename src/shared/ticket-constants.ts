@@ -3,10 +3,31 @@
 // literal types (Status, Priority, ...), and a value can never be added in one
 // place and forgotten in another.
 
+// The roles a person can hold. This is what the user model, the role picker and the
+// role-change endpoint accept, so nobody can be given the agent role through them.
 export const roles = ['admin', 'technician', 'user'] as const;
 export type Role = (typeof roles)[number];
 
-export const statuses = ['open', 'assigned', 'in-progress', 'resolved', 'closed'] as const;
+// The service desk agent is not a user account. It exists only as a short-lived token
+// minted by the worker for one ticket (security/accessToken.ts), so it is a separate
+// actor role, not a member of `roles`.
+export const agentRole = 'agent' as const;
+
+// Everyone who can appear in a token, a comment or a history entry.
+export const actorRoles = [...roles, agentRole] as const;
+export type ActorRole = (typeof actorRoles)[number];
+
+// `pending-user` means the ticket is waiting on the requester (for a reply, or to confirm a
+// fix). The service desk agent sets it when it posts a resolution; the requester's reply, or
+// a technician, moves it on.
+export const statuses = [
+  'open',
+  'assigned',
+  'in-progress',
+  'pending-user',
+  'resolved',
+  'closed',
+] as const;
 export type Status = (typeof statuses)[number];
 
 export const priorities = ['low', 'medium', 'high', 'urgent'] as const;
@@ -18,12 +39,23 @@ export const terminalStatuses = ['resolved', 'closed'] as const satisfies readon
 // Which status a ticket may move to from each status. The API enforces this
 // (src/server/domain/ticketWorkflow.ts) and the status menu offers only these moves.
 export const statusTransitions = {
-  open: ['assigned', 'in-progress', 'closed'],
-  assigned: ['in-progress', 'open'],
-  'in-progress': ['resolved', 'assigned'],
+  open: ['assigned', 'in-progress', 'pending-user', 'closed'],
+  assigned: ['in-progress', 'pending-user', 'open'],
+  'in-progress': ['resolved', 'pending-user', 'assigned'],
+  'pending-user': ['in-progress', 'resolved', 'closed'],
   resolved: ['closed', 'in-progress'],
   closed: ['in-progress'],
 } as const satisfies Record<Status, readonly Status[]>;
+
+// The status the agent may move a ticket to (and the only one). Everything else about a
+// ticket's workflow stays with people.
+export const agentStatus = 'pending-user' as const satisfies Status;
+
+// While a ticket waits for its requester the team cannot act on it, so its SLA clock is not
+// counted: it is not flagged at risk or breached, and the escalation job leaves it alone.
+// The deadline itself does not move, so when the ticket is worked again the time it waited
+// still counts against it.
+export const slaPausedStatuses = ['pending-user'] as const satisfies readonly Status[];
 
 // Moves that exist in the table above but only an admin may make.
 export const adminOnlyTransitions = [
@@ -65,10 +97,50 @@ export const outboxEventTypes = [
 ] as const;
 export type OutboxEventType = (typeof outboxEventTypes)[number];
 
+// Who an event is for. Each event is written once per consumer that wants it: the webhook
+// sends notifications, the agent triages new tickets. Events written before consumers existed
+// have no value here and belong to the webhook.
+export const outboxConsumers = ['webhook', 'agent'] as const;
+export type OutboxConsumer = (typeof outboxConsumers)[number];
+
+// The events the agent acts on. It triages a ticket when it is created; nothing else it hears
+// about, and everything else stays with the webhook.
+export const agentEventTypes = ['ticket.created'] as const satisfies readonly OutboxEventType[];
+
 // pending: waiting to be sent (or to be retried). sending: claimed by a worker. delivered:
 // the webhook accepted it. dead: gave up after the last attempt; an admin can retry it.
 export const outboxStatuses = ['pending', 'sending', 'delivered', 'dead'] as const;
 export type OutboxStatus = (typeof outboxStatuses)[number];
+
+// The categories the service desk agent chooses from. Ticket.category itself stays free text
+// (people type their own and existing tickets keep theirs), so this list constrains the agent and
+// the knowledge base, not the data. Security is here so a phishing report or a lost device has
+// somewhere to go.
+export const agentCategories = [
+  'Network',
+  'Access',
+  'Hardware',
+  'Software',
+  'Onboarding',
+  'Email',
+  'Security',
+  'General Support',
+] as const;
+export type AgentCategory = (typeof agentCategories)[number];
+
+// The queues the agent may hand a ticket to. A group, not a person: the agent triages, people
+// pick the ticket up.
+export const assigneeGroups = [
+  'Help Desk',
+  'Network Support',
+  'Security Team',
+  'Field Services',
+  'Access Management',
+] as const;
+export type AssigneeGroup = (typeof assigneeGroups)[number];
+
+// A knowledge-base article id, such as KB-006. Replies cite these.
+export const kbIdPattern = /^KB-\d{3}$/;
 
 export const slaFilters = ['breached', 'due-soon'] as const;
 export type SlaFilter = (typeof slaFilters)[number];

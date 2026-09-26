@@ -1,4 +1,5 @@
 import OutboxEvent, {
+  type OutboxConsumer,
   type OutboxEventAttrs,
   type OutboxEventRecord,
   type OutboxPayload,
@@ -10,7 +11,13 @@ import type { Tx } from './transaction';
 
 export type { OutboxDraft };
 
-export type { OutboxEventRecord, OutboxPayload, OutboxEventType, OutboxStatus };
+export type { OutboxConsumer, OutboxEventRecord, OutboxPayload, OutboxEventType, OutboxStatus };
+
+// Events written before consumers existed have no `consumer`, and null matches a missing field,
+// so they still belong to the webhook. Every read that is one consumer's business goes through
+// this, so one consumer can never claim, count or send another's events.
+const forConsumer = (consumer: OutboxConsumer) =>
+  consumer === 'webhook' ? { $in: ['webhook', null] } : consumer;
 
 // Records events in the same transaction as the change that caused them, so an event exists
 // if and only if the change was committed.
@@ -28,12 +35,17 @@ export async function enqueue(drafts: OutboxDraft[], tx: Tx, now: Date): Promise
   );
 }
 
-// Takes the oldest event that is due, atomically: two workers asking at once get different
-// events (or none), never the same one. Also takes an event another worker locked and then
-// abandoned. Counts the attempt as it is taken.
-export const claimNext = (now: Date, lockMs: number): Promise<OutboxEventRecord | null> =>
+// Takes the consumer's oldest event that is due, atomically: two workers asking at once get
+// different events (or none), never the same one. Also takes an event another worker locked and
+// then abandoned. Counts the attempt as it is taken.
+export const claimNext = (
+  consumer: OutboxConsumer,
+  now: Date,
+  lockMs: number
+): Promise<OutboxEventRecord | null> =>
   OutboxEvent.findOneAndUpdate(
     {
+      consumer: forConsumer(consumer),
       $or: [
         { status: 'pending', nextAttemptAt: { $lte: now } },
         { status: 'sending', lockedUntil: { $lt: now } },
@@ -95,5 +107,10 @@ export async function page(
   return { events, total };
 }
 
-export const countByStatus = (): Promise<{ _id: OutboxStatus; count: number }[]> =>
-  OutboxEvent.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]);
+export const countByStatus = (
+  consumer: OutboxConsumer
+): Promise<{ _id: OutboxStatus; count: number }[]> =>
+  OutboxEvent.aggregate([
+    { $match: { consumer: forConsumer(consumer) } },
+    { $group: { _id: '$status', count: { $sum: 1 } } },
+  ]);

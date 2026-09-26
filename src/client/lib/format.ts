@@ -1,4 +1,4 @@
-import { terminalStatuses } from '../constants';
+import { slaPausedStatuses, terminalStatuses } from '../constants';
 import type { Ticket } from '../types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -19,9 +19,10 @@ export function formatDate(value: string | Date | undefined | null): string {
   }).format(new Date(value));
 }
 
-export type SlaState = 'met' | 'breached' | 'due-soon' | 'healthy';
+export type SlaState = 'met' | 'paused' | 'breached' | 'due-soon' | 'healthy';
 
-// met: no SLA left to miss; breached: overdue; due-soon: inside 24h; healthy: otherwise.
+// met: no SLA left to miss; paused: waiting on the requester, so the clock is not counted;
+// breached: overdue; due-soon: inside 24h; healthy: otherwise.
 export function getSlaState(
   ticket: Pick<Ticket, 'dueAt' | 'status'>,
   now: number = Date.now()
@@ -29,6 +30,7 @@ export function getSlaState(
   if (!ticket.dueAt || (terminalStatuses as readonly string[]).includes(ticket.status)) {
     return 'met';
   }
+  if ((slaPausedStatuses as readonly string[]).includes(ticket.status)) return 'paused';
   const dueAt = new Date(ticket.dueAt).getTime();
   if (dueAt < now) return 'breached';
   if (dueAt - now <= DAY_MS) return 'due-soon';

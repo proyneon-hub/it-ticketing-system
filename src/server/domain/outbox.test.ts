@@ -9,6 +9,7 @@ import {
   slaEvent,
   webhookBody,
   webhookFormat,
+  withConsumers,
 } from './outbox';
 
 const tech: TokenPayload = {
@@ -27,6 +28,44 @@ const ticket = {
   priority: 'high' as const,
   assignee: 'Unassigned',
 };
+
+describe('withConsumers', () => {
+  const created = createdEvent(ticket, tech);
+  const commented = commentEvent(ticket, tech, 'public');
+  const both = { webhook: true, agent: true };
+
+  test('gives the webhook every event and the agent only the ones it acts on', () => {
+    const routed = withConsumers([created, commented], both);
+
+    expect(routed.map((e) => [e.type, e.consumer])).toEqual([
+      ['ticket.created', 'webhook'],
+      ['ticket.created', 'agent'],
+      ['ticket.comment_added', 'webhook'],
+    ]);
+  });
+
+  test('each consumer gets its own copy, so one cannot change what the other sees', () => {
+    const [forWebhook, forAgent] = withConsumers([created], both);
+    expect(forWebhook).not.toBe(forAgent);
+    expect(forWebhook?.payload).toEqual(forAgent?.payload);
+  });
+
+  test('a consumer that is off gets nothing', () => {
+    expect(withConsumers([created, commented], { webhook: true, agent: false })).toEqual([
+      { ...created, consumer: 'webhook' },
+      { ...commented, consumer: 'webhook' },
+    ]);
+    expect(withConsumers([created, commented], { webhook: false, agent: true })).toEqual([
+      { ...created, consumer: 'agent' },
+    ]);
+    expect(withConsumers([created, commented], { webhook: false, agent: false })).toEqual([]);
+  });
+
+  test('does not change the events it was given', () => {
+    withConsumers([created], both);
+    expect(created).not.toHaveProperty('consumer');
+  });
+});
 
 describe('events', () => {
   test('a created ticket produces one event with a small snapshot and the actor', () => {

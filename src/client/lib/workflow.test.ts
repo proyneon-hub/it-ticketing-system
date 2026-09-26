@@ -7,11 +7,13 @@ describe('allowedNextStatuses', () => {
       'open',
       'assigned',
       'in-progress',
+      'pending-user',
       'closed',
     ]);
     expect(allowedNextStatuses('in-progress', 'technician')).toEqual([
       'in-progress',
       'resolved',
+      'pending-user',
       'assigned',
     ]);
   });

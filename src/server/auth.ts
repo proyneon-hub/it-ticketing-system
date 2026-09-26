@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { Role } from '../shared/ticket-constants';
+import type { ActorRole, Role } from '../shared/ticket-constants';
 import { ForbiddenError, UnauthorizedError } from './errors';
 import { verifyAccessToken } from './security/accessToken';
 
@@ -15,8 +15,13 @@ export interface TokenPayload {
   sub: string;
   name: string;
   email: string;
-  role: Role;
+  role: ActorRole;
   exp: number;
+  // Only on an agent token: the one ticket it may touch, and the agent run it belongs to.
+  // verifyAccessToken refuses an agent token without a ticket, so where role is 'agent'
+  // `ticketId` is always present.
+  ticketId?: string;
+  runId?: string;
 }
 
 function getTokenFromRequest(req: Request): string {
@@ -37,7 +42,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   }
 }
 
-export function requireRole(...allowedRoles: Role[]) {
+export function requireRole(...allowedRoles: ActorRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return next(new ForbiddenError('You do not have permission to perform this action.'));
