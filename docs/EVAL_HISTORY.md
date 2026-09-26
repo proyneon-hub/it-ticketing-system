@@ -2,7 +2,7 @@
 
 Every row below is a measured run of the agent against the golden tickets in [`eval/tickets.jsonl`](../eval/tickets.jsonl), added by `npm run eval -- --append-history`. Nothing here is estimated or typed in by hand.
 
-**No live run has been recorded yet.** The agent needs a real model to be measured, and a key has not been used with it so far. Until a row appears, the README's evaluation table stays as placeholders, on purpose.
+**One live run has been recorded so far**, on the 15-ticket smoke set. The full 108-ticket set has not completed a run yet (the first attempt died at ticket 75 when its sign-in expired; that is fixed), so the README's table for the full set stays as placeholders, on purpose. A single run of 15 tickets, labelled by one person, is a first data point and not a benchmark: one ticket is almost seven points.
 
 ## How to add a row
 
@@ -20,6 +20,8 @@ The evaluation starts its own throwaway database and refuses to run against anyt
 | ---- | ------ | ----- | ------- | -------- | --------------- | ----------------- | ------------------ | ----------- | ----- |
 
 <!-- history-rows -->
+
+| 2026-09-25 | triage.v1 | claude-sonnet-5 | 15 | 86.7% | 0 of 4 | 100.0% | 100.0% | $0.0159 | First live run: the 15-ticket smoke set, prompt v1. The two misses are the injection tickets (T049, T050), which it escalated to the Security Team instead of resolving. |
 
 ## What is measured
 
