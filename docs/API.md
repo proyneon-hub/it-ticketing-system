@@ -60,6 +60,7 @@ Failed sign-ins are rate limited per client address (10 per 15 minutes by defaul
 | GET    | `/agent/runs`                   | Admin only    | The agent's runs, newest first                                        |
 | GET    | `/agent/runs/:id`               | Admin only    | One run with its proposal and steps                                   |
 | POST   | `/agent/escalations`            | Agent only    | The agent hands its ticket to a person                                |
+| POST   | `/agent/resolutions`            | Agent only    | The agent answers its ticket alone (auto mode, where allowed)         |
 | GET    | `/users`                        | Admin only    | List users (never their password hashes)                              |
 | PATCH  | `/users/:id`                    | Admin only    | Change a user's role                                                  |
 | GET    | `/audit`                        | Admin only    | Read the security audit log                                           |
@@ -223,9 +224,13 @@ In assist mode the agent does not reply to the requester. It saves a draft on it
 - Both decisions are `409` with code `NO_PENDING_PROPOSAL` if nothing is waiting, or if someone else decided first. Of two people deciding at the same moment exactly one succeeds.
 - All three are staff only: a requester or the agent itself gets `403`.
 
+## The agent answering alone
+
+`POST /agent/resolutions` (agent token only) with `{ ticketId, replyMarkdown, citedKbIds, confidence }` posts the reply as a public comment marked `source: "agent"` with no `approvedBy`, moves the ticket to `pending-user`, and records the proposal as `posted`, in one transaction (`201`, the ticket). The server decides whether that is allowed, whatever the agent believes: `403` unless the kill switch is off, this deployment allows auto mode, the ticket's category (after the agent's own triage) is in auto mode and on the allowlist, it is not Security and the confidence is `high`; `400` if a cited article does not exist; `409` (`DUPLICATE`) if the agent has already answered the ticket, and `409` for a finished ticket. It is only for the ticket the token names.
+
 ## Agent settings and runs
 
-`GET /agent/settings` (staff) returns `{ settings: { killSwitch, defaultMode, modeByCategory, autoAllowlist, dailyCostCapUsd, perRequesterHourlyLimit, enabled, model, spentTodayUsd } }`. `enabled` says whether this deployment has the agent switched on and a key for the model; it is not changeable here.
+`GET /agent/settings` (staff) returns `{ settings: { killSwitch, defaultMode, modeByCategory, autoAllowlist, dailyCostCapUsd, perRequesterHourlyLimit, enabled, model, spentTodayUsd, autoAvailable, circuit } }`. `enabled` says whether this deployment has the agent switched on and a key for the model; it is not changeable here.
 
 `PUT /agent/settings` (admin) changes only the fields sent (`killSwitch`, `defaultMode`, `modeByCategory`, `autoAllowlist`, `dailyCostCapUsd`, `perRequesterHourlyLimit`) and accepts nothing else. Categories must be ones the agent chooses from. The kill switch takes effect on the agent's very next step, and every change is audited as `agent_settings_changed`.
 

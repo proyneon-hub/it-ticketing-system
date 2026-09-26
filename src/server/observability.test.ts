@@ -62,6 +62,7 @@ describe('the Grafana dashboard', () => {
     const text = agent.flatMap((panel) => panel.targets.map((t) => t.expr)).join('\n');
     for (const metric of [
       'agent_kill_switch',
+      'agent_circuit_open',
       'agent_cost_usd_today',
       'agent_proposals',
       'agent_events',

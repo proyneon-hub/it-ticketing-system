@@ -5,7 +5,8 @@ import { DEFAULT_PROMPT, loadPrompt, type Prompt } from '../agent/prompt';
 import type { ModelClient, RunContext, RunOutcome } from '../agent/types';
 import type { AgentRunMode } from '../../shared/agent-constants';
 import { agentEnabled } from '../config';
-import { effectiveMode } from '../domain/agentPolicy';
+import { breakerConfig, breakerState } from '../domain/agentBreaker';
+import { autoModeAvailable, effectiveMode } from '../domain/agentPolicy';
 import { isPricedModel } from '../domain/agentPricing';
 import { MAX_ATTEMPTS, backoffMs } from '../domain/outbox';
 import { logger } from '../logger';
@@ -150,11 +151,13 @@ interface Deps {
 
 type Handled = 'ran' | 'skipped' | 'failed';
 
-// The mode a run actually uses. Auto (the agent posting replies alone) does not exist yet, so a
-// setting of auto runs as assist: the agent triages and drafts, and a person still approves.
-const runnableMode = (mode: 'shadow' | 'assist' | 'auto'): AgentRunMode => {
-  if (mode === 'auto') {
-    logger.warn({ requested: mode }, 'Agent auto mode is not available yet; running as assist');
+// The mode a run actually uses. Auto (the agent posting replies alone) is only for a deployment that
+// allows it (autoModeAvailable: not on Vercel unless AGENT_ALLOW_AUTO=true). Anywhere else a setting of
+// auto runs as assist: the agent triages and drafts, and a person still approves. The server refuses
+// an auto post there too (services/agentResolutionService.ts), so this is not the only lock.
+const runnableMode = (mode: 'shadow' | 'assist' | 'auto', env: Env): AgentRunMode => {
+  if (mode === 'auto' && !autoModeAvailable(env)) {
+    logger.warn({ requested: mode }, 'Agent auto mode is not available here; running as assist');
     return 'assist';
   }
   return mode;
@@ -230,6 +233,24 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
     return 'skipped';
   }
 
+  // The model or the API is failing: stop asking, and leave the ticket with people, until it has had
+  // time to recover (domain/agentBreaker.ts). Worked out from the runs, so every instance agrees.
+  const breaker = breakerConfig(deps.env);
+  const state = breakerState(await runs.recentAttempts(breaker.failures), deps.clock(), breaker);
+  if (state.open) {
+    const paused = await runs.beginRun({ ...base, mode: 'shadow' }, deps.clock());
+    if ('started' in paused) {
+      await runs.finishRun(
+        paused.started._id,
+        paused.started.attempts,
+        emptyResult('circuit_open'),
+        deps.clock()
+      );
+    }
+    await done();
+    return 'skipped';
+  }
+
   // One requester's tickets may only be run so often, so a person raising a stream of them cannot
   // run up the bill. Past the limit the ticket goes to a person, as it would without the agent.
   const recent = ticket.requesterEmail
@@ -252,7 +273,7 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
     return 'skipped';
   }
 
-  const runMode = runnableMode(mode);
+  const runMode = runnableMode(mode, deps.env);
   const begun = await runs.beginRun({ ...base, mode: runMode }, deps.clock());
   if ('skipped' in begun) {
     if (begun.skipped === 'done') {
@@ -310,7 +331,7 @@ async function handle(event: OutboxEventRecord, deps: Deps): Promise<Handled> {
     observeRun(outcome, runMode, deps.model);
     // A reply waiting for a person is marked on the ticket first: if that fails, the run is retried as
     // a whole, and a proposal is never left on a run that no ticket points to.
-    if (runMode === 'assist' && outcome.outcome === 'proposed') {
+    if (runMode !== 'shadow' && outcome.outcome === 'proposed') {
       await recordProposal(ticketId, run._id);
     }
     await runs.finishRun(run._id, run.attempts, toResult(outcome), new Date());

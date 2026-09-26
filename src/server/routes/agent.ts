@@ -4,9 +4,11 @@ import { requireAuth, requireRole } from '../auth';
 import { actorOf as actor, auditContext } from '../http';
 import * as admin from '../services/agentAdminService';
 import { escalateTicket } from '../services/agentEscalationService';
+import { postResolution } from '../services/agentResolutionService';
 import { recordAudit } from '../services/auditService';
 import {
   parseAgentEscalation,
+  parseAgentResolution,
   parseApproveProposal,
   parseListAgentRunsQuery,
   parseRejectProposal,
@@ -74,6 +76,16 @@ router.post(
   requireRole('agent'),
   asyncHandler(async (req, res) => {
     const ticket = await escalateTicket(actor(req), parseAgentEscalation(req.body));
+    res.status(201).json({ ticket });
+  })
+);
+
+// The agent answering a ticket itself (auto mode). The server decides whether it may; see the service.
+router.post(
+  '/agent/resolutions',
+  requireRole('agent'),
+  asyncHandler(async (req, res) => {
+    const ticket = await postResolution(actor(req), parseAgentResolution(req.body));
     res.status(201).json({ ticket });
   })
 );

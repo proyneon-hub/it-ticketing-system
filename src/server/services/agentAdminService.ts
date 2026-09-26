@@ -2,6 +2,8 @@ import type { ListAgentRunsQuery, UpdateAgentSettingsInput } from '../../shared/
 import { hasAnthropicKey } from '../agent/anthropicClient';
 import type { TokenPayload } from '../auth';
 import { agentEnabled } from '../config';
+import { breakerConfig, breakerState } from '../domain/agentBreaker';
+import { autoModeAvailable } from '../domain/agentPolicy';
 import { assertStaff } from '../domain/permissions';
 import { NotFoundError, ValidationError } from '../errors';
 import * as runs from '../repositories/agentRunRepository';
@@ -18,19 +20,33 @@ export interface AgentSettingsView extends AgentSettingsValues {
   model: string;
   // What it has spent since 00:00 UTC, against `dailyCostCapUsd`.
   spentTodayUsd: number;
+  // Whether this deployment lets it answer without a person; where it does not, auto runs as assist.
+  autoAvailable: boolean;
+  // Whether it has paused itself because runs keep failing.
+  circuit: { open: boolean; consecutiveFailures: number; reopensAt?: string };
 }
 
 export async function getSettingsView(user: TokenPayload): Promise<AgentSettingsView> {
   assertStaff(user);
-  const [settings, spentTodayUsd] = await Promise.all([
+  const config = breakerConfig();
+  const now = new Date();
+  const [settings, spentTodayUsd, attempts] = await Promise.all([
     getSettings(),
-    runs.costSince(startOfUtcDay(new Date())),
+    runs.costSince(startOfUtcDay(now)),
+    runs.recentAttempts(config.failures),
   ]);
+  const circuit = breakerState(attempts, now, config);
   return {
     ...settings,
     enabled: agentEnabled() && hasAnthropicKey(process.env),
     model: agentModel(),
     spentTodayUsd,
+    autoAvailable: autoModeAvailable(),
+    circuit: {
+      open: circuit.open,
+      consecutiveFailures: circuit.consecutiveFailures,
+      ...(circuit.reopensAt ? { reopensAt: circuit.reopensAt.toISOString() } : {}),
+    },
   };
 }
 

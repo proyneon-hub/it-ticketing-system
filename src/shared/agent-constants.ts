@@ -53,8 +53,16 @@ export type AgentModel = (typeof agentModels)[number];
 
 // Where a ticket's proposed reply stands. none: the agent has not proposed one. pending: waiting for
 // a person. approved: posted as it was. edited: posted after a person changed it. rejected: a person
-// declined it, and the ticket carries on as any other.
-export const proposalStatuses = ['none', 'pending', 'approved', 'edited', 'rejected'] as const;
+// declined it, and the ticket carries on as any other. posted: the agent posted its reply itself, in
+// auto mode, with nobody reviewing it first.
+export const proposalStatuses = [
+  'none',
+  'pending',
+  'approved',
+  'edited',
+  'rejected',
+  'posted',
+] as const;
 export type ProposalStatus = (typeof proposalStatuses)[number];
 
 // Who last set a ticket's category, priority and group: the agent, or a person after it.

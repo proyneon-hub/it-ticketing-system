@@ -1,5 +1,12 @@
 import { agentModes, agentToolTiers, type AgentRunMode } from '../../shared/agent-constants';
-import { disposition, effectiveMode, mayPostAlone, type AgentPolicySettings } from './agentPolicy';
+import {
+  autoModeAvailable,
+  disposition,
+  effectiveMode,
+  mayPostAlone,
+  postingRefusal,
+  type AgentPolicySettings,
+} from './agentPolicy';
 
 const settings = (overrides: Partial<AgentPolicySettings> = {}): AgentPolicySettings => ({
   killSwitch: false,
@@ -122,5 +129,76 @@ describe('mayPostAlone', () => {
 
   test('an empty allowlist means never', () => {
     expect(mayPostAlone({ autoAllowlist: [] }, 'auto', 'Email')).toBe(false);
+  });
+});
+
+describe('autoModeAvailable', () => {
+  test('is available locally and in Docker, and not on Vercel', () => {
+    expect(autoModeAvailable({})).toBe(true);
+    expect(autoModeAvailable({ PORT: '5000' })).toBe(true);
+    expect(autoModeAvailable({ VERCEL: '1' })).toBe(false);
+  });
+
+  test('can be allowed on Vercel by saying so, and only by saying exactly true', () => {
+    expect(autoModeAvailable({ VERCEL: '1', AGENT_ALLOW_AUTO: 'true' })).toBe(true);
+    for (const value of ['1', 'yes', 'TRUE', '', 'false']) {
+      expect(autoModeAvailable({ VERCEL: '1', AGENT_ALLOW_AUTO: value })).toBe(false);
+    }
+  });
+});
+
+describe('postingRefusal', () => {
+  const allowed = settings({ defaultMode: 'auto', autoAllowlist: ['Email'] });
+
+  test('lets a high-confidence reply through where auto is on and the category is listed', () => {
+    expect(postingRefusal(allowed, 'Email', 'high', {})).toBeNull();
+  });
+
+  test('refuses while the kill switch is on, before anything else', () => {
+    expect(postingRefusal({ ...allowed, killSwitch: true }, 'Email', 'high', {})).toMatch(
+      /stopped/
+    );
+  });
+
+  test('refuses where the deployment does not allow auto mode', () => {
+    expect(postingRefusal(allowed, 'Email', 'high', { VERCEL: '1' })).toMatch(/not available/);
+    expect(
+      postingRefusal(allowed, 'Email', 'high', { VERCEL: '1', AGENT_ALLOW_AUTO: 'true' })
+    ).toBeNull();
+  });
+
+  test.each(['off', 'shadow', 'assist'] as const)(
+    'refuses a category whose own mode is %s, even though it is listed',
+    (mode) => {
+      const s = settings({ ...allowed, modeByCategory: { Email: mode } });
+      expect(postingRefusal(s, 'Email', 'high', {})).toMatch(/not on for the Email category/);
+    }
+  );
+
+  test('refuses a category that is not on the list, though auto is the mode', () => {
+    expect(postingRefusal(allowed, 'Network', 'high', {})).toMatch(/not on the list/);
+    expect(postingRefusal(settings({ defaultMode: 'auto' }), 'Email', 'high', {})).toMatch(
+      /not on the list/
+    );
+  });
+
+  test('never answers Security alone, even if it is wrongly on the list', () => {
+    const s = settings({ defaultMode: 'auto', autoAllowlist: ['Security'] });
+    expect(postingRefusal(s, 'Security', 'high', {})).toMatch(/never answers a Security ticket/);
+  });
+
+  test.each(['medium', 'low', '', 'HIGH', 'certain'])('refuses confidence %j', (confidence) => {
+    expect(postingRefusal(allowed, 'Email', confidence, {})).toMatch(/high confidence/);
+  });
+
+  test('a category that only looks like a setting name gets the default, not an inherited value', () => {
+    expect(
+      postingRefusal(
+        settings({ defaultMode: 'assist', autoAllowlist: ['constructor'] }),
+        'constructor',
+        'high',
+        {}
+      )
+    ).toMatch(/not on for/);
   });
 });

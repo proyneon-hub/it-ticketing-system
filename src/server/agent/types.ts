@@ -59,6 +59,14 @@ export interface AgentApi {
   // If the ticket changes while this is happening it reads it again and tries once more, and then
   // gives up with an ApiError that says so (409).
   setTriage(id: string, triage: Triage): Promise<void>;
+  // Answers the ticket with the reply, without a person approving it first (auto mode). The server
+  // decides whether that is allowed and refuses (403) where it is not.
+  postResolution(input: {
+    ticketId: string;
+    replyMarkdown: string;
+    citedKbIds: string[];
+    confidence: AgentConfidence;
+  }): Promise<void>;
   // Hands the ticket to a group, and leaves the summary for whoever picks it up.
   escalate(input: {
     ticketId: string;

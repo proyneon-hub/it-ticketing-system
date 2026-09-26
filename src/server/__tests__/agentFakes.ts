@@ -141,6 +141,15 @@ export function fakeApi(
         }
       );
     },
+    async postResolution(input) {
+      return track(
+        'postResolution',
+        `${input.ticketId} ${input.confidence} ${input.citedKbIds.join(',')}`,
+        () => {
+          if (input.ticketId !== ticket._id) throw new ApiError(403, 'FORBIDDEN', 'forbidden');
+        }
+      );
+    },
     async escalate(input) {
       return track('escalate', `${input.ticketId} ${input.assigneeGroup} ${input.reason}`, () => {
         if (input.ticketId !== ticket._id) throw new ApiError(403, 'FORBIDDEN', 'forbidden');

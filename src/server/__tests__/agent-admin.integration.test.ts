@@ -89,6 +89,8 @@ describe('GET /agent/settings', () => {
       enabled: false,
       model: 'claude-sonnet-5',
       spentTodayUsd: 0,
+      autoAvailable: true,
+      circuit: { open: false, consecutiveFailures: 0 },
     });
   });
 

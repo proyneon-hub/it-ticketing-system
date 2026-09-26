@@ -320,12 +320,21 @@ async function main(): Promise<number> {
     await new Promise<void>((resolve) => listening.once('listening', () => resolve()));
     const baseUrl = `http://127.0.0.1:${(listening.address() as AddressInfo).port}`;
 
-    const login = await fetch(`${baseUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: 'tech@demo.local', password: 'TechPass123!' }),
-    });
-    const staffToken = ((await login.json()) as { token: string }).token;
+    // A technician's token, signed in again every ten minutes: an access token lasts fifteen, and a full
+    // run takes longer than that.
+    let staffToken = '';
+    let signedInAt = 0;
+    const freshStaffToken = async (): Promise<string> => {
+      if (staffToken && Date.now() - signedInAt < 10 * 60_000) return staffToken;
+      const login = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'tech@demo.local', password: 'TechPass123!' }),
+      });
+      staffToken = ((await login.json()) as { token: string }).token;
+      signedInAt = Date.now();
+      return staffToken;
+    };
 
     const live = source === 'live' || args.grade ? new AnthropicModelClient() : undefined;
     const recorders = new Map<string, RecordingModelClient>();
@@ -354,7 +363,7 @@ async function main(): Promise<number> {
     const { results, truncated } = await runEvaluation({
       tickets,
       baseUrl,
-      staffToken,
+      staffToken: freshStaffToken,
       model,
       prompt,
       modelFor,

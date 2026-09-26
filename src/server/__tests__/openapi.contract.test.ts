@@ -459,12 +459,12 @@ describe('responses match their documented schemas', () => {
   });
 
   test('the agent endpoints match their schemas', async () => {
-    const newTicket = async (title: string) =>
+    const newTicket = async (title: string, category?: string) =>
       (
         await request(app)
           .post('/api/tickets')
           .set(as('user'))
-          .send({ title, description: 'It keeps dropping.' })
+          .send({ title, description: 'It keeps dropping.', ...(category ? { category } : {}) })
           .expect(201)
       ).body.ticket._id as string;
 
@@ -572,6 +572,43 @@ describe('responses match their documented schemas', () => {
     conforms('TicketEnvelope', handed.body);
     used('agentEscalate');
     conforms('Error', (await post('/api/agent/escalations', 'tech').expect(403)).body);
+
+    // The agent answering a ticket itself, where auto mode is on for its category.
+    await request(app)
+      .put('/api/agent/settings')
+      .set(as('admin'))
+      .send({ defaultMode: 'auto', autoAllowlist: ['Network'] })
+      .expect(200);
+    const answerable = await newTicket('VPN drops again', 'Network');
+    const answerToken = await issueServiceToken({
+      ticketId: answerable,
+      runId: String(first.run._id),
+    });
+    const answerBody = {
+      ticketId: answerable,
+      replyMarkdown: 'Reconnect the VPN, then restart your laptop if it still drops.',
+      citedKbIds: ['KB-006'],
+      confidence: 'high',
+    };
+    const answered = await request(app)
+      .post('/api/agent/resolutions')
+      .set({ Authorization: `Bearer ${answerToken}` })
+      .send(answerBody)
+      .expect(201);
+    conforms('TicketEnvelope', answered.body);
+    expect(answered.body.ticket.agent.proposalStatus).toBe('posted');
+    used('agentResolve');
+    const posted = await get(`/api/tickets/${answerable}/comments`, 'user').expect(200);
+    conforms('CommentList', posted.body);
+    expect(posted.body.comments[0]).toMatchObject({ source: 'agent' });
+    expect(posted.body.comments[0].approvedBy).toBeUndefined();
+    const refused = await request(app)
+      .post('/api/agent/resolutions')
+      .set({ Authorization: `Bearer ${answerToken}` })
+      .send(answerBody);
+    conforms('Error', refused.body);
+    expect(refused.status).toBe(409);
+    conforms('Error', (await post('/api/agent/resolutions', 'tech').expect(403)).body);
 
     // Settings and runs.
     const settings = await get('/api/agent/settings', 'tech').expect(200);

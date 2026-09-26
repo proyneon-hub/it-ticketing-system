@@ -270,6 +270,7 @@ describe('a proposal already decided', () => {
     ['approved', 'Approved and posted to the requester as written.'],
     ['edited', 'Approved after editing, and posted to the requester.'],
     ['rejected', 'Rejected. Nothing was posted to the requester.'],
+    ['posted', 'Posted by the agent on its own. Nobody reviewed it before the requester saw it.'],
   ] as const)('shows %s as read-only, with no buttons', async (status, text) => {
     vi.mocked(api.fetchTicket).mockResolvedValue({ ticket: withProposal(status) });
     vi.mocked(api.fetchProposal).mockResolvedValue({ proposal: makeProposal({ status }) });
@@ -311,6 +312,29 @@ describe('agent comments in the thread', () => {
     ).toBeInTheDocument();
   });
 
+  it('says a reply the agent posted alone was not reviewed', async () => {
+    vi.mocked(api.fetchTicket).mockResolvedValue({ ticket: makeTicket() });
+    vi.mocked(api.fetchComments).mockResolvedValue({
+      comments: [
+        makeComment({
+          body: REPLY,
+          source: 'agent',
+          author: {
+            id: 'service-desk-agent',
+            name: 'Service Desk Agent',
+            email: 'agent@service.local',
+            role: 'agent',
+          },
+        }),
+      ],
+    });
+    await open('user');
+
+    const [comment] = await screen.findAllByTestId('comment');
+    expect(within(comment!).getByText('AI-generated · not reviewed')).toBeInTheDocument();
+    expect(within(comment!).queryByText(/approved by/)).not.toBeInTheDocument();
+  });
+
   it('labels an internal note the agent left, without claiming a person approved it', async () => {
     vi.mocked(api.fetchTicket).mockResolvedValue({ ticket: makeTicket() });
     vi.mocked(api.fetchComments).mockResolvedValue({
@@ -334,5 +358,6 @@ describe('agent comments in the thread', () => {
     expect(within(note!).getByText('AI-generated')).toBeInTheDocument();
     expect(within(note!).getByText(/Internal note/)).toBeInTheDocument();
     expect(within(note!).queryByText(/approved by/)).not.toBeInTheDocument();
+    expect(within(note!).queryByText(/not reviewed/)).not.toBeInTheDocument();
   });
 });

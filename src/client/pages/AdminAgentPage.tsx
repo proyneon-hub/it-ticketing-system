@@ -21,7 +21,7 @@ const MODE_TEXT: Record<AgentMode, string> = {
   off: 'Off: does nothing',
   shadow: 'Shadow: records what it would do',
   assist: 'Assist: triages, and a person approves replies',
-  auto: 'Auto: not available yet, runs as assist',
+  auto: 'Auto: may answer alone, for the categories ticked below',
 };
 
 const DEFAULT_CHOICE = 'default';
@@ -119,6 +119,22 @@ function Controls({ settings }: { settings: AgentSettings }) {
 
   return (
     <>
+      {settings.circuit.open ? (
+        <div className="agent-status stopped" role="alert" data-testid="circuit-open">
+          <div>
+            <strong>The agent has paused itself.</strong>
+            <p>
+              {settings.circuit.consecutiveFailures} runs failed in a row, so new tickets go
+              straight to people until{' '}
+              {settings.circuit.reopensAt
+                ? formatDate(settings.circuit.reopensAt)
+                : 'it has recovered'}
+              , when it will try one again.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div className={`agent-status ${settings.killSwitch ? 'stopped' : 'running'}`}>
         <div>
           <strong>{settings.killSwitch ? 'The agent is stopped.' : 'The agent is running.'}</strong>
@@ -157,6 +173,12 @@ function Controls({ settings }: { settings: AgentSettings }) {
               </option>
             ))}
           </select>
+          {!settings.autoAvailable ? (
+            <p className="hint" data-testid="auto-unavailable">
+              Auto mode is not available on this deployment, so a setting of auto runs as assist
+              here: the agent drafts and a person approves.
+            </p>
+          ) : null}
         </div>
 
         <div className="table-wrap">

@@ -1,6 +1,7 @@
 import { ValidationError } from '../errors';
 import {
   agentEscalationSchema,
+  agentResolutionSchema,
   approveProposalSchema,
   listAgentRunsQuerySchema,
   rejectProposalSchema,
@@ -12,6 +13,7 @@ import {
   patchTicketSchema,
   trendsQuerySchema,
   type AgentEscalationInput,
+  type AgentResolutionInput,
   type ApproveProposalInput,
   type ListAgentRunsQuery,
   type RejectProposalInput,
@@ -63,6 +65,8 @@ export const parseRejectProposal = (body: unknown): RejectProposalInput =>
   parseOrThrow(rejectProposalSchema, body ?? {});
 export const parseAgentEscalation = (body: unknown): AgentEscalationInput =>
   parseOrThrow(agentEscalationSchema, body);
+export const parseAgentResolution = (body: unknown): AgentResolutionInput =>
+  parseOrThrow(agentResolutionSchema, body);
 export const parseUpdateAgentSettings = (body: unknown): UpdateAgentSettingsInput => {
   const changes = parseOrThrow(updateAgentSettingsSchema, body);
   if (Object.keys(changes).length === 0) {

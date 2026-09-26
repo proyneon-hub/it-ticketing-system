@@ -160,12 +160,6 @@ const decisionFor = (
   },
 });
 
-// Posting a reply without a person is the auto mode's, and it does not exist yet: the tool is defined
-// so the model is told about it, and refused everywhere it could run.
-const notYet = async (): Promise<never> => {
-  throw new ToolUnavailable('Posting replies without a person is not available yet.');
-};
-
 // What a ticket looks like in a list of similar tickets: enough to recognise it, without the
 // description, which is often long and is someone else's text.
 const brief = (ticket: Ticket) => ({
@@ -363,7 +357,17 @@ const postResolution = defineTool({
   },
   summarize: summarizeResolution,
   decide: (input) => decisionFor('posted', input),
-  execute: notYet,
+  // The server checks again, against the settings as they are now: it refuses (403) where posting
+  // alone is not allowed, and the model is told, so it can propose the reply instead.
+  async execute(input, ctx) {
+    await ctx.api.postResolution({
+      ticketId: ctx.ticketId,
+      replyMarkdown: input.reply_markdown,
+      citedKbIds: [...new Set(input.cited_kb_ids)],
+      confidence: input.confidence,
+    });
+    return { done: true, note: 'Your reply has been posted to the requester.' };
+  },
 });
 
 // The four parts of an escalation, as lines a person reads without opening the ticket.

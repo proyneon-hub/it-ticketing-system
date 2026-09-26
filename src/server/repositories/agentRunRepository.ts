@@ -218,3 +218,16 @@ export const costByModelSince = (since: Date): Promise<{ _id: string; total: num
     { $match: { startedAt: { $gte: since } } },
     { $group: { _id: '$model', total: { $sum: '$costUsd' } } },
   ]);
+
+// The most recent runs that really tried something (finished, not stopped on purpose), newest first.
+// The circuit breaker is worked out from these.
+export async function recentAttempts(limit: number): Promise<{ outcome: string; at: Date }[]> {
+  const rows = await AgentRun.find(
+    { outcome: { $nin: ['running', 'aborted'] } },
+    { outcome: 1, finishedAt: 1, startedAt: 1 }
+  )
+    .sort({ finishedAt: -1, startedAt: -1 })
+    .limit(limit)
+    .lean<{ outcome: string; finishedAt?: Date; startedAt: Date }[]>();
+  return rows.map((row) => ({ outcome: row.outcome, at: row.finishedAt ?? row.startedAt }));
+}

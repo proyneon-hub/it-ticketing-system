@@ -44,6 +44,8 @@ export interface AgentMockState {
     enabled: boolean;
     model: string;
     spentTodayUsd: number;
+    autoAvailable: boolean;
+    circuit: { open: boolean; consecutiveFailures: number; reopensAt?: string };
   };
   // The bodies the page sent, in order, so a test can say exactly what was asked.
   requests: { path: string; method: string; body: unknown }[];
@@ -90,6 +92,8 @@ export async function installAgentMocks(page: Page): Promise<AgentMockState> {
       enabled: true,
       model: 'claude-sonnet-5',
       spentTodayUsd: 0.0234,
+      autoAvailable: true,
+      circuit: { open: false, consecutiveFailures: 0 },
     },
     requests: [],
     conflictNext: false,

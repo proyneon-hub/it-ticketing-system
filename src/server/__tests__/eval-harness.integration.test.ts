@@ -511,6 +511,24 @@ describe('how the harness runs a case', () => {
   );
 
   test(
+    'asks for a fresh token before each call when it is given a way to get one, so a long run outlives a token',
+    async () => {
+      const issued: string[] = [];
+      const { results } = await evaluate([golden[0]!, golden[1]!], undefined, {
+        staffToken: async () => {
+          // Whatever the token was before, this is the one that works.
+          issued.push('asked');
+          return staffToken;
+        },
+      });
+      expect(results.map((r) => r.score.actionOk)).toEqual([true, true]);
+      // At least once for each ticket created, and once more for each earlier ticket and edit.
+      expect(issued.length).toBeGreaterThanOrEqual(2);
+    },
+    BIG
+  );
+
+  test(
     'stops before the first ticket if the limit is nothing',
     async () => {
       const { results, truncated } = await evaluate(golden, undefined, { maxCostUsd: 0 });
