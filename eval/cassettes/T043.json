@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErgCCpABCBIYAipARF8G/snoX+xWxQqtvdmIyD1Lz46Z1FsfcFcfULP3ehFCHT8AGKJgSVhgBRaUyPZFho5nf8EWMR5n72j4CC1h8TIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcaZ3NUGEgwLW545iFPmWz4IStcaDLXe5qU1JQKJHjEG8CIwgxfMGxLtQ7ojivJTDHoRUqfZwGjiujbL1tNxaFa+zUvEOtse9yKV5zT9zS6kknT2KlXmcCudZqVRNZWKhTgTNRkDdqrdFC88ZfWQ5Zp+2QviOiy3qVWOY/5E1IeEOOm7oaqf/Z/ch/2uQmC8+QNGLooKzXefTTJl0GsrCR13WNUScGCODyFWGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ChJYrcxWV7U2fzL5qWWzcK",
+          "name": "search_kb",
+          "input": {
+            "query": "macro run-time error 1004 after Office update"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01PgPeTep1dViYF9vikc7Evb",
+          "name": "search_tickets",
+          "input": {
+            "query": "macro broke after Office update run-time error 1004",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 364,
+        "output": 171,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Et4DCpABCBIYAipAvUsiffG6rp3ChZI5ou7xeQZX9xWC1VZvk3O+n6206kWlYfkI2I/agYnU2uIWPY3b63LNKUZreM++JfcLVqBCQzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcmZ3NUGEgy8yhg9G2oLJlxIoWkaDNoW9pSP0BcHlPVq+iIw4m9VnQry9hkv5TgP6BEsJpeXnuoZBtBQ0vL92P/kF8vcrf/XvMa1SjTJwa5n0k+LKvoBohMfG5u6kKUF5tuPIFdstK2gsf1ZnbcjpBpMMisYKt8md2YQij2OrsS1ywSQeIwee89o6wrvE6G7Jqpl5fxBMMne8NW43tLeJOE6w61e9kO4BU4nm3AXqYisC16w3YF/cVi/O5jG6JUpsAMNzRwTPS6ywlQydbLTWqv11zimB61OYkpzIpyRprkvAAp5LhakGakKhXwbo5TxiDuASW/A20vHekd0k9vSLleHuzXWmg1Vi1LAryTOjhJU9qgaiskL2yvXhjHUAkThVLjw1qDDL31r6JcX6RKjpSyJg5UzvhNgsCk89vVaSeAU39HE5Du83QerssNcQtLf2hgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01K1Db2djYXsdxf1dcR6UU2R",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Finance macro fails with a run-time error after an Office update; a workaround (using the macro before update or manual entry) likely exists, so this is a degraded but not blocking issue, and no KB article addresses VBA macro compatibility."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1183,
+        "output": 326,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_019WkrGu7R7FR1NzkpJYkskq",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Help Desk",
+            "reason": "out_of_kb_scope",
+            "summary": {
+              "reported": "Requester says their finance month-end Excel macro now throws a Run-time error 1004 since a recent Office update; it worked previously.",
+              "checked": "Searched the knowledge base for macro/VBA errors, Run-time error 1004, and Office update issues, and searched past tickets for similar cases. No KB article covers macro/VBA compatibility issues or this specific error code.",
+              "ruled_out": "General app freeze/crash article (KB-023) and licence error article (KB-020) do not match this specific VBA run-time error scenario, so they were not used.",
+              "why_escalating": "No knowledge-base article addresses Excel/VBA macro run-time errors after Office updates, so a technician needs to investigate the macro code, Office update changes (e.g., security settings, reference libraries, trust center changes), and possibly test a rollback or code fix."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1554,
+        "output": 425,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

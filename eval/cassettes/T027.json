@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a phishing report - a classic case that must be escalated to the Security Team, not troubleshot."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Nm7XRsv1vsa1nZV2MvGphF",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "high",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "Requester reports a phishing-style email asking to confirm password via link; this is a security incident requiring specialist handling, not a how-to fix."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 382,
+        "output": 243,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01J99tsBn3rdDcWDCYu5phn2",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester received an email purporting to be from 'IT Helpdesk' claiming their mailbox will be deleted unless they confirm their password via a link. They state they have not clicked the link.",
+              "checked": "Reviewed ticket details; no comments or prior history to review. This matches a typical phishing pattern (urgency, credential harvesting link, spoofed sender).",
+              "ruled_out": "Not a routine password reset or account request; not treated as a how-to knowledge-base fix.",
+              "why_escalating": "Unexpected emails asking to confirm or reset a password via a link are treated as phishing incidents per policy and must be handled by the Security Team, including checking headers, blocking/reporting the sender, and confirming no credentials were entered."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 671,
+        "output": 383,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a security incident - the requester was socially engineered into giving their MFA code to someone impersonating IT. This needs immediate escalation to Security Team, not a KB resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01NAjq9AQfbizPwVi2etRMNT",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "urgent",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "Requester disclosed a live MFA code to an unverified caller claiming to be IT, indicating a likely account compromise via social engineering/vishing."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01P2kDpr2wYFqsX6q2gGRoPX",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester received a phone call from someone claiming to be from IT, who asked them to read out their authenticator app MFA code, and they complied. They are now asking if this was okay.",
+              "checked": "Reviewed ticket details; no prior similar tickets checked needed given clear indicators of a vishing/social engineering attempt targeting MFA codes.",
+              "ruled_out": "This is not a routine MFA or password reset request; it is a live account compromise risk since a valid MFA code was shared with an unverified third party.",
+              "why_escalating": "This is a security incident requiring immediate action: the shared MFA code could allow an attacker to access the account right now. Security Team should verify account activity, force a password/MFA reset, and advise the requester, rather than receiving self-service troubleshooting steps."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 667,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

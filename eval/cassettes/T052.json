@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqwCCpABCBIYAipAWx8A5flgL57rrtSzXC5ZztwunxtPtpFyhrobwCvJGyPRPsUQTkiVY748czuWlwXh1GcHYWmG08BiPphdBUDV3TIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaaa3NUGEgyCQYKXiKtLkijoDXEaDM13X/hKdS0pLUmA8SIwSuC+Ec3gwdnmgth19PpVrOs0PhK05VjLH/oIlgx/Ff+9KjqEphNxd7GpCtZUwQYrKklpA5GPRyARZEcTZoTPMMmN60rP+IZd3sUmY8XZIwpFYMHLegTSKh27JTK32+D21gd5urjsU9eezaINb/BVQhfAHNSN75vw+CdoGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01U5i46Xcz8MM94wdUGKzAJ5",
+          "name": "search_kb",
+          "input": {
+            "query": "Wi-Fi connected but no internet access laptop"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01EVNBsXmc3ftLMRanpPNBmS",
+          "name": "search_tickets",
+          "input": {
+            "query": "Wi-Fi connected but no internet laptop second floor",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 385,
+        "output": 172,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01KEGompxPu2HBwcWHE2mibq",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-008"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1239,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpIECpABCBIYAipA55EQ5WT/VgEkW3f5twY8uidl3bU5o8ekojcTEhwUCzfINmJy0WhVHu6z03kTjnnovOELfTxDYeV/2Hp6ggG3BjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaua3NUGEgxydVQLT41k/gyGz+IaDOUoGKHuoavo4zhD1CIw8aoPAn1XFz9QX+d6jdLFP6XwYfC2XXCpcIOlCyH0n39VTamsvKQozbPhLauYruKXKq4C4NMzM5n7H6U0IGyOsKiFoI2BATSchlTrb+J7b226Ipn8osSrmEeA0mOaeaPenMr9inR711u0YeceEAES+uboJg5haC34dYR2UFFIDXTSetiUokzr8lWyNY38uxeJ/k4tLdzEF8o/vDS3J+0xCfp1I4DlCdYcaYVm5tWGRM+116bX8esqqesGKeF7rbyYpxU5co59Ru6RSC0Jw5HajFwAkRUNaxmM+O1k5nnbpQMrR8zQB76HCwjOOMpTx8X+Cc9N/M+vDtT1XVn0iMbd0NFY2Y9Bj8/apaPoKJqnyks9dTCOPF8l5V+Mj5ym6A7K+RlK9oJM4yQvtglL8r1Erk1wqY+R6gfTC3jpT8sv3O5t/5Dl4AbXiWYq9p9Rkla8qccgsqHdZhVAIrhVUgEUKtsYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HdF9w671gv4zJN42RkmaSB",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "medium",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "Wi-Fi connectivity issue affecting one laptop on second floor with a workaround (phone works fine), consistent with known Wi-Fi troubleshooting steps."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1783,
+        "output": 323,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_011aGw5k3dBMV2EeXthBM5Re",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the trouble on the second floor! Since your phone works fine on the same Wi-Fi, this looks like a laptop-side connection issue. Please try these steps:\n\n1. Turn Wi-Fi off and back on using your laptop's Wi-Fi switch or network menu.\n2. Restart the laptop — this clears most short-lived faults.\n3. Forget the network and reconnect: on Windows go to Settings > Network and internet > Wi-Fi > Manage known networks > Forget, then reconnect with your credentials. On a Mac, remove the network in Wi-Fi settings and join it again.\n4. Move a bit closer to an access point, since walls and lifts can weaken the signal.\n5. Check for a pending system update and install it if one is available.\n\nIf none of this helps, or if you notice colleagues nearby having the same issue at the same time, please reply and let us know where you sit and when it started — that would point to an issue with the access point rather than your laptop, and we can route it accordingly.",
+            "cited_kb_ids": [
+              "KB-008"
+            ],
+            "confidence": "medium",
+            "reasoning_summary": "KB-008 covers Wi-Fi showing connected but not working, with standard troubleshooting steps; it matches the symptom closely though doesn't guarantee the fix, hence medium confidence."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2151,
+        "output": 568,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

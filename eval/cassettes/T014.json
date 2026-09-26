@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpoCCpABCBIYAipAKQNf5l2czpDp3OygnfXOcxtEt/NJXtnUjoYY0BPC+czCAOK80g8d+n1ibFDAWmVypzri5CmNHPaxeqjRezmeoDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYOX3NUGEgyYN9CrtqM+AWpopgUaDOFGU+SsBhtK9fRK9iIwP6aqvpUPuZB9zVH3Mirwpy73x6Bgi7M31quS+IpbpLMCVZF414We7GAm3Cm+pbDtKjdULzSTXbw920i8Rogrb1TdHjjhuYnSIrIwIeb28qqVtYaexYHjrk2YFjArd6nyGQF80Ad19+/WGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0182cMoKNEVrwGbvdRabzTEV",
+          "name": "search_kb",
+          "input": {
+            "query": "no sound Teams calls headset"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 375,
+        "output": 75,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_0172afhj1WQN6Jj8t7XStynC",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-021"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1050,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well. Set triage and propose resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01D8iXGrQ6dKbxKpWaKfJsk1",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "high",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Audio failure in Teams blocking an important client call this afternoon, with no workaround, matches a known KB fix for software/device settings."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1609,
+        "output": 226,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_011XQGqktAtJJhxowZRnX4f9",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about this, especially with a client call coming up. Here are some quick checks that usually fix Teams audio issues:\n\n1. In the call, open device settings and confirm the correct speaker and microphone are selected. If the headset was unplugged earlier, Teams may still be pointing to the wrong device.\n2. Check the mic isn't muted, both in Teams and on the headset/keyboard mute button.\n3. Check the volume is up, and if it's a Bluetooth headset, make sure it isn't connected to your phone instead of your laptop.\n4. Close any other apps that might be using the camera or mic (another call app, a recording tool, etc.).\n5. On Windows: Settings > Privacy and security (or on Mac: System Settings > Privacy and security) - make sure Teams is allowed to use the microphone and camera.\n6. Fully quit Teams (not just close the window) and reopen it, then try a test call.\n7. If it still doesn't work, restart your laptop.\n\nIf none of this helps, please let us know: does it fail with every headset, or just this one? Does the built-in speaker/mic work? And can a colleague hear you on a normal phone call? That will help us narrow down whether it's a Teams setting or a hardware issue - and given your afternoon call, we'll prioritise getting this sorted quickly.",
+            "cited_kb_ids": [
+              "KB-021"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-021 directly covers no audio in Teams calls with headsets, providing exact troubleshooting steps for this scenario."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1881,
+        "output": 644,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

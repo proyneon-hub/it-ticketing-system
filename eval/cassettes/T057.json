@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ep0CCpABCBIYAipA1nGxOtrU9VOH0m850U9h8bPuM8kKCoAovicNYCdRQu616oaIWvR+HDUAvmZeXf2VFfLCaoHc97DbQZY7il8uSTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeaa3NUGEgwHnxwp3Zr5DVI95A8aDCnsEneXihP9fjStFCIwUOcEXiazdmBE/T1a6KPegIATzXx+/f3h4RHFHsnVEmNeiZU9KNFMqvRBvSzNfh1rKjoTTNwQWt4QvORzpsVovCAsrQ8iBy5DM36ETKqUix3lfFpb/M3XMMBhRxoBqyoGgo9gsrSFnHqVj/p3GAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01X6k1CCiQhnGbywT1355Jwu",
+          "name": "search_kb",
+          "input": {
+            "query": "printer offline after moving desks"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JKzKb7kPD9oSpFSQJkrCig",
+          "name": "search_kb",
+          "input": {
+            "query": "printer offline"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 376,
+        "output": 121,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01DvPomMAnUoQvk1rJ8Ea8uU",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-011"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1492,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - it's a hardware/printer offline issue affecting the whole team, likely a network path issue since they moved desks (printer's location/network changed relative to them)."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01P2HRp4uPiZ34Zki8FMxUF8",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Whole team blocked from printing to a specific office printer after a desk move, likely a network/connection issue with a workaround (other printers) available; Field Services can check the physical device and network setup."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1972,
+        "output": 282,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01WvizcSrFZkxCtcqgrAbLEC",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the trouble with the printer after your move! Since the whole team is affected, this is likely a connection issue between your area and the printer. Please try these steps:\n\n1. Check the printer itself: make sure it is powered on, has no error shown on its screen, and is not out of paper or toner.\n2. Check the printer's network connection: a cable plugged in, or Wi-Fi shown on its screen. Restart the printer and wait two minutes.\n3. Make sure your laptop is connected to the office network (or VPN if working remotely) — office printers can't be reached from a plain home connection.\n4. On Windows: go to Settings > Printers and scanners, select the printer, open **Printer properties**, and make sure **Use printer offline** is unticked. On a Mac: remove the printer and add it again.\n5. Restart your laptop and try printing a test page.\n\nIf it still shows offline after trying this, please reply with the printer's name (found on a label on the front) and its location, so we can look into it further.",
+            "cited_kb_ids": [
+              "KB-011"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-011 directly addresses a printer showing offline, including checking the device, network connection, and offline settings, which covers this scenario of a printer becoming unreachable after a desk relocation."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2300,
+        "output": 556,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

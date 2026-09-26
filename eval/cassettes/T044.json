@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a request for access to a restricted area (comms room) - this requires permission verification, not a troubleshooting fix. This falls under account access/permissions changes."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014JYNAvWjgNF7DQKYLsQxsf",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "medium",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Badge access denial to a restricted comms room is a permissions issue requiring verification of authorized access, not a simple troubleshooting fix; workaround may exist via other means so not urgent/high."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 365,
+        "output": 279,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErwCCpABCBIYAipA5FSGv+5xacmeGC/xMUQZFCliz1Ky4914M/OmYvY4r8UOVvaUgvx9cTCb3p3BQzXi51qxy58GFCjg6bWwf9VNkjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdWZ3NUGEgzA89f6Q6jvvs0+rhYaDIRtUUOJhUFzP3KMvSIwQz7z6WCFqYd4LdEPdpXEbgFFxsi7+ubczYcNquFKIXBjRZfarimE1cRbmzD+jfEWKlkRgvamxtQlY2zPSdQvNpeCYLzeWVjwSYCHIk7A1I4s5dZSlpxWXxurDVDzEkPxqWbgSyCM2Oxjd0Ey7IgGbpO6MGYXDWgDtuz0tig9tSpeFZP9owBuakWxrRgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Tq4myc2EGnAm2ps8k9FJ4b",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "account_access_change",
+            "summary": {
+              "reported": "Requester's badge no longer opens the comms room door (beeps red), while other doors work fine for them.",
+              "checked": "Confirmed this is a physical access control issue specific to one restricted room, not a general badge malfunction.",
+              "ruled_out": "Not a broader badge system outage since other doors work; not a hardware fault with the badge itself.",
+              "why_escalating": "This requires verifying whether the requester's access to the comms room was intentionally revoked or needs restoring, which is a permissions/access-list change that only Access Management can authorize and action."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 690,
+        "output": 346,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

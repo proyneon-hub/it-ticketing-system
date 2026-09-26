@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErICCpABCBIYAipAgDvNeU5rDbFv9lxQeWcMIcMIWXyNJ93JneCEwFjJ3nDH+zvXF9vavsAjNAYwO0NSfOwtGqOqa4duxkGnIeUYhjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcGa3NUGEgxvQwSa5nsV1bUmPqUaDEQaz4Z/4X3gsaRaxyIwPB8dvvIkoOg4bTqddlM3eGJc45za7iMN40QAAMjMlCLMKYLnEHiBZlrG9KKuph4vKk8eZlyNte9yzeYcLqh0ccXAZZARkMZY2Ou1IE5f2NO+NAUv9cDBKO0XWhd4zfRI/Wpr5xq7aV12Qp9rxRScjmf2yYG1+V82spNwF4io1A8CGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01919XB15XZeNPdspBE9RLoU",
+          "name": "search_kb",
+          "input": {
+            "query": "meeting room screen no signal HDMI"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 373,
+        "output": 87,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01F3mjDt2LZHVRPWTy14o7LV",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-014"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1075,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - covers \"No signal\" HDMI issue directly."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01KWq3xNN9iqUMBxxVj5fH6i",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Meeting room display hardware issue with a workaround (other rooms/screens likely available), matches KB troubleshooting for no-signal displays."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1603,
+        "output": 237,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_0192yZM1GHxkXz7JwgHczJPU",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the trouble with the screen in Meeting Room 4! Here are a few steps that usually fix a \"No signal\" message:\n\n1. Check the screen is switched on and set to the right input (HDMI). Most screens have an input button you can press to cycle through inputs (HDMI, DisplayPort, USB-C).\n2. Unplug the HDMI cable at both ends and plug it back in firmly. If another cable is available, try that instead.\n3. If the laptop connects through a docking station, unplug the dock's power for 30 seconds, plug it back in, then reconnect the laptop.\n4. Wake the laptop by pressing a key, then close and reopen the lid.\n5. On Windows, press Windows key + Ctrl + Shift + B to reset the graphics driver. On a Mac, unplug and reconnect the display.\n6. If you can, check the display refresh rate is set to 60 Hz, as a higher setting can cause issues on older cables.\n7. Restart the laptop with the screen connected.\n\nIf none of this helps, please let us know the screen's model, whether a dock is involved, and the type of cable used, along with whether the issue also happens on another screen. That will help us dig further.",
+            "cited_kb_ids": [
+              "KB-014"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-014 directly addresses a \"No signal\" display message with a full troubleshooting sequence that matches the reported symptom exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1886,
+        "output": 607,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErMCCpABCBIYAipAfdc/0CFFmtssMdxZQ1ueLRkRpHJQAL1FqyoQ8tNpGyGw/DVwPwGQ9+tbe7xEGzSPwyvvXybqslZ6KM2Q9LVbKTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAc6a3NUGEgxPaFFi5y/jxBeQLOIaDP3jkn5JBDzYw34xiyIwMP4yCVz952uBJ24K+EBGPgjQ84MzSy2Xs/2XR7rRlcBOirZ4KwlA49l8H07ewrAeKlD7HOPiL2skkdNPEOp5Xp2p5HbKjv5UAxWIfW/Y6RcRIeg7OmbvJl08nIb5j66F7GNSnVL6KJwtCI+uem9ALwP+Wf7NynCRJjtOnPmjCCWerxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Nx9q64fVgrmNhzwoXYZGFs",
+          "name": "search_kb",
+          "input": {
+            "query": "docking station monitors black screen after sleep wake"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01XAMRoCgNLVQbs1dcqDRZnq",
+          "name": "search_tickets",
+          "input": {
+            "query": "docking station dual monitor black screen wake from sleep",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 383,
+        "output": 168,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "KB-014 looks directly relevant. Let me read it in full."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0117gpkm3AsUtRiavdJnhkJo",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-014"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1240,
+        "output": 78,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well. Now set triage and propose resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_019USpae8ABmpH4heF7DXAtd",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Dual monitor black screen on wake via docking station is a hardware display issue with a workaround (can restart), matching KB-014 exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UoyKh9YAmnuHbreguEFm59",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex, sorry about the flaky screens after wake-up. Here are some steps that usually fix this:\n\n1. Check the monitors are switched on and set to the right input (HDMI, DisplayPort or USB-C) - the input button on the monitor lets you cycle through options.\n2. Unplug the video cable(s) at both ends and plug them back in firmly. Try a different cable if you have one handy.\n3. Unplug the docking station's power for 30 seconds, plug it back in, then reconnect the laptop.\n4. Wake the laptop by pressing a key, then close and reopen the lid.\n5. On Windows, press **Windows key + Ctrl + Shift + B** together to reset the graphics driver.\n6. In display settings, set the refresh rate back to 60 Hz, as a higher setting can cause flicker on some cables.\n7. Restart the laptop with the monitors connected.\n\nIf the screens still go black or flicker after trying these, please reply with the monitor model, the dock model, and the type of cable you're using, and let us know if it also happens with just one monitor connected - that will help us dig further.",
+            "cited_kb_ids": [
+              "KB-014"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-014 directly addresses monitors going black/flickering after wake from sleep with docking stations, matching the reported symptoms exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1790,
+        "output": 812,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

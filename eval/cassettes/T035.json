@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a swollen battery situation - a physical safety hazard requiring immediate handling, not a knowledge-base fix."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JUfc5DtqP5dDwBLGHUrHfk",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "high",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Bulging laptop base with lifting trackpad indicates a swollen battery, a physical safety hazard needing hands-on hardware handling."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Dgam9CBhLWRxuqzPHEBaGY",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Field Services",
+            "reason": "hardware_damage",
+            "summary": {
+              "reported": "Requester's laptop has a bulging bottom case, a lifting trackpad, and runs warm even when idle.",
+              "checked": "Symptoms strongly indicate a swollen battery; this is a physical safety issue, not something the knowledge base addresses with troubleshooting steps.",
+              "ruled_out": "Not a software or performance issue; no KB article safely applies since this is a hardware safety hazard.",
+              "why_escalating": "Swollen batteries pose fire/safety risk and require in-person handling: device should stop being used, be powered off, and be collected/replaced by a technician rather than troubleshooted remotely."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 370,
+        "output": 601,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

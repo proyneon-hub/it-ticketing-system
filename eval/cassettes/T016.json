@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ep0CCpABCBIYAipAZQS3xZJOD54W5av39A2OpAnGeYnVKj6Ly73hLP5J8d9tazu2l/FE00z4hQdK4cy0HEj4O1CgvDuKEBEQVDk86jIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZ+X3NUGEgzTR/Efo7CuArffd/EaDKuX7cKoVdwGKFwI2yIwhdZfeBTjWN1sR1Kgr2fTxVYA1PeC7nCsVohOAIpg5GuKpmlu8JjscHxO6+yd2oS/KjqW5T0H1qSJAbDAut4BVXplyhimKEVxsTgsJBFgErBFagI0V9Bo+3hQn3rLtc2zJPw6dkYHyW8dYxsZGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Rz5zY8fcjcWy6E25WCjWm1",
+          "name": "search_kb",
+          "input": {
+            "query": "Excel freezes and closes when opening workbook"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_019zusXq2PEBg4UbVi1DmqhS",
+          "name": "search_tickets",
+          "input": {
+            "query": "Excel freezing crashing when opening file",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 365,
+        "output": 161,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01AZvwS7cP3U9k725xSh1jxR",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-023"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1177,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - covers the exact issue described (app freezes/closes itself). Confidence high."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0141dE5AL7jpcQMChcU5Pd8J",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Single-app crash affecting one file; a workaround exists (other spreadsheets work), so this is a degraded, not blocking, issue best handled by Help Desk software troubleshooting."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1646,
+        "output": 259,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01RccVz6brAiUWpjtyPRkyWT",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry to hear Excel is freezing on you! Since it's only happening with this one budget workbook, let's try a few standard steps:\n\n1. **Wait a minute** before assuming it's frozen — a large or complex workbook can look stuck while it's still calculating.\n2. If it's truly stuck, save your work in any other open programs, then force Excel to close: press **Ctrl + Shift + Esc**, select Excel in the list, and click **End task**.\n3. Reopen Excel and the workbook. If it offers to recover your work, accept it.\n4. **Restart your laptop** — this clears up a lot of odd crashes, especially if it hasn't been restarted in a while.\n5. Check you have free disk space, and close other large programs that might be competing for memory.\n6. Install any pending updates for Excel and Windows/macOS from the company software portal.\n\nIf the workbook keeps crashing after trying these steps, please reply with:\n- the exact error message (if any),\n- what you were doing right before it froze (e.g. entering data, opening a specific tab, using a formula),\n- and the time of the last crash.\n\nThat will help a technician dig into the logs if needed.",
+            "cited_kb_ids": [
+              "KB-023"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-023 directly addresses an application freezing or closing itself, which exactly matches the reported Excel behavior with a specific file; standard troubleshooting steps apply."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1951,
+        "output": 606,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

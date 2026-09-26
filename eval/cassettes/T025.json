@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqcCCpABCBIYAipA+On1YgKFUpxkmAcICf5IGtdN3vBe1LZZbZCiueDV6WtEWNRhlwNPL7o6GcAuVp9ymLY8Wok1eOS+kLEtnI7lAzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZCY3NUGEgzNUs8ML1qn0RpBN5MaDKRNyqF1MTRug1L7cyIwusr3Nfa6Dgyyak6BGmDouMsEaejmUEcX1xL0Xu/emgrmE8f4kdi7Hr87fG7comDFKkTNY8TsF7cJbqo5iRErQNxOCh+BT8ZQp7zWySnGs8vX5pu3Izwjneilw1t5OZtTNkgMXOqCDrNfh4U7y43IeEZQwJs/PhgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Avh3kn8n27cRH3wqVRUBns",
+          "name": "search_kb",
+          "input": {
+            "query": "Operating system not found after reimage laptop"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01CM4LEaDJZD7QQtN4ecrs1C",
+          "name": "search_tickets",
+          "input": {
+            "query": "laptop operating system not found after reimage",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 368,
+        "output": 161,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01NxNhvmiFT5RFXEydA6EA5a",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-018"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1211,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqcMCpABCBIYAipA6DdDMKJP3GRXjitWoTAevtJTenenyOFJ1i++Y/SvKlU8lfOersjKpdi3UGj1h2y7YerenT1UjfgdriMb4UtQwTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZiY3NUGEgwbjR9gqZCoTY/DWxwaDGXZrhvGnwT31G0F/SIwj1VPkV5OomdHMNktO3C/bAxLwVHUBS0UTcV9CByyRSKU2QP+htbK//KGgfnUMjfqKsMKNnWgg21Mkl1C0wv76ZnOjC96H4HtBQKqvhWQEbuEs7v1fGjssIMb0eF8iLbwhl16VgweNMiQxgpIsNaGIIGmu3QKfj17NRpU2VtXQFr97MVc0t/7O6L8svcmjkCgURo1e0L3NT36XyIcIRky1F9OmqvAv6JEq1MHgE7w9T0/FkrS0b0L407EvX44QkWRn2epURrVazfvtE5md481pgmFc/R4bg0yu1ku6LZ1zRnhraOpt56aUt1+eKRQAk7h6MGhkUtrCeoIf9UXH/evFj7ytF2aQoiuFrwU2z7XEyQkA29yYs8TMto8REsMA6dmej+As+V0ofsT/b2InZ5wjbOCQXL23BswT/7+CyRnWYWXnVFwq10pghgv6e56cdigrqOafIXt5Tf/Yi/sNPLKkgNMsy7n4ysUG+sKEll2hSgWKcKEW/TaXfDfDixP5OG+ae8s5Ot0+jnKzklY30pLYdzNLT1hR+PlPVAyDPUuQNUMdBNj6diGrDXQ5GcEqsEXWl+QlJu4e+dQHwcAIpA1ySBuqsdePKPgRk6wzmcQrlwmWbDRqXmy0TTPYVyDlHnEex71OeuTKBrJLZYol6vbpFy0jV86uotwyzdlbB910i2LdKcP3U/qfC8PNy+DvNRuywD9pIdJKaQCz93+Fiy8+9oa2QlrJP3ehYh1SQdsgTD/6OiZaegK5wd2btLEAK2uY5SOh1LkN7BpuQ725ESjLaeSBeHijZNLjaLfvvJLVH/xKEwfHFUNj9jVLkk/wocTowEX5x2fIpVlbefVXwgJkMUga7Tb/JmdakFAZ4W0P3uDWglq8NRcznNBELzKkp2XPf/di61KGLddkT1puYex50yysiuQAv6Odv+oyOWcnccfZpd1q1HR7enFms33uLT1iXoQPJob4PnCAa+nOi/em2Q/OQJf8w5zPR77yJFBqdEoUgZU1iIhdXVAAU3/JDV4D4iCTzhpimOCpU/rdWkPCNXTL8p83QIlc/WOnM7aU7zeiLitiNidxOQyta2kbNSC5VPnMB3C67lnhbhjIqzxjchBA8rcX6AChdTYoNuQDpB/UnOqAQenjMNacNDgpgFXxUUnpdI/1i9wL7zEEtvmdctKK74tUYeT8OaIsVFp2Rmo1vXbehcHPcsMgMfefvz/tfCl7/4gdn30KuDtRtjjyDntPCWJrilXEtDE6VUkqrJ/siaeihIGwJlQR/RN6TALvb6a1a42S1zximDwcZgEpvFjtlIE/IvJfJAwzu8L61hcFVqP2cqeulfTxYD6Ry/RRg3YMCFegO7p/prfZ7C8cbv23YFbse9yEh2Ceh2UhnYyL0O0q/wmrS63qOwDALkBQ5HlyWQ8KSJ5ceTbaOxIuHCBlUd4eqUYjKuSM5xeqYGGtWXwvUHHXDfjiZP2JUW6QkLqRsaxM4RLiTewWMM/MwqhD0MfipQ82Y7oBgAVf20AjF+tTQHnEvIlpJOue5vUDfgX7VuRuDMSOkVhH73P4z1mZWJu+89mhxqAfNOGk+/z2inrR26Fc9P29TuOMCMysaYnK49DMLKxVjLtc0ehBwK4wjwk7bYxkV0bRNKa+C+ToUfsV1RVFb1H5Q2374y1kGbkNX83HR5kYJAjz+TTnfzG3MQ+r8XvGeK9EXYepcSCWjZD9WkwD18DpUlIHqAZ2SxrbOUzhEOSGa+j3HUAH8vopvyZ4rTIfgysGjwcklUJxlEsfgS+pXAfRAUo7R5mpmGSfcUT8/O5eruqVZZCFBvMMb/92F7Eek4NtabKom4A0JcHhgwe62q0s4AEjqkTwUFW7ZF2GAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01PWZNM1UWQ32mMGMKfMApuh",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "high",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Laptop fails to boot after reimaging, leaving the user fully blocked with no workaround; this matches a known KB troubleshooting article for imaging boot errors."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1734,
+        "output": 658,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01SqY8BFKomZSUDbnsHzqi26",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about this — here are some steps to try for the \"Operating system not found\" error after reimaging:\n\n1. Disconnect everything except the charger: remove any USB drives, docks, or network cables that were used for imaging.\n2. Hold the power button for ten seconds to fully switch the laptop off, wait a moment, then turn it back on.\n3. Watch the first screen for the key to open the boot menu (often F12 or Esc), and choose the internal drive as the boot device.\n4. Open the setup screen and check the disk is detected and that the boot mode matches the image (UEFI, not legacy).\n5. If it reaches the imaging screen but fails partway, check it's connected to the imaging network and start the image again.\n\nIf the disk isn't detected at all, or the same error appears after trying again, please let us know with the laptop's serial number and the exact error text — it may need a hardware check, and we shouldn't keep re-imaging it if it fails at the same step.",
+            "cited_kb_ids": [
+              "KB-018"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-018 directly covers a laptop stopping at \"Operating system not found\" after imaging, with a step-by-step fix and clear escalation criteria if it persists."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2437,
+        "output": 537,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

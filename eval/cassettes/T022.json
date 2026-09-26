@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpICCpABCBIYAipA23FyjYm2cdZ2gn34Fap3+JoE/n+1XcAM3X27QCb+Wv6CBbMcYi3YnUI07pcaVemq2P1rct7PY15FsK6D4kqPNjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeqX3NUGEgyC+4H49HNkUYpygGQaDPEazv0tgSItSob1+yIw6p4mI7FJveJ1mbK2M5iEGE2ujVnliI8X85KRUuD+XxRoPiKxd0I505JDN3ua5uleKi+Dy5xHhW7LBNW0B4ZHarcajDaRq8zjuKzrRwzC2p5zFIDrg0M7kjDrFGyQsPSJDhgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01PSkBcehmynMQrf7nhqMieJ",
+          "name": "search_kb",
+          "input": {
+            "query": "MFA push notification not arriving"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01D14kWcoCGy9dmKYCrV5NMZ",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 367,
+        "output": 99,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01CqMe8UGPv5XrMFZ9EBxB3Z",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-004"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1144,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Article covers this exactly."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01B383wd8RnjjNwGaefA4Tmd",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "medium",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "MFA delivery issue is an access/authentication problem with a workaround (manual code), so medium priority routed to Access Management."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1618,
+        "output": 215,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01FLiHwxxmjM9hxhg6deuLeP",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry for the trouble signing in. Here are some steps that usually fix missing MFA prompts:\n\n1. Check your phone has a data or Wi-Fi connection — prompts can't arrive in airplane mode.\n2. Open the authenticator app directly. A pending request often shows there even if no notification appeared.\n3. Check notifications are allowed for the authenticator app in your phone settings, and that Do Not Disturb/focus mode isn't blocking them.\n4. Check your phone's date and time are set to automatic — a clock that's off by a few minutes can cause failures.\n5. Fully close the authenticator app, reopen it, and start a new sign-in attempt on your laptop.\n6. If the app offers a six-digit code, choose **Use a verification code instead** on the sign-in page and enter it.\n\nIf none of this works, please reply with which phone and authenticator app you use. If you've recently changed phones, let us know as that needs a separate process.",
+            "cited_kb_ids": [
+              "KB-004"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-004 directly addresses MFA prompts not arriving on phone with a full set of troubleshooting steps matching the reported symptom exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1879,
+        "output": 531,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EucDCpABCBIYAipAP8UttjPXcCCz1U2aDH6Bq/Q2GyT8lAI0zPQgdavyMCyTWppQfIC5h0e9BZQZFCxaIn2Bvtn51SBbVHveLCY/VzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZWZ3NUGEgyQkEfctHYlzLeBRyIaDMcK8hl7/PMQ+jkNwSIwqXtygxoH2dfYvCvEoy6SUTcbKwmsLNAaz6c0c/YYO7wqCu0AburMhk6cCJwWtVcFKoMCFcEIGOD7nPsld9tU9QOv7qY97qc9vXtfbOrsdVBIEX6zbMUHroEn1ZbnQRbefjnoX4wMbxFIaTRNLCUjF1LDQB42NKM2FFac3DY4UiGeEASjD+QIMparI+7Hr4LE7V8tNwZbCYadIV77+urij4MpFGXj8K2+UC4wF0HhODa9XQlMm2veQ4JdFtpo0BkEkfNACRdGVUmUfy7jFortKp3mIQjpXEGXuRB18IiHemMh9j/Wk9QxYvhLgFm6Z7hc/m5/uHcP0/58hoDz9YB4ikNvQ42m5cDTgCik+a+TkLPjyzNhocIsD70/pIMY5xUaAbCwZZ8Kok0kH9RRZDTIK81QQ0f/VxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01B8hdV8UEYTCsER4tVotvuo",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "high",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Offboarding request to disable a leaver's accounts and remove group memberships is an account access/permissions change that requires human action and verification."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 359,
+        "output": 280,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01BV3uP2qKebt2YQ2jb7kfF1",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "account_access_change",
+            "summary": {
+              "reported": "Requester states a person named Jamie left the company today and asks for their accounts to be disabled and removed from all groups.",
+              "checked": "Confirmed this is a request to change account access/permissions (disable account, remove group memberships) rather than a troubleshooting issue; no KB article applies since this requires actual account changes and identity verification.",
+              "ruled_out": "Not a technical fault or password issue that can be resolved with self-service KB steps.",
+              "why_escalating": "Disabling a leaver's account and removing group access is an account access change that must be verified and actioned by Access Management, including confirming the requester's authority to make this request and identifying the correct account(s) for 'Jamie'."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 684,
+        "output": 364,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

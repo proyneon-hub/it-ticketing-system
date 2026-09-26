@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eo8DCpABCBIYAipAAo7WxDBoq4ygD1lrdWVvBR/qhZdus0Giu2dB1Y+PYMnRLFVtrFyDsOGW7+sVI9Iz9J3D6CCu8TkC0J8g3DSdJTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaWc3NUGEgyUfOBXbTkoE1jtapIaDN3RmPq3SdzoKa5layIweEiX+1AJzPeMUnzarUuhFBXLPu/26hUxgW7qMtqjEp34PcH5WZJnVIYxaIx92uNeKqsBok7zGTJqWquQR9+HmOzAiNsWny7S9jdBx0RWGyeeDusBzFp385jDg9x7V7rLbLBy0MNZEqAMyiS+5PBc6rWz+sBDMCTAhewmmdzyMdIAXwWWan+SEJMkt5Nin7OyJquEeZ+wxez+4qtpI0KHH1KGgA1YhHNLWp3M6SvBwlcnHPNKSPrerlocC8nBNBZzAxoKRdSOTlKrUjCMcJLz3xpz1SHImFfDFMXp36XuGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01U1LKndKJzNhzW1G5RxCTjP",
+          "name": "search_kb",
+          "input": {
+            "query": "forgot password reset portal login"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01WnteAhJ9gXLAcJDv1bgHYH",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 370,
+        "output": 130,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01D4c4sh1sjyjfF5m1vPU5KA",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-001"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1163,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a straightforward self-service password reset request, no indication of phishing or account compromise — the requester is asking how to get in, not being asked for credentials."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013H7khGgY9Fa7U6bhegoGnv",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "high",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Requester is fully blocked from the portal due to a forgotten password and has a same-day timesheet deadline, with no workaround; this is a standard self-service password reset case."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01QuVnoGz2972HFyFrhPevjj",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry for the trouble getting in — here's how to reset your password yourself, which should only take a couple of minutes:\n\n1. On the sign-in page, choose **Forgot password**.\n2. Enter your work email address and approve the verification prompt sent to your registered MFA device.\n3. Choose a new password that meets the rules shown on the page.\n4. Sign in with your new password.\n5. If you use your phone for mail/calendar/Wi-Fi, update the saved password there too — an old saved password can trigger repeated failed attempts and lock your account again.\n\nIf you don't get the verification prompt, or you no longer have your registered MFA device, or the page says your account is locked, please reply here and we'll route you to the right next step. Also note: we will never ask you for your password directly — if anyone does, treat it as phishing.",
+            "cited_kb_ids": [
+              "KB-001"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-001 directly covers the self-service password reset flow, which matches the requester's exact situation of being locked out and needing to regain access."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1577,
+        "output": 752,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

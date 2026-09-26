@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqMCCpABCBIYAipAJI1JCycus0lxreXsoI5G4t4la2EWC4owpMfjIGpo9D4eDN9zjzX9rmVXUlQvkLWpSyxqgBfTVLcu1f3qMlUevzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdSb3NUGEgzChv27YDeOD90BVx8aDCujzGkr8emL/RiyFyIwMLVonuqME5xPthadsa4Q+pZ5FM1epI97sWh/uV8FA/c8QsqNCPAte/4O5u9Lw9ZFKkCrCEMioUQ1SXJRzxTmUkUu3lhtYE1rehxXLfONDEvts8QZKbMQuMrt44mjdSgLtUlpxoZZ16dg6CvcdHDbys+aGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JNouEMePW65EBznAprMJku",
+          "name": "search_kb",
+          "input": {
+            "query": "PowerPoint crashes when opening file"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01LJEX3tsnryDzSYjNmTwkE8",
+          "name": "search_tickets",
+          "input": {
+            "query": "PowerPoint crashes opening file",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 377,
+        "output": 161,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_019VQHPJiN7HNWMMR55CtMZW",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-023"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1200,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a straightforward software crash issue covered by KB-023. I'll set triage and propose the resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HAZdaLuHS3VrVWqvoEtcEd",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Single application (PowerPoint) crashing on one specific file, other files work fine, no indication of wider outage; a workaround (using other files) exists so this is medium priority software support."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1669,
+        "output": 259,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01QmSxR5V9ybfPYFb17PSbwZ",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry PowerPoint is giving you trouble with this deck. Here are some steps to try:\n\n1. Wait a minute after opening it — a large file can look frozen when it's actually still loading.\n2. If it's stuck, force close it: press **Ctrl + Shift + Esc**, select PowerPoint, and click **End task**.\n3. Open the file again. If PowerPoint offers to recover your work, accept it.\n4. Restart your laptop — apps often start failing after running for many days without a restart.\n5. Check your disk isn't nearly full, and close any other large programs you have open.\n6. Install any pending updates for PowerPoint and Windows from the company software portal.\n\nIf it still crashes after these steps, please reply with the exact error text (if any), what you were doing when it crashed, and the time of the last crash — that will help a technician check the logs. It would also help to know if this started after a recent update.",
+            "cited_kb_ids": [
+              "KB-023"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-023 directly covers an application repeatedly crashing/freezing, with steps to force close, restart, free disk space and update; matches the reported symptom of PowerPoint crashing on a specific file while others work fine."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1974,
+        "output": 537,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

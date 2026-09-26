@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EskCCpABCBIYAipASj9f8ngOjKTaYu2zFkykzerXf/gn2DH6mz7NpCd7bl0Vp2o2aeBkE+trLLmdQWiv7ZruK8FE86e2tvmCJY5mYDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAceb3NUGEgxASAFx+82zlTk2KCMaDOqAGBZNoOP/OKsY+iIw0YwX+p7BZURuV/6Kock1EU5dRyjgbvxmh75JVrS8wFZ5t3+wovBL4ZXHjuzasXvgKmbIFKVK1JWxT1YM8Dk/GuTZx+3ihyAKmCQ9FRxIeWL+VIBcUgB9akhLJP2VJina48wJP5Hv/l6AMiZ/JR5vhxFha3lumNwZsKZ9OCz98N1rNCa6+T+qxoTdLsQSR0RFDIiCou7x5+wYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_015ykFHxaoGXgXNPdtV6VnMf",
+          "name": "search_kb",
+          "input": {
+            "query": "website showing outdated cached data browser cache"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01FDkBpLxPAxxZSpg2UPzJjx",
+          "name": "search_kb",
+          "input": {
+            "query": "expenses site old data not updating"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 375,
+        "output": 145,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01NgKwwmbeN8u3VsX3uKRhKG",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-022"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1806,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - a web app showing stale data, colleague fine on her own laptop (points to local browser cache, not the app). This is directly covered by KB-022."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HP9pxNHfrLiZ25eMXDrJ23",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "A web app showing stale data while a colleague sees it fine points to a browser cache issue on one device; workaround exists so not high priority."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2318,
+        "output": 261,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Amp4EpZ2mhzjHHMVeB2oz1",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Thanks for the report. Since your colleague can see the same page correctly, this looks like stored data in your browser rather than a problem with the expenses site itself. Please try these steps:\n\n1. Refresh the page with **Ctrl + F5** (Windows) or **Command + Shift + R** (Mac). This bypasses the stored copy of the page.\n2. Open the expenses page in a **private/incognito window**. If it shows the correct data there, the cause is stored browser data or an extension.\n3. Clear the **cache and cookies for that site only**: click the padlock icon in the address bar, choose to clear cookies/site data for the site, then sign in again.\n4. If that doesn't help, turn off browser **extensions** one by one (especially ad blockers or password managers) and test again.\n5. Try a **different browser** to confirm - if it works there, let us know which browser is failing.\n6. Restart your browser after installing any pending updates.\n\nIf the issue persists after trying these steps, please reply with the exact page address, your browser and version, and roughly what time you see the outdated data - this helps us investigate further.",
+            "cited_kb_ids": [
+              "KB-022"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-022 directly covers a web application showing out-of-date data, including the exact scenario where a colleague sees it correctly, pointing to browser-side cache/cookies as the cause."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2625,
+        "output": 590,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

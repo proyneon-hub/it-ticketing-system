@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ev4CCpABCBIYAipAJkQh1kqjGYNh4zmOggzl1HZTE3exAhCmwB/JSqi+BOIap1w/JjMMwos7YN9TA387meIy1L8btS0u/RBiNJiy2TIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdSX3NUGEgxL2omYD6w2L7rrVjEaDEE6fsO9F/ywa2KpliIwuMWBD6fviii948TNhbHXcDkeL785COOvuw2f7v5GEJ63F3XFScjT9MUwCDBP5uosKpoBmt/CG0IzaD4inL5+yYUpxJSa9GFrnx9C0nT79DTJuXiTfGns+7eVp6CLikHSU7tm15VYEXCz4/9vYEzmJj+RzC4f0F9qRfDxwswagzbOS/NtVNO+5BHESoBsj8zOoCR9zhtXY0Ao/05+vB8MRJGQ0cBtzLV2nrZaKR5sGh/Q5myyYSq6hOU5Ge/I1gw7+XH8rKeE/2lSW7MW+BgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013E3HibYFSGHTgcgRiHbMVB",
+          "name": "search_kb",
+          "input": {
+            "query": "forgot password laptop sign in"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013m6sok4bomDvQjFgTpqgaR",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 366,
+        "output": 134,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01SAi2EN21Q75ZhuML9kpkct",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-001"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1174,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a straightforward forgotten password case, covered exactly by KB-001. Not a phishing/security incident since the requester initiated it themselves, no urgency (no meetings until tomorrow)."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01XgvgkLv89cefp94zX2f7NP",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "medium",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Standard forgotten password issue, blocking sign-in but no imminent deadline; routed to Access Management per policy for password/account issues."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1588,
+        "output": 275,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01JyUA9zdawW55HUerJ1qXyc",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry for the trouble, Alex — here's how to reset a forgotten password:\n\n1. On the sign-in page, choose **Forgot password**.\n2. Enter your work email address and approve the verification prompt sent to your registered MFA device.\n3. Choose a new password that meets the rules shown on the page.\n4. Sign in on your laptop with the new password.\n5. Update the saved password on your phone (mail, calendar, Wi-Fi) too — an old saved password will keep retrying and can lock the account again.\n\nIf it doesn't work:\n- No verification prompt arrives, or you no longer have your registered MFA device — let us know and we'll get you the right steps.\n- If the page says your account is locked, it should unlock on its own after 30 minutes.\n- Note: the service desk will never ask you for your password directly. If anyone does, treat it as suspicious and report it.\n\nLet us know if you're still stuck after trying these steps.",
+            "cited_kb_ids": [
+              "KB-001"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-001 directly and fully covers the self-service forgotten password reset flow, which matches the requester's exact situation."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1909,
+        "output": 516,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EswCCpABCBIYAipAdLpxDmy3BYqCHZGJwxojK4aFRK1J7k0xOALpZhqY4U+8mpnxyLXphy6yAvO3ObaJJkANdmzlAucHapUOqDmi6jIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaGY3NUGEgyKAnOUHMPYI2vzp2YaDHfqqY67QK+613F61yIw8MwfXGmiwHCYOaSK8MAfrC9S+8jvOwd7y9wv1FC8QCo72/o6hq5F/J3q7rZl3iqZKmm4vs+yfX4lT1rvMc7ztuX/fQzKMiV12xrdEcwqVLflqmCsldAWyvxGUmjZ1o8FmyyDQVSCa1XV7UKsfluLPG3HW1S36THX/DIoVf0qCzsiSEM9BKgmzFLbmJKjCw7NwZ+ofnOYkM1rjVMYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01XoCZyaiaMLyBVGuDQQtRWM",
+          "name": "search_kb",
+          "input": {
+            "query": "install software request Zoom"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 360,
+        "output": 79,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01LGeN43L1dxJCG7cnkqQKj1",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-019"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 992,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a straightforward software request request covered by KB-019."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JMWC1o9WxwqR89L1Sz6njy",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Request to install Zoom is a standard software request with no urgency indicated and a workaround (portal) may exist; routed to Help Desk per KB-019."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1426,
+        "output": 234,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_014qfKWgZVW1VNKWgTv8XfQW",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nThanks for reaching out. Here's how to get Zoom set up:\n\n1. Check the company software portal first (from the Start menu on Windows, or the Applications folder on Mac).\n2. Search for \"Zoom\" in the portal. If it's listed there, you can click **Install** directly - no approval needed, and it should be ready in a few minutes.\n3. Once installed, open it once to confirm it starts properly.\n\nIf Zoom is **not** listed in the portal, please raise a follow-up ticket including:\n- The name/version of Zoom and a link to the vendor's page\n- What you need it for (e.g., client meeting)\n- Whether it needs a paid licence and which cost centre would pay\n- Your manager's name, since new software needs their approval\n\nNew software requests are checked by the security team, which can take a few working days, so it's worth doing this as soon as possible given your meeting next week. Please don't install Zoom from a source outside the company portal in the meantime, as unapproved installers are a common malware risk.\n\nLet us know if you run into any issues with the portal install.",
+            "cited_kb_ids": [
+              "KB-019"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-019 directly covers requesting new software, whether it's already approved in the portal or needs a new approval process, which exactly matches this request."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1706,
+        "output": 568,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

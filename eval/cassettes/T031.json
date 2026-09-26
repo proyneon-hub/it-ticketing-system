@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a lost device with work email and authenticator access on it — a security incident requiring immediate account protection action, not a knowledge-base troubleshooting fix."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01NZtG9D9cUe4t56WpPyuafs",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "urgent",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "Lost phone containing work email access and authenticator app is a security incident (potential account compromise) requiring immediate action such as revoking sessions, resetting credentials, and deregistering the device."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 358,
+        "output": 278,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01JmL68VbXorGqoTqFvAvUK4",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester lost their phone on a train this morning; the device has their work email and authenticator (MFA) app installed.",
+              "checked": "Reviewed the ticket details; no knowledge-base article applies since this requires account security action rather than troubleshooting steps.",
+              "ruled_out": "Not a simple device replacement or troubleshooting issue; this is a potential account compromise risk given email and MFA access on a lost device.",
+              "why_escalating": "A lost device with email and authenticator access is a security incident requiring urgent action: revoke device access/sessions, reset credentials, and re-register MFA. This needs a person on the Security Team to act immediately, not automated KB steps."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 682,
+        "output": 360,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

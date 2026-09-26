@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErgECpABCBIYAipAczFdjDeFJAhkWa0g5NP/xTQqgoz6GQonrWd12avijFVW2m8OzXgDqPG0iga+J+6z4BtvbtGyJiW3TZ9CcqbQQTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAbSa3NUGEgwBzuy7P+Tx31EXV4IaDA3moOBpVCzZgcJDayIweZ0PUmuPxXVM+WMH2wdxLalPZ9ojGP/smTO1AGt5HdtLwYcj/ea716MIGYbLiT+9KtQCgSvy2CmU10BaQTQmuG6Xkvu52ljsf4X3jiYB7izsXIcPbKcqivywrRW/EsgyRsMuEwSZpNLsSUg0lj5CDmGA+KVc3lieM/T6vJ2JGRjYP7axStAihSFq/nbou0yg4AcyjSiZA5MI5AQ3IL0ijjEKCqvtqe914iTvPivReYkG1FWtiFXNRvh1COS1hYomrodoiIW7zxEfmLFUA4DHtqMuI49f0Yd/1Ikf0suLbCeiKzxMfyR43e0awCDoW0HcCIjQDuHP+umHalpyYo7iVuEaTUKhV8v9qw+F1b+CmX+dW88XfvjgtOeHc6zHXrL0vq2y4XrATfg5rau+069/ftBcjygYMElxcVuFxN671uaZMYe424oMujJh1bdCoP1l8paZukkADcdoB//+uS7DM8cgSO5N3nAwUIXhlWwxMIDTdtE03tVlSqb42ntaaGrQiNyenPuRsBgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01GsCur1hnRqXuzjBW7y1aZX",
+          "name": "search_kb",
+          "input": {
+            "query": "guest wifi access visitors"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013gmmfV3Vj3BvUbSLfNo15Z",
+          "name": "search_tickets",
+          "input": {
+            "query": "guest wifi visitors access",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 379,
+        "output": 233,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01UdpQ3cdNJ6NgQBcqXNWkRv",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-009"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1267,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is directly covered by KB-009: the host requests a guest access code from the service desk ahead of the visit. This is a straightforward, low-risk request (temporary guest network access, not internal account/permission changes), so I can propose a resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01DmvNT5vrgAK6x26T1SMy3J",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Routine request for temporary guest Wi-Fi access for visitors, with no urgency and a clear KB process."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Trqq67DE1SmKPk2d28gV3z",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Happy to help with Wi-Fi for your visitors on Thursday. Here's how guest access works:\n\n1. Before the visit, request a guest access code from the service desk, letting us know how many visitors and how long they'll need access (please confirm here how many hours you need it for Thursday morning).\n2. Once you have the code, give it to your two auditors.\n3. They should join the network named **Guest**, open any web page, and enter the code plus accept the terms when the sign-in page appears.\n\nA few things to note: guest Wi-Fi is separate from the staff network and cannot reach internal systems, printers or shared drives. Codes expire at the end of the day, so a new one would be needed if they return on a different day.\n\nIf you don't receive a code in time for Thursday, or run into any issues signing in, just reply here and we'll help sort it out.",
+            "cited_kb_ids": [
+              "KB-009"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-009 directly describes the host process for requesting a guest Wi-Fi access code for visitors, matching this request exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1669,
+        "output": 759,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

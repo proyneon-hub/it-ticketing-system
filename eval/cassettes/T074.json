@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqkCCpABCBIYAipAHyKlEFsJi0pF292//dzH5HfUSrMDMG+CyufzApo8LOUigWur8bI0BPuLuk52KZ65ZUBrXunHanE5/xQ/qSX36zIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdyc3NUGEgxHCR1GuUohkK2zh1IaDPdCHPFusC07hi1MfiIwlEm4EulouSIXj/0waK/sfUT+1fQZu1JtwRKFpYUHev5nSeaevGF+8Vs1saNhzh9aKkY6/haYs5ET31udh6UAVSEcqm0rwNKM8DzM6xWSgDg+7co41saj7t1VDdIrCoZ5TcYI3hTUjzsYn0xRAEpieblOMLfYsV8zGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012WmGFkZbLZDMQUWAL3xWHe",
+          "name": "search_kb",
+          "input": {
+            "query": "no bootable device after reimage"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0173CMYGB9Q5Zo3rUcSEHDqS",
+          "name": "search_tickets",
+          "input": {
+            "query": "no bootable device after reimage laptop",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 380,
+        "output": 158,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "No KB article covers this hardware/boot issue directly. This is a hardware/imaging problem requiring hands-on diagnosis — no bootable device after reimage likely indicates a failed imaging process or disk issue, needs Field Services to physically fix. This is out of KB scope."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013WGkfxVGFqWWVLCyLBZBGg",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "high",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Laptop fails to boot after a reimage and it's the requester's only device, leaving them fully blocked with no workaround; this requires hands-on diagnosis of the imaging/disk, not a KB fix."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1199,
+        "output": 327,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_013EioEWeXWxUicJWPVegWJP",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Field Services",
+            "reason": "out_of_kb_scope",
+            "summary": {
+              "reported": "Requester's laptop was reimaged by the service desk this morning and now shows 'No bootable device' and will not start. It is their only laptop, so they are fully blocked from work.",
+              "checked": "Searched the knowledge base for articles on boot failures or reimaging issues and found none that cover this; also checked past tickets for similar cases and found none.",
+              "ruled_out": "Not a password/account/MFA issue (ruled out KB-001, KB-002, KB-003 as irrelevant); no indication of a security incident.",
+              "why_escalating": "This is a hardware/imaging failure (likely incomplete image, boot order, or disk issue) that needs hands-on technical diagnosis and repair, which is outside knowledge-base scope and requires Field Services to physically inspect or reimage the device."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1572,
+        "output": 407,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

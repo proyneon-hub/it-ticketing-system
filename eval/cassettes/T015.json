@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EsICCpABCBIYAipA8uMBNlTaGo/fYtH0PrRLvMN/AfeZNLqrYrCcS7VkA+t+DSxbKsHJ71xLRFN+bzS7oRGNo0y/sgARj181g62dPTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZKX3NUGEgxsp6gLrloKmAtDVZkaDHqFhSxg3wy8hTtn9yIwy12dnWwZfIQNbF988T/ljerYwXcc2fOunBpIfn9WHW/GKmTPJddP43T9kX3YJYRFKl/eQGryPMqQe2uyC1K4ebS4uQ1H9oMwmY+l9UhYaHATG4UDl0J8k26NIrn7Q8UACfRzQG99zvS5JNgLvv/aNfChC/EGvyuJeSxpEyJQjF62wCSEY5wRetpqFljzbAq4/xgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01QoWE4wuB3XCq5oM1EtMbBi",
+          "name": "search_kb",
+          "input": {
+            "query": "web page showing old data cache browser"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Nt5aiYZwZ4D3iLUBSR9U6K",
+          "name": "search_tickets",
+          "input": {
+            "query": "timesheet page shows old data stale cache",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 367,
+        "output": 164,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_016sH1oXRsybgzatfPbF4rzf",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-022"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1216,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - KB-022 covers exactly this issue."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_019ZuFarmDcRabtugdHrW265",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Single user sees stale data on a web page while colleagues see correct data, a workaround (refresh) has been tried but not full cache-clearing steps; this is a browser-side caching issue with a workaround available, not urgent."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1728,
+        "output": 258,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Eky3dffAZ1FsTwtiNALmNo",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nSorry for the trouble with the timesheet page. Since your colleagues see the correct data, this looks like a browser caching issue on your end. Please try these steps:\n\n1. Force-refresh the page: press **Ctrl + F5** on Windows, or **Command + Shift + R** on a Mac. This bypasses any stored copy of the page.\n2. Open the timesheet page in a private/incognito window. If it shows the correct data there, the issue is stored browser data or an extension.\n3. Clear the cache and cookies for just that site: click the padlock icon in the address bar, choose to clear cookies/site data for that site, then sign in again.\n4. If that doesn't help, try disabling browser extensions one at a time (especially ad blockers or password managers) and test again.\n5. Try opening the page in a different browser to see if it works there.\n6. Restart your browser after installing any pending updates.\n\nIf the page still shows old data after trying these steps, please reply and let us know which browser and version you're using, along with a screenshot if possible — that will help us investigate further.\n\nThanks for your patience!",
+            "cited_kb_ids": [
+              "KB-022"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-022 directly addresses a company web page showing outdated data, with the exact scenario of one user affected while colleagues see correct data, providing a full set of browser-cache troubleshooting steps."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2032,
+        "output": 598,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

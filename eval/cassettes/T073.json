@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EvMCCpABCBIYAipA42G1vR3WfMlhQLmNRPQ6qGPPCmXGd7J+Y9t2ZIEhpbo0d+dszBxT3sRKZh3rV5QJuxtidaYJST1gZamKM/QyXTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAc+c3NUGEgwNPFBmXTD/E5WtgOUaDBYeF/rtcP6zzjaVWyIwMpYsvPDL33vDWsSY/otnkqTkgZVUo7kmS9GW6WFIPwok1iErogs8Qj2wwMiiJ5pUKo8BsKolvsvokxY0I+wJmkQGw/FNo71r1XUsbl26kQwZxJxidTmSHCI1MxIt8Ni4QcXSFtaesIMoTfbmIC5Y67xPgHeYUOf/XwAby+tanKLDIspUWWEFAwiQvNsdHl2PAV4OyFKUGhtxYNroXneO1Qk5v3ourwHYY0M9Xk0zh7B6ZzQBfbw2o+sAXBYoeGALFUEYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_016na7Fpvvf8JrQ8kRtLUVEA",
+          "name": "search_kb",
+          "input": {
+            "query": "authenticator app new phone MFA transfer"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_015EJoPhW3d3btqvVy4uagzj",
+          "name": "search_tickets",
+          "input": {
+            "query": "move authenticator app to new phone",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 383,
+        "output": 178,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EtgDCpABCBIYAipAlZroKcwzxLlA62nAqjZ4D1pDWJBobLlQ/ohgCQttQm1T2Rs90JzYhCHkNwmerAxALLRT4JPXP5qKdTNZyqYHUTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdGc3NUGEgyq7TaQ2/rCkrermXcaDG+g8fhS2kiH5X+WTyIwXzz+Qr9pRGaLxJev/BXG4dW7wt9nlgSVVjhur4RC24FzH/I2TFn0juN8/qEELVlzKvQBp8+nXeR9q5gVPUf/gfu9xTpG+jPBw7ifCjnw2BfMS7wVYhOmuJOBib/OGkVZXX8JEm1aeTHHtuETRK8O8U8yQdYvSMWrxPoyE2mT4lh4csP0HBXOqx+x0bj+KiIcfR8vsc9avcZX/D8AOlllKSDjzvzQ2S1xscjmuTx+LaioI6IVOSrbTlHcc7LRLGGUcumfvtVgaO2QKJfTnMwEdFNeSLDP71yap7Kd8eEF8Tn88q/lE2l+00DkdabzZTfPLDiD3l/HtDjYti9qAHwlnm6ocgo5plZQbePx/uawkpvZFkUARuoVhKKiVfdFDw0xYTR8Xu8vThgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_019wC9iFCgiU2fpKPH8BSDBP",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-003"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1200,
+        "output": 135,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches directly: they still have the old phone (being wiped Friday) and can follow \"If you still have the old phone\" steps. This is a straightforward MFA device change covered by KB-003, not an account access change requiring escalation since the article gives self-service steps."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01AyMJufcf7qNUmoGZGvdSGE",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "medium",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Requester needs to register a new phone with the authenticator app before the old one is wiped; a workaround exists (still has old phone) but there is a time constraint."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1707,
+        "output": 299,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Lty2Y23FsuxFJ5UPvnt2Qx",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Since you still have your old phone, you can move your authenticator over yourself before it gets wiped on Friday. Here's how:\n\n1. Keep the old phone until you finish, and sign in on your laptop.\n2. Open your security settings and choose **Add sign-in method**.\n3. Follow the prompts to install the authenticator app on your new phone and scan the QR code.\n4. Approve one test sign-in on the new phone.\n5. Once that works, remove the old phone from your list of sign-in methods.\n\nPlease do this before Friday, while you still have the old phone available. If you run into any trouble with the steps, or the old phone gets wiped before you finish, let us know right away and we can help further.",
+            "cited_kb_ids": [
+              "KB-003"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-003 directly covers moving MFA/authenticator to a new phone while the old one is still available, matching the requester's exact situation."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2052,
+        "output": 441,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

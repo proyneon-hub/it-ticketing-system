@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ep0CCpABCBIYAipA1nGxOtrU9VOH0m850U9h8bPuM8kKCoAovicNYCdRQu616oaIWvR+HDUAvmZeXf2VFfLCaoHc97DbQZY7il8uSTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaCW3NUGEgyotnFmKN1MLWS4wNUaDKK0DPmTmHexrkWQFCIwqeQRisT58YBmN+4BU3PjL4C9jkJguDad+Pl9s1adbwuOLsph5UFQOrmZ5SNmzrv3KjqljgJ9dASjOKtqT9dOg2sO27NVp7eV+mBrfvq8OBYw8GP0y7tLAhIYBTUJE/0ZawBsoS7mhyPY0Op8GAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014DhGtaKWxiBWGvqeCocZPr",
+          "name": "search_kb",
+          "input": {
+            "query": "printer offline",
+            "category": "Hardware"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 372,
+        "output": 92,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Bb5PkxqzhAYP9wWwAnesd2",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-011"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 830,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well. Category Hardware, priority medium (workaround exists - other printers/waiting), assignee Field Services? Actually offline printer issue is software troubleshooting, could be Help Desk. KB says physical devices go to Field Services per routing rule. But this is a troubleshooting step first, propose resolution to requester with steps, then if fails escalate to Field Services. Set assignee_group Field Services since it's a physical device issue, but resolution can still be proposed to requester first."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_018NinD1hWM4gaoYwEmmoLwo",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Single printer shows offline, a physical device issue with a likely workaround (other printers available), matching KB-011 exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1310,
+        "output": 366,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01UYM22jJNHdb37ZDzG11mqd",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry for the hassle! Here are a few steps to get the 3rd floor kitchen printer back online:\n\n1. Check the printer itself: make sure it's powered on, has no error shown on its screen, and isn't out of paper or toner.\n2. Check its network connection (cable plugged in, or Wi-Fi shown on the printer's screen). Restart the printer and wait about two minutes.\n3. Make sure your laptop is connected to the office network (or VPN if remote) - printers can't be reached from a home network.\n4. On Windows: go to Settings > Printers and scanners > select the printer > Printer properties, and make sure \"Use printer offline\" is not ticked.\n5. Restart your laptop and try printing a test page.\n\nIf it still shows offline after these steps, please let us know - and if other people nearby also can't print to it, mention that too, along with the printer's name (found on a label on the front) and its location, so it can be looked at directly.",
+            "cited_kb_ids": [
+              "KB-011"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-011 directly covers a printer showing offline with a step-by-step troubleshooting process that matches the reported issue exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1722,
+        "output": 522,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

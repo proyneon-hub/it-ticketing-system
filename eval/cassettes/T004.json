@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpICCpABCBIYAipAZMopIhjXsHtE+mICJBBngM4Y2/Xi/OejPGPay5obOjgCaqGXgRJmhbB13KwRbf4dalzPsTrhYe+hibyAxDrwnDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYaW3NUGEgzcM5qeQn/llevJK3EaDN0OS5r6/fex2mf1giIwfDNk2pTkEhD6hmqyJgAMqjo2qUy0o2p2haA+4rDmN9nbTivvuHWgk94Si0QD7OUkKi+weaycwqRYZkXAQxjAGRQEtxvsqGjoHTpeZZ1mUeIV1Q4IXXLzq0vgTQoQhtubZxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_019vEj4ovpXDd7NgmEszePD1",
+          "name": "search_kb",
+          "input": {
+            "query": "guest Wi-Fi access for visitors"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 77,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_0153ppnixtL5FCr4BSR7sx3Q",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-009"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1061,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a clear, direct match. Now triage and propose."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01VetKujwc4vA8MUxAzJereA",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Routine request for guest Wi-Fi access ahead of a scheduled visit, fully covered by KB, no urgency."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1463,
+        "output": 225,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01P2R4QRr2HtNLxg29KiLTYL",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nHere's how to set up guest Wi-Fi for your visitors tomorrow:\n\n**Before the visit:**\n1. Request a guest access code from the service desk, noting how many visitors (3) and how long they'll need access. Codes expire at the end of the day, so request it for the day of the visit.\n2. Give the code to your visitors when they arrive.\n\n**For your visitors:**\n1. Join the network named **Guest**.\n2. Open any web page — a sign-in page will appear.\n3. Enter the access code you give them, and accept the terms.\n\nNote: the guest network is separate from the staff network, so visitors won't be able to print, open internal sites, or reach shared drives from it.\n\nIf you run into any trouble getting a code issued in time for 10am tomorrow, please reply here and we'll help sort it out.",
+            "cited_kb_ids": [
+              "KB-009"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-009 directly and fully covers how a host requests a guest Wi-Fi code and how visitors connect, matching the ticket's request exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1734,
+        "output": 492,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

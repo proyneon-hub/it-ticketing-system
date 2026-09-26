@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpwCCpABCBIYAipAn5IACXXo61orwXEbJ6yidkNihuftEMkZKNf4nV+OXRMjXtwZUtfDYYOZa2/GU9OCN62xo6hpcN8CuU47c/TBJTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAfmV3NUGEgzOCQ5HXxW5RCj5NtkaDNYbEGl2rmD6Upcn/yIwRon8fXkchNuemYoRbuyO8wY3Nc2CrEo37CaMfogKyFZzTqt3Xpl3lCUWID24GU3aKjl3SxGOmaF+D/EDO1DXuhqf5dx5Y61HScri6OgZyCxusdVet772KaoouMTBDKW/aorn90w/Ytyz6voYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Ms39Vqhoj2wyqLhs5cxRDs",
+          "name": "search_kb",
+          "input": {
+            "query": "Wi-Fi keeps dropping laptop"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013xduyRYfsm7qUVRbzf1uwG",
+          "name": "search_tickets",
+          "input": {
+            "query": "Wi-Fi dropping second floor laptop",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 378,
+        "output": 165,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01DBAypXGUGr5mf357kfemUD",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-008"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1223,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches directly. Proceeding with triage and proposed resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BzV9drhfviWxSNWuJgNwAP",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "medium",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "Single user experiencing intermittent Wi-Fi drops on laptop only, with a workaround (phone works fine); matches known Wi-Fi troubleshooting steps."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1767,
+        "output": 247,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012n1PfFsasAUtiQMqU4eLbF",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the dropped Wi-Fi — that's frustrating. Since it's only happening on your laptop (and your phone stays connected fine), let's try a few standard steps:\n\n1. Turn Wi-Fi off and back on using your laptop's Wi-Fi switch or the network menu.\n2. Restart the laptop — this clears most short-lived connection faults.\n3. Forget the network and reconnect: on Windows go to Settings > Network and internet > Wi-Fi > Manage known networks > Forget, then rejoin with your credentials. On a Mac, remove the network in Wi-Fi settings and join it again.\n4. If possible, try moving closer to a Wi-Fi access point on the second floor — walls and distance can weaken the signal.\n5. Try another Wi-Fi network (like a phone hotspot) to see if the problem follows the laptop or stays with the office network.\n6. Check if there's a pending system update and install it, as this can sometimes fix connectivity bugs.\n\nIf the problem keeps happening after these steps, or if you notice colleagues sitting near you on the second floor having the same issue at the same time, please reply and let us know — that would point to an access point problem rather than your laptop, and we can look into that specifically.",
+            "cited_kb_ids": [
+              "KB-008"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-008 directly addresses laptop Wi-Fi dropping every few minutes while other devices stay connected, which exactly matches the reported symptoms."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2060,
+        "output": 633,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

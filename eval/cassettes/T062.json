@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpsCCpABCBIYAipAhGHQ1rB6i4o1uxWrSNLQM+CPh0LJ/pVowQUlGkRvEcHGbAeZrt8N6S8dtD7E+jDbN41SOm7BoPewnatJXl5iEzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAbub3NUGEgyvymPvLcXXgCOcqq0aDAbwcB1mcAEOj/ZAfiIwbqDlZUpLWNniyACQbR4vX4MjcAjd/02WhJaEk5lIpFNWjfdeXXIfkMbWyUQs1qyWKjgnEjvZhHzRxmY9ZXoN6NvHkYmAPxqSfk/xXmivFJp3GZSkfS2MoZmMO7I0R2h/ojHyDFQTXJK2vBgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UvVwbtBCXwfuNHGySayXwb",
+          "name": "search_kb",
+          "input": {
+            "query": "Teams camera not found"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_015RVkwxfPADPjBRu4a9yWnZ",
+          "name": "search_kb",
+          "input": {
+            "query": "camera greyed out laptop"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 373,
+        "output": 126,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01XzAGsW47u6Cni21xKVXJBh",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-021"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1767,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - camera greyed out / not found in Teams is directly covered by KB-021."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01375jnJ6RrnVASXyGDXyACg",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Camera not detected in Teams is a software/app issue with a workaround (other apps, previous meetings), matching KB-021."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2326,
+        "output": 236,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01X9DqCM2kdsdZq58X8QGNWa",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry your camera isn't showing up in Teams! Here are some steps that usually fix this:\n\n1. In the Teams call, open the device settings and check the correct camera is selected (sometimes Teams points to the wrong device).\n2. Close any other app that might be using the camera, such as another video call app or a recording tool - only one app can use the camera at a time.\n3. Check Teams has permission to use the camera: on Windows, go to Settings > Privacy and security, and allow Teams access to the camera. On a Mac, check System Settings > Privacy and security.\n4. Quit Teams completely (from the taskbar or menu bar, not just closing the window) and reopen it, then try a test call.\n5. If it still doesn't work, restart the laptop and try again.\n\nIf the camera is still not found after these steps, please reply and let us know whether it fails in every app or just Teams, so we can dig further.",
+            "cited_kb_ids": [
+              "KB-021"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-021 directly addresses Teams camera issues, including checking device selection, permissions, and closing conflicting apps, which covers a camera showing as \"not found\" in Teams."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2608,
+        "output": 519,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

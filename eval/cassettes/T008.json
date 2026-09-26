@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqsCCpABCBIYAipA4rgiEXHc8hhBF10ib1P5H1D2cNQGxQ4xggKlC0oGheD6ej+F3P9OIOhSPsz2s5wPwe6qqUxAAL9HKPOPlPkHdjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAbqW3NUGEgz8khVj+bf46851g1QaDEIC2MDHsl6CjGfxaSIw2sFETdp1Alw9uHsCMCopWL9WEqN0JIsRC7vqAOfSqPvF498CCqT1M8T8rF0OaNtrKkj58D55SJgEr2C/foZFunkFrkvNK4IDictzNHqCo4Vv/NFaRxDKD2zp3mmSPfot0a5y3LTzSrGUdMZoZOGNExzR5aVwvrmsxIIYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01FSQWsu86fRZ3ja4ug6S9bP",
+          "name": "search_kb",
+          "input": {
+            "query": "add printer MacBook"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 357,
+        "output": 76,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_017CTktsRYPTvVogNPWukoFL",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-013"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1036,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01EZuYAtszn3VRmpEGMP9pCs",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Simple how-to request for adding a network printer on macOS, no urgency or blocking issue."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1464,
+        "output": 199,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01FCC5iu4JVZBAKSQbD28gjb",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nHere's how to add the new printer on your MacBook:\n\n1. Connect to the office network or the VPN.\n2. Open **System Settings**, then **Printers and scanners**, then click **Add Printer**.\n3. Choose the printer from the list and add it.\n4. Print a test page to confirm it works.\n\nIf the printer doesn't show up in the list, make sure you're on the office network. If it still isn't listed, reply here with the printer's name and location so we can send you its address to add it manually.\n\nThanks!",
+            "cited_kb_ids": [
+              "KB-013"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-013 directly covers adding a network printer on macOS with exact steps matching the request."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1709,
+        "output": 376,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

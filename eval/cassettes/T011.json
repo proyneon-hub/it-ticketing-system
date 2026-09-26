@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqYCCpABCBIYAipAzPoHhzZDXMQ+qw+c/VXaAVSG4iAPI2WAZfHuBAkXn3Ne1MnXdWiHrFQInC/Us/MeRO4ULkUNseRzsk97DyZX9DIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAd2W3NUGEgylejl1vIzSHCLJOaAaDIgOEtss/z1m6i0pMiIwX81Kdd/14uXRa2wI48WlpY6l5id2r0eCPib0SGiUrfbKhZCsM9DHUQ2O6gz8nYg7KkNXuVgYR1a8qFtpnJVR/x6NZGD3A8GBAExpZVyBzgowqRQyGJZ9Nfqjj+r79fX52j4pXRrLmCqU3kiRtPSWRyWyk3rXGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_015yUxttGEeZJXXvcEUqfzdx",
+          "name": "search_kb",
+          "input": {
+            "query": "wireless mouse not working"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 357,
+        "output": 78,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_011dFkboxcBwPiqy63tdXp5Y",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-016"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1046,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This directly covers the wireless mouse issue. Proceeding with triage and resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012RDrVFzsUFqQW2uoFphBMk",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Single-user hardware issue (wireless mouse not responding) with a workaround likely available; matches standard troubleshooting KB."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1623,
+        "output": 240,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01FJXsHy3kPSbtMGUXCdXsyg",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry your mouse stopped working! Since you've already checked the batteries, here are a few more steps to try:\n\n1. Make sure the mouse's on/off switch is set to on.\n2. If it uses a USB receiver, unplug it and plug it into a different USB port. If it connects via Bluetooth instead, remove the device from your Bluetooth settings and pair it again.\n3. Try the mouse on another computer (or try a different mouse on yours) to see whether the issue is with the mouse itself or the laptop.\n4. Restart your laptop.\n\nIf none of this brings it back, please reply to this ticket with which device it is and what you tried, so we can arrange a replacement or further help.",
+            "cited_kb_ids": [
+              "KB-016"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-016 directly addresses a wireless mouse that has stopped responding, covering battery checks, receiver/port swap, Bluetooth re-pairing, and restart steps."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1909,
+        "output": 455,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

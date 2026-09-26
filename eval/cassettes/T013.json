@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eq0CCpABCBIYAipACUmiBDGloCP3B4tSwYB8jJZbCKMBauwa4T9p/tDDRVkvZ8wJsn2xOg8VBQTn7ktJYgDmJGAp5o1DRCsU1Ph37jIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAfeW3NUGEgx4L8T8COr8VMrjVTUaDNvfy0TWAEq9z8pclSIw5m2Wdl86BUs+iPDOXtWSLu/6aTqGn2WxXFf2xALqlu9CNchH5+QEuKm8+1rf6DxgKkqVCdpg1G2ByYIhVciZtMkbWaNBbB1qpENvHzTOXFq+44DSXAphX+70WY/jPXdwq27LXafTfJrkNitRCOjetmKZHufjUvGk4BmrKBgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013EbLcxuL9HY4kpDGbwQ1fk",
+          "name": "search_kb",
+          "input": {
+            "query": "design software license expired"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_017UPtfPG6fva3xJfD3xr91E",
+          "name": "search_tickets",
+          "input": {
+            "query": "design suite license expired",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 360,
+        "output": 143,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_018eRDVZRFdtUE4Tc1byHze4",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-020"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1136,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - KB-020 covers exactly this scenario. Confidence high since it directly addresses the issue."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01AeMCuih65GYa1YUVfCEVHM",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "high",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Single person blocked from completing an important task (design work with a deadline this week) due to a licence error, with no workaround available yet."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1639,
+        "output": 243,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01946pwFf9buatozBrXAMTbP",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about this, especially with a deadline coming up. Here are a few steps that often fix a \"licence expired\" message in design software:\n\n1. Close the program completely, then open it again.\n2. If the program has an account menu, sign out and sign back in using your **work email** — licences are tied to that account, and signing in with a personal address can show as unlicensed.\n3. Check your internet connection. Many programs verify the licence online, and a poor connection can trigger this error.\n4. Restart your laptop and try opening the program again.\n5. Check the company software portal to see if there is an update — older versions sometimes don't accept a renewed licence.\n\nIf it still shows as unlicensed after trying these, please reply with:\n- the exact wording of the error message\n- the email address you're signed in with\n- the date the licence was meant to run until, if you know it\n\nThis helps us confirm quickly if it needs to be renewed or reassigned by the software owner, since licence changes need that approval.",
+            "cited_kb_ids": [
+              "KB-020"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-020 directly addresses a software licence showing as expired or not recognised, with clear steps and what info to gather if it persists."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1928,
+        "output": 521,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

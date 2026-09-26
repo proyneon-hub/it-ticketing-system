@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErYCCpABCBIYAipABqUQlOtzAnsXkTXi+58iaLzYowT7MjfZ1hv4k2lpspoE2nkqTiVmj5yJ5Geit+FYfVlud0i/Wq5sy2qSHbvlkTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeOY3NUGEgyc/gBjQbnS7+ik7gYaDHVw/VrwvsWi0f/p0iIwz2BJWrEfSGlHOIB4L1juWsULP9vi2cmkSmQf+rzFgqQVL8FCBt1IcHYPEavaHcjaKlO3xOYjfIbDjlnNtUKlrCuWlHIwOCaypExV4u961ihwIl5TEsWQDAe7zHZ41IEXKlOH0Y8JGPtpWU6bRuOzGYJ72VbFHrecEKpB25aZ98r4fPVIghgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Hp56riTHCBJDTpEKUQWpP7",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "high",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Liquid spilled on laptop causing sticky keys and odd smell is hardware damage that could pose a safety risk and needs physical inspection."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 375,
+        "output": 242,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Th9KHgkxtcXs2ozubsoeoP",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Field Services",
+            "reason": "hardware_damage",
+            "summary": {
+              "reported": "Requester spilled a full cup of coffee on their laptop keyboard; laptop still powers on but some keys are sticky and there is an odd smell.",
+              "checked": "Confirmed this is a liquid damage case, not a knowledge-base-covered software/config issue.",
+              "ruled_out": "Not a simple software or peripheral issue; this is physical liquid damage that could pose a safety or further-damage risk if used.",
+              "why_escalating": "Liquid spills are hardware damage and unsafe to keep using or troubleshoot remotely - needs physical inspection/repair by Field Services. Advise requester in the meantime to power off the device, unplug it, and not attempt to use it until it's inspected."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 662,
+        "output": 374,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

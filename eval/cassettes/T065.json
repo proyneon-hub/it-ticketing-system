@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqkCCpABCBIYAipA+4M7PyFRsWcnfag97kWdrry33Hdw8fD8ShBbGE50RU+6WaURQySf/PEdnn85c27fJ1uKCAVUmnYB8wIQvRH5wDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeKb3NUGEgyvVBDjUcO0ZO1pNnYaDJC0WeMliCk0sV8rOCIwowa4D40jqSOdJcN8Nmu3N9ADCpmE/vPRFjVC0p8sDwv65a+p51comYDM6VJ+W7fXKkaVr5ggdIf4aCT8PUuD4JA3bX3jJVq9gbqqJmQeUKOzUzMRqXE5H2a3ZV/WndkrcTzjy9+XfQ4F9YHsJupEKjETzJKy5xjlGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UZVkonn6uDxzya5Dr2rSex",
+          "name": "search_kb",
+          "input": {
+            "query": "Adobe Acrobat trial expired licence"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Q5Akk3mya2aYwXkBpzum2y",
+          "name": "search_tickets",
+          "input": {
+            "query": "Adobe trial expired company license",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 378,
+        "output": 162,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Ny3aiLma5vxFe4LTkKKFa3",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-020"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 947,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - KB-020 covers exactly this scenario."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BFyBPf6m8rhAXovB5wmUrC",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Software licence error blocking PDF editing; workaround may exist via sign-out/sign-in, not a full outage, so medium priority to Help Desk per KB guidance."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1450,
+        "output": 244,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01WM1zX3eyyf7zmVeq1XtBbu",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the interruption, Alex! This usually happens when Acrobat loses track of your licence rather than the licence actually being gone. Please try these steps:\n\n1. Close Acrobat completely, then open it again.\n2. If you see an account menu, sign out and sign back in using your **work email address** (a personal sign-in shows as unlicensed even if your account normally has access).\n3. Check your internet connection — Acrobat checks the licence online, and a poor connection can trigger this message.\n4. Restart your laptop and try opening Acrobat again.\n5. Check the company software portal to see if there's an update available — sometimes older versions stop recognising a renewed licence.\n\nIf it still shows as expired after trying these, please reply with:\n- the exact wording of the message\n- the email address you're signed in with\n- the date you believe the licence should run to (if known)\n\nThat will help us get it sorted quickly.",
+            "cited_kb_ids": [
+              "KB-020"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-020 directly addresses a program showing an expired/unrecognised licence, with clear troubleshooting steps that match the reported issue of Acrobat showing a trial-expired message despite a year of company licence use."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1740,
+        "output": 533,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

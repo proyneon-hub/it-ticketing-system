@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqEDCpABCBIYAipA+tKpDs/JyfeMsZpXRIzPvXHKmwWf06FlKoud7ouubT8pQZhQNq2lkpgA3bthncbvjYLgWxvu64YGDb+rPFtW3DIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAfOa3NUGEgxCqHnFuhpYzjtnep4aDPBQQsazR2QGa2hS+SIwVQaOeAumrATDKqM23oT6l1IHwSGMCzLkPJG84aePrc3VkBq/hx5iz5Qa1wUJtOe/Kr0Bha1WOub4zJcoHQhSWJMvDN/dO9Nkb9N7rdt7nmPq6FOEBOaLNWN/ziI87b4RLxqp8TXLcsc2RwhKTINU3ypdByESc59xfRguAR7+4l8cL9AwKJA8KqBOi3VkIqJDeNx4qUKyv8srNd6PHGvVeVncFxAYqKk0+OMFS2cga7WzvOo37AZcugyuNFg2e96UUUe0CuVccFWdvlZuQSkJU2TcyVmaczopu98Ql3Oi/rvHoA03G5rxyNzJKr2SVVcbGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_017faR6Ecewg3xNcPBEWE4Fx",
+          "name": "search_kb",
+          "input": {
+            "query": "add network printer to laptop"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 367,
+        "output": 110,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_018ER5XZX8EyuQULBaLAgKYb",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-013"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1097,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This covers adding a network printer directly. Category General Support/Hardware, low priority per requester (\"not urgent\"), route to Field Services or Help Desk? Since it's a printer/hardware setup task, Field Services deals with physical devices/printers, but this is a software-side add-printer task that user can self-serve. Help Desk seems more fitting for general support triage."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Qd5cZ7vhZYHmWSSoUEGzCV",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Requester wants to add a nearby printer to their laptop after a desk move; explicitly marked not urgent, and this is a routine self-service printer setup task."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1525,
+        "output": 336,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01LCk4mvc3wKegubD2aeUT5g",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nThanks for letting us know about your move. Here's how to add the new printer to your laptop:\n\n**Windows**\n1. Connect to the office network or the VPN.\n2. Open Settings, then **Printers and scanners**, then **Add device**.\n3. Choose the printer from the list — its name is on a label on the front of the printer.\n4. Wait for the driver to install, then click **Print a test page**.\n\n**macOS**\n1. Connect to the office network or the VPN.\n2. Open System Settings, then **Printers and scanners**, then **Add Printer**.\n3. Choose the printer from the list and add it.\n4. Print a test page.\n\nIf the printer doesn't show up in the list, please make sure you're on the office network, and reply with the printer's name and location — we can send you its address so you can add it manually.\n\nThanks,\nService Desk",
+            "cited_kb_ids": [
+              "KB-013"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-013 directly covers adding a network printer on Windows and macOS, including what to do if it doesn't appear in the list, which matches the request exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1907,
+        "output": 503,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

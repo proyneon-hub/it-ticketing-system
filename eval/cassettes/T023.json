@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EsUCCpABCBIYAipA8nT+S3EagJ2+4xwDr28xqI3XaBDe06M6TcBMtZLJIHe/BjymsKw0+nrugvB+ByarQ+ANhIubkXvbsJd6/xR7JTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAfmX3NUGEgyqjMJ7tW1PLvWnEdkaDPTphVzVv3WEU9eplCIwBiVsNRwiuAp7iOBPGyrnLDJgfTmJ9X+YY3b6fzcUODBr2DMaMAo7Cvvr9MdGyHuLKmI4myNAz0UM9o1BbbyyEhYhYlWI/LZ0dDC7jLkLN0+iZBwtw5o1FGDFr/KEM93cYSAgaN8KwLyfLqdcwA9qH6sEO8OI/WqvmgE0uNkZX0vmptWCjJn75Hs79gQeCtgyfleZyBgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0119mFEuL8KS3ffPxWLRxntZ",
+          "name": "search_kb",
+          "input": {
+            "query": "move authenticator app to new phone MFA setup"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HFVnsqM7AsDxXj5Q1tp1Lk",
+          "name": "search_kb",
+          "input": {
+            "query": "set up MFA new device"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 365,
+        "output": 142,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01CVNVTu4JicphDkGupknGuA",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-003"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1702,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches exactly — requester still has old phone, straightforward self-service MFA transfer."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01X2btD3uob3C47nQ2RWoU6p",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "low",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Routine self-service request to move MFA to a new phone while the old phone is still available; no urgency or access change needed beyond user's own action."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2130,
+        "output": 238,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01VdZaUqcH5oXg44LTMGjhCM",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nSince you still have your old phone, you can move your authenticator over yourself:\n\n1. Keep the old phone handy until you're done, and sign in on your laptop.\n2. Open your security settings and choose **Add sign-in method**.\n3. Follow the prompts to install the authenticator app on your new phone and scan the QR code.\n4. Approve one test sign-in on the new phone.\n5. Remove the old phone from your list of sign-in methods.\n\nIf you run into any trouble during these steps (for example, the QR code won't scan or the test sign-in fails), reply here and we'll take a closer look.",
+            "cited_kb_ids": [
+              "KB-003"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-003 directly covers moving MFA to a new phone when the old phone is still available, matching the requester's exact situation."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2414,
+        "output": 414,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

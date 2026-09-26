@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EoADCpABCBIYAipAp2utVE1m6rk7xG3Pc8I81ukzf4eZAY66P1fBRRVJbEsddRbFym8UfePGk0r5Y9ECqHfw4CEPNRa9mzmE00ozeDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAbCc3NUGEgwF9mobPFQeZfPZDDcaDP54VnnV9hrQFegaXSIwE9x9e8iMtAzxSFsj1uX6rBFLYCVTDuIMqR3L2SQx52lmrdUkokZRTTSCeMPp9LkyKpwBM6smCh4OSdvH3S0zmZkOLKXL/RSW/RVMUy9whoq3bAEhDn3pdA8lfZ7rs/bx1zoJ7SNWtr5JGQOYXjAEITLR/CjK2DlqAQDqqiufvQqLNIDj4492g/Dk8FmbT+ccOBYa3ts6dyGeV6ygPFJ5OFpKQMJChhY8jk71sEJYs2/7MJ18AH2qwr+Z9qGtTzcQ86JlBNGLk1p8tBcVk7HqGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SgkdyvLsbNDv7Du5bVzxsn",
+          "name": "search_kb",
+          "input": {
+            "query": "account locked too many password attempts"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01WdoXo1emcnCBWauHTqnEqK",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 370,
+        "output": 126,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01NwtgT282e2QjfdSVHJhXRN",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-002"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1147,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a straightforward account lockout scenario covered exactly by KB-002. No signs of compromise, just typos on new phone."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JDC84Y2JV6ooMCnJ2CzHwq",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "high",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Account lockout from repeated failed password attempts, requester has a time-sensitive call, standard self-service unlock applies but urgency warrants high priority."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1609,
+        "output": 257,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01GNAnVYrY6dKNjDz3Rdj8o5",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the timing on this — here's how to get back in.\n\nYour account locks automatically after a few wrong password attempts, and it unlocks on its own after 30 minutes. To make sure it clears in time for your 2pm call:\n\n1. Wait 30 minutes without trying to sign in on any device. Each failed attempt restarts the 30-minute wait, so please don't retry in the meantime.\n2. While you wait, sign out of the mail app (and any other app) on your new phone, and turn off its Wi-Fi for a minute. A phone that still has the old password saved is the most common reason accounts keep re-locking.\n3. After the 30 minutes are up, sign in once on your laptop with the correct password.\n4. If you're not fully sure of your password, use the reset steps instead of guessing again (Forgot password on the sign-in page, enter your work email, and approve the verification prompt).\n5. Once you're back in, update the saved password on your phone right away so it doesn't cause another lockout.\n\nIf the account locks again within the hour, or you notice any sign-in attempts you didn't make, please reply here so we can look into it further — that could mean a device or app is retrying the old password automatically, or something needing a closer look.",
+            "cited_kb_ids": [
+              "KB-002"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-002 directly and fully covers this exact scenario: account locked from repeated failed sign-in attempts on a new device, with clear self-service steps and no indication of compromise."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1912,
+        "output": 625,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

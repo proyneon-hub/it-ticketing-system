@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EtACCpABCBIYAipAldZ8cFvXAukgFjPaRuzWMDH/UbEOODqyKfU/rsKLJjXtZmN066u7OYELBWwO7DMy8Nk3pWdMLCRirt3zNrruAjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcWY3NUGEgy9LVhaxuSTDJyeQiMaDEsEwIaqejdT5HvmpiIwE6rqx4W25GPqLtIeiwh/Ik+ey8/VPtoULjtVsMFuskF6ylY5DtLwiBCO6mpqJxRfKm3vSOoXAJ3Coqh4A/RKdymbsyFJikezdIb4KT7P2zX0qNc321jBHbc8Xv2fn5Oe2FkHjyGdiO6QiwiOPummLcFhvJWqKVRIiNElIw12OCvgpilNmubMWBc4wsqzGTn1uO4DC0B2/BalB7ZdKog9GAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HWAcvxYkBZPMpLYUdNHYMg",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "urgent",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "A stolen work laptop is a security incident requiring immediate account/device lockout and investigation, not a knowledge-base fix."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 358,
+        "output": 243,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_016RpHixLbP7UDmRUajcT8HE",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester's work laptop was stolen from their car overnight; they have already filed a police report.",
+              "checked": "Confirmed this is a physical device theft/security incident, not a routine hardware or access request; no KB article applies since this requires account lockout, remote wipe, and device access revocation.",
+              "ruled_out": "Not a simple hardware replacement or software issue; not an attempt to manipulate the assistant.",
+              "why_escalating": "Stolen device with company data/access requires urgent action by Security Team: disabling the account, revoking credentials/tokens, remote wipe if possible, and coordinating replacement, which is outside knowledge-base scope and requires human judgement."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 646,
+        "output": 363,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

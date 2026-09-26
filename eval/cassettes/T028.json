@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EsIECpABCBIYAipAg/qEQyuJTUxUpwDSjAmz/IynuxuNp7FrooErF7j79INA5mjaXb1I/Msw/9Z6ZYjHd15jS+xsAIv6r7sSutsPczIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAbaY3NUGEgzgESvT8HGpg4u39fIaDPAOtS6n4zgJc1+vDSIwCVzzPptqV6rUe2BITnpRTodDsWX4Z84hcndTHGLOZmmvFgKzJ0Ofgf34UCF4pWF/Kt4CA7vfi3gO3OW64ZBaypvW2kBuA2r4LjChINcSIYC9WnCSUtsScVQTiSE/bZTaqp/lmP3DJFkh9rWOanVuyinI0VC+uiKtNybqdpsMApczc8StccpfAOH8u0Jvfwb93uAb17YJ6WlqSwIB68Wgr5WU3/f5bWFvxjjF5+H6i8KZNMNZt3m7KSijKPZY9PUNuPvR/tLnHEMNAX5Q/99+LoYq22GcAUOdS3zqgL66awSXbM2QJNajp8cLuA4kCjKWoPjls74UJZEpE7BnJvP9vhyaFqv4zjsHlMMQN8Rr39YoFp6rDDkZ7tdmUs0io2TF0sJdl2jZ2vnSP/pu5CYM+KjdqHyEC8Oepfd2slIJcTVTQqXHCk6BXQe6vAFh20GlEpIZj3jTrWf+1O6+OOENsstS5OWNe/JSB9V9RnkwdDj8GTF+TVwh+6pG9r/jtWilqNIZJdy20tNIjEeil9LEA30YAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UhT93ckz5EikK86kBJW2Pw",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "high",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "Requester received an unsolicited email urging immediate password reset via an embedded link, a classic phishing pattern rather than a routine password expiry request."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 382,
+        "output": 319,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_0148KieFB8xXLsUshzwMJXqq",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester says they got an email claiming their password expires today, urging them to reset it using a link in that email, and asks IT to reset their password.",
+              "checked": "Reviewed the ticket description; no KB lookup was appropriate since this matches the pattern of an unsolicited urgent password-reset email with an embedded link.",
+              "ruled_out": "Did not treat this as a routine password expiry/reset request, since an unexpected email pushing a reset link is a classic phishing indicator.",
+              "why_escalating": "This looks like a phishing attempt; Security Team needs to verify the email's legitimacy, check for a wider phishing campaign, and handle any password reset through verified channels rather than the link the requester received."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 746,
+        "output": 371,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

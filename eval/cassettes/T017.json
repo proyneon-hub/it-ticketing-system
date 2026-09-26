@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EuYCCpABCBIYAipAC5YR5/m6jr0GzY8ComWtf+wAc2sy9S5hOD8RFsMwl7Yp28a3vyF0m1VSZlL7fQRybldY5In2mf8QY/wuoHdfvTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAa6X3NUGEgwsS4584+QdW586Ic8aDIk7QiqaL3pEtgCPyCIwy227jN8hRb+CDTsdd2FYrtCOzwAFmJMy+QoXNjcMJEV/+0HLvD4Mb2VBAoIH2wPLKoIBv7qRISqGPraBiRtWqgzjdQ/cYieeEZlozdbByS5e/YMSq3PAdhdvJDw9bc4nD2xLgTqUoKWztpc1i/mD+mU3R/PKAGHA5SoZQ6UwaeQQYgsPJO6hhTmPLu9W3XKrKKVdXLXHu91744koXS5VIF9tYx1BTI7fZIAwCCdO4HPGTU1mHRgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01DL4tRERZqqHn1SCnjM3prT",
+          "name": "search_kb",
+          "input": {
+            "query": "Outlook repeatedly asking for password after password change"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01H7PzbmoBEBHreztytNjqaZ",
+          "name": "search_tickets",
+          "input": {
+            "query": "Outlook keeps asking for password after password change",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 370,
+        "output": 181,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01EL97XG6bGvo7nrD4JtWi2i",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-024"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1201,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches directly. I'll set triage as Email/medium/Help Desk and propose the resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014gopuCYshEBuxomdezymDU",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Email",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Recurring Outlook sign-in prompt after a password change is a known, documented issue with a workaround (webmail still works), not blocking all work."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1719,
+        "output": 246,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01WqMKBZrXPFierAx3zYoxnQ",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the repeated password prompts — this usually happens right after a password change while Outlook (and sometimes your phone) is still using the old saved password. Here's how to fix it:\n\n1. Close the sign-in box, then close Outlook completely.\n2. Try signing in to webmail in a browser with your new password. If that fails, your password may not have updated correctly - let us know.\n3. Make sure your laptop has a working internet connection (and is on VPN if you're remote and need it for mail).\n4. Open Outlook again and sign in once, approving any MFA prompt if asked.\n5. If it keeps looping, sign out of your work account in your operating system's account settings, restart the laptop, and sign in again.\n6. On Windows, open **Credential Manager**, remove any saved entries with the mail server or \"Outlook\" in the name, then restart Outlook.\n\nAlso check if your phone's mail app is still using the old password — that's a common cause of repeated prompts right after a password change, and updating it there usually resolves it too.\n\nIf the prompt still keeps coming back after trying these steps, please reply and let us know your Outlook version, whether webmail works, and when it started, so we can look further.",
+            "cited_kb_ids": [
+              "KB-024"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-024 directly addresses recurring Outlook password prompts and specifically calls out a recent password change as the usual cause, matching the ticket exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2011,
+        "output": 605,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

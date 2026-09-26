@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EogECpABCBIYAipAxj4zXGTCUjYvWZXYSUWoejJCv7bsW1U5Hemwp0yXkAa1rSEUZyHZAq0V+pu522lNA6iNJzOsfEGjdF549eBcfjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeOZ3NUGEgzUcTEE5VcXNG/IsjQaDBEyJLHTnA70471KzSIwN3lYzpu6ufpnxC3348GwASSYvQAh2qj+65OEELS5xsrHsSsU3MjadwmpBDS10Ui8KqQCfHQnox++zI9tmObG8XLuk+AqOVDSAT1iCoG/AVo8ZKc+0Gs+CH7ZPsQabDDrx7RCz+WiJoo95BFlFcfovOAeHPBWSUHnGWiBWKFs26kDP5/LGqNqaR9XNLV4wXjGYzOt7CkSmTjggKVOW1M0nGWCqTYf3g81t42oT1VKZu9pTMWD/EdkdaKGbhxUOct/xs8tHW2Rx2Rj8DlscjLZjOUpz5tDZG7ZgisLMVlWB7bLQ+De/3UUWiLItIGi/lEQVVndfFwVjJuT8DcABUdBbtuMX6aZtyjPrj7WHym0xckaa9fYU3WUOhV3H0VnytDEEu2J7X6UIrWyYgpQuQ8kRMegVWkIis/YckINwZRjrN4o8ZystCaOjzyCZ/HXq5ZTta6tg+DPyBgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01KV9g4C6pUJjvJ8HuwuYLDu",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "General Support",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Ticket lacks any detail about what is broken; cannot be triaged to a specific category or resolved without more information from the requester."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 336,
+        "output": 303,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01KEc3UwW83DS888DkpSKz8b",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Help Desk",
+            "reason": "ambiguous_or_multi_issue",
+            "summary": {
+              "reported": "Requester says 'It's broken. Please fix.' with no description of what system, device, or issue is involved.",
+              "checked": "Reviewed the ticket description and comments; there is no detail to search the knowledge base against.",
+              "ruled_out": "Nothing could be ruled out due to lack of information.",
+              "why_escalating": "The ticket is too vague to categorize or resolve; a person needs to contact the requester to clarify what is broken before any troubleshooting or routing can occur."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 686,
+        "output": 308,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

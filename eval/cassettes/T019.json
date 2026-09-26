@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqcCCpABCBIYAipA1XVQO2FGHsIksvVdi7sQZyfq+OrURrgsBbOxl7b25ochCtxhsmpAIG/mmNnjCdO4nxvLDcMtM1nLY/WCRgaamjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAceX3NUGEgxRxb5YBJw1UMI+88QaDB7Hh37ZsGRSKBWGIyIwU+l05Qqicq6x5XXzn+uLsVtO8uemqm1THaIXyDeOvZfjxvXLfK/AJfyrzf9VbmUEKkQlUjENcjGMt59n/wHFuGnH0TBGLmv9VVRfRCZXawALMq5EmcBqFrHD6xWo4hWtCHohbdgGFxXngjk8jN9hF9fBtPgENRgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01B44LbVJVfmFbKHsKSCmYzA",
+          "name": "search_kb",
+          "input": {
+            "query": "calendar invites not syncing on phone"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01KXtuGfA2PuTR1yGXRUvvTj",
+          "name": "search_kb",
+          "input": {
+            "query": "iPhone email calendar sync"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 367,
+        "output": 135,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01NMCy6x9ETVKZazQkxnWFp1",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-027"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1766,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches exactly. I'll set triage and propose the resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MHpxLUduL3cFk4X1i5PoaV",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Email",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Calendar sync issue on phone only, email works fine, laptop unaffected, workaround exists (use laptop) so medium priority; matches known KB article on mobile calendar/mail sync."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2268,
+        "output": 252,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01C1V9e5G9nJG2ddt9eLfpr2",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Thanks for reporting this. Since email works fine on your iPhone but calendar invites aren't showing, here are some steps to try:\n\n1. Check your phone has a good connection, and that Low Data Mode or battery saver isn't blocking background updates.\n2. Open the mail or calendar app and pull down to refresh.\n3. In the app's settings, check that both **Calendar** and **Mail** are switched on for your work account.\n4. Check the sync period setting — some apps only sync recent days/weeks by default, so older invites may look missing.\n5. If you see a warning or password prompt on the account, sign in again.\n6. As a last resort, remove the work account from your phone and add it back. You'll need to approve MFA again, and mail/calendar will re-download, which takes a few minutes.\n\nIf this still doesn't fix it, please reply with your phone model, iOS version, and which app you use for mail/calendar, and we'll dig further. Also let us know if invites ever go missing on your laptop too, as that would point to a different cause.",
+            "cited_kb_ids": [
+              "KB-027"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-027 directly addresses calendar invites/email missing on phone while working on laptop, matching this ticket's exact symptoms."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2566,
+        "output": 550,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

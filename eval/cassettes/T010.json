@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EtMCCpABCBIYAipAHot40oM6o4X348qftxYVJ//dQ8sBn5d47iB67Zw3eDzP/O5s56jI9uR7MIIJvj1QPhg/dMd0v6604M3kmkAktjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdCW3NUGEgxT/1AiWNOQCWt09j0aDJiK6zdmh7LFLb4PbiIwB5fU0qHT8+DbyYb9zdXBH4hIAfcba1jvW5hJxSRfFbjBWmn8gM0C2t15Srgqg9fEKnDybJ69cFtxFyVO87mluG/7weY7nPSqiB84HnBJkxJPQQFcdyOQ56oIhvMhhsaa7cHp5MXPqlTdZod9LyENlbO6hjksuS0MFwgttEFPizGvWgiruWlL7IyVUkso7WozWJoupLhX9Z4XE+McKJOGXKmBGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Q4GwvNYNYvnQ2teBQkcJE8",
+          "name": "search_kb",
+          "input": {
+            "query": "laptop battery drains quickly"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 369,
+        "output": 92,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012Cu1hp7Yne3xPHnbZMqaWW",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-015"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1107,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This covers the case well: laptop is 2 years old (not the >3 year replacement threshold, no swelling/heat mentioned), so troubleshooting steps apply."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01V7JTNfHq8Gxs4xcrx6XSFj",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Battery degradation issue with a workaround (troubleshooting steps), affects one person's productivity but not urgent; routed to Help Desk per hardware battery KB."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1604,
+        "output": 279,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01ED8v9UpjU1yPwLvWwsJM3A",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry to hear your battery isn't lasting long. Since there's no mention of swelling, overheating or damage, here are some steps to try first:\n\n1. Unplug the charger and check what's using the battery: on Windows, go to Settings > System > Power and battery > Battery usage; on a Mac, go to System Settings > Battery.\n2. Close or quit any apps near the top of that list, especially video calls left running in the background or browser tabs playing video.\n3. Lower the screen brightness and turn on battery saver or low power mode.\n4. Restart the laptop, as a stuck background process can keep the processor busy.\n5. Make sure you're using the charger that came with the laptop, and that both ends are plugged in firmly.\n6. Install any pending system updates.\n\nIf the battery still drains quickly after trying these steps, or you ever see a \"Service battery\" message, please let us know — a technician can check the battery's health and arrange a replacement if needed. And if the laptop ever becomes hot, swollen, or otherwise feels unsafe, stop using it, unplug it, and contact the service desk right away.",
+            "cited_kb_ids": [
+              "KB-015"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-015 directly addresses laptop battery drain with standard troubleshooting steps, and the laptop's age (2 years) doesn't meet the KB's threshold for automatic replacement, so troubleshooting is the appropriate first step."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1929,
+        "output": 610,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

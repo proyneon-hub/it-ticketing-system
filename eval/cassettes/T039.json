@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EucGCpABCBIYAipAoiD4uyUJR7CHIoWBUJRSzF/PlvBegxfl04HJgoqHILuHVmaU8Og/nwJqUJukRn3mWT1h9l6IHkl7Ju/hHrb+0zIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYeZ3NUGEgw61yjzhI/M1SrStjsaDKhS5et/tlzrOy2HlyIwk2/8wwlRI81hwZNMNTr0RrLj+JNI4jg2fxGj+AY/Dur9COtX652aA/HiX8fDFvMnKoMFvauUc5zsVQ1tK0VttmKuB1aBZJgtXjg93Ddxbzsv0sQiPxwXXvN4KC29P8BWLrsBpf1N25E9gXagFWJJZinB3GQVk9HIhPT8ai/63O7QTAnKoT2WdMY/OvsR2SgxjU5mxCFAPs9N8BpnsH5xjnG8rWs76VdcEWa3L1GSpEQEMSI8YQbdKCksyy4Xs1ldH5WowP9FEYGk5yis02DCfcSid6FvvdWdBpeDt1YnaozbsfXGrPCRiLJWzyN4rvi51B3y8lL/wzt9bd0QVDoQhoQ/Gv2yqKP8wix8y6xD161KVHw8QdgLDn/lAdT4lqaoSPFEGkyYs0T0M4H1BaKtaIz96wjJWWMvVtdIXI9DV2Dd+3XSWuFb9/9amB20Wo90sJcTu0YCuNbA4StsHV+R7UCro0tlH+wMx8hFnejDWxq+cDj21ik0W+Pz5N7VjEKzrYqCVcD2jQr0fxwWiiHWxG++XncCKZzoQyhSo5XkmPWJU/XrpqDTiQcvmPv3QVqibjDC2r094YevyNyeeWLy2EA3mLOvWpJdiaN0ehrO5jJYwJiuYSOLaXmENIxAaMHel+cnu4LDkbT3qsEKrhD0q/+P1Qoz9w3ktpHlx/oMh7FIfsQXl/hJ/dUreF7IFyY4TI4AVJhu0g9J9Ij0Spz+5QmYmtF9aSyD2WHiVy7QgXfCaVnMtNVQirhPGb7qXYz1NplyBsvzdEVrbRWD4MNKUGSKm71c7t5ulY1B0OXWzCHBr8Pz3YyfMcC+ScG6Pgmmgfi4trH7F9N8w3eBXSNco9JqkaTipSD+GzHXF9l+oS9RfqE2SILi8JWMdSao5V4DJUtb46lqbgbeRJ4CLa+oflhfHI690RgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_015hxToEuqnuENkheNmU8gX6",
+          "name": "search_kb",
+          "input": {
+            "query": "new starter onboarding laptop email account CRM access",
+            "category": "Onboarding"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01LKtGJ5iyXwJwKPFDUHMShW",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 294,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErMGCpABCBIYAipAVN6wbSspcAsgoMddi7HE/DE+k5jtu93NE4GzjApN7XanP3p8mpb5yTUwfVc8LUWIicJ+EM8VZbumHumGl0rLUjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYqZ3NUGEgzfyPkUaGRPRTIVlpMaDNXNR0n6H44ginVN8yIwRglo8MIB7/eIC9lcp2hNssIGfKiUHZ/cbAyA/uYc5HqSIWLjW4WXLv2D7F/TAr4yKs8E97sAhOcfUcQcfgxAobiDUdqsICVT3MvQXzpPEjsQNjPr8tdVaD/oEJVif/BZUY1f6lvwzpP+EeH8AxnZrgrNKvBQpt5vAv9w80vFbE8MN+5UI+xfkhvUWJA/2yVZGmiun6KcJ/tlHVJMEqEtYMiDieGpg4N68gaEFtoYyslaWV7kCDPNimG0JzCWWYsoT2RndmE5LEDu2j+BVvdRBEn6kVaQrufZNYdW8ysQcn9tnU4NFg3Myfbe9TRHQyB/aDNUwKk7wo9ElGYEUcOVf1jl5YCa48yT68elnw3KTov1rV3vE7QDM7XClPmMiSu1YohUn3/0arf3PW6xhozww7Jz9UxcXlBJlJvssI202MZ2FcpHHUWeNy6oGchYRR7D/C6P+q8+bwpkpoqs3iftz8SSFE5Untup5zoZVxPaYnfgTl13YBi5NbW44rP33GuLx2LxsY/w5ibWHyVkIk7JaGjwWGVfnpCTn9TH+mq+LLklPEHRL+E2VIT4s7vTvpyv8W8P0uFGsX27qzf/Y+Zz9vufj3kG8VA+VrQM8Qt23061mWSuY24zvIcSBt4GNNtV0BDNHAAZuewdf48x43CKS3O5A1kZYb33nWHbYeh8ayg26J0Fg6+WzhvIUqM3FCw1+2x0EazTb/4xszF+crnvgVHIx0IvD9fbuZJfgPNBCJ/k51IYYBdJ3VySHhKe+5QMT1+dsXXoeCLjJxG5rwnZymsrJFTWFEcDcnC8huKkXjuTKkWgaNCtxANIuae44jIEEBDUlZZTgepPCO9C1ULumbnRGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01W9ozoqsSCHZa66aypL27iQ",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-028"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 857,
+        "output": 215,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqMGCpABCBIYAipAobp8a4f8BEtKoCbrHzBjTQ7McXoEO9lEC+wqgtu3m1q7ex+W4/gNVO6oyBo9f1HBHfUUNhvkLTd6kOdxpVIhHjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAY2Z3NUGEgzOvBF0PPCWaycVMZwaDD04qTpuQCOKEPUq3iIw+y0zm7R4PYZveELz6eaRWpm68OkD2EiMVD5woYP9o1AS2AnBBCQkzQ0BY/KP2YRzKr8EioXSE58weyEExpLqQbN8qoEeAu24J199L/NgiysuC9zNDx50demhLFijlO7X2QlcWBEBN7y+lL8YYylVFuqJ2+HvXi/63w2bDUBFLd6VgPIbtGZeA4EEUvHMyyi7ysoZ819Z8Np8zJj+Lod+D7ca0SAkoWcAUvFDWc/AWoOEt1VyDE1wQYhwLAiC6YXeQ2xQxz1+2+s1Z7O/fW23p6Yphu0n5/JLbThNqoJOhwJ7QBqzqUTeMhElk97OMbMM9WBPaafiT1lImxGFjO2caNpntF8Z99P24b6PdWERaDXGtwdfLloDa2/oZLnvJKo3K5zMpxD7+A5kGePNxL1fQRp+RA0Cm0GyPxLtOvmFMMN9HWTJAGHQllIwqMgzoBDh1Ftu52GyBEk4JXLbCtR1iS54IIiEDB2anBRO1JtYS3oPmkI0MH/hWsHRqzw2nG2SiTLZtAfHIec9GgKKTyEjmc14cklqMFWKLvQVM+Y0gsFY+yiCm2Bkj+0XVoDAj+PXLJ2XaaguKM1sVnY1sYRFhKMnTfUjL3gExrFWIcLYnDmeRI8v2RcaKfWO4uXCYyyZgIXWMyoRjoHIAMItUpuJkspiSXM07JK1FT0p3fBTbiIcja9NgVgKDqy3mtOP19GXVm1+11lnNjhRYE8Lk1WVXY+q3Pn9g3OAMiVU+8S4VFLnz9hM7dO0fkzTV2c7fSqF+fmX95OCQ7EbiaLRIlVQJToXoDHsXT95Osugc2W0SbMJ5DGqM071pEs8daV/ckgE1ckYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01AUXbN2AtZ3nhXkAztCFFAg",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Onboarding",
+            "priority": "high",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "New starter needs a laptop, email account and CRM access before Monday; this requires provisioning new accounts and granting application access, and the request appears to be short-notice, so it needs human handling rather than a KB-based reply."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01USq86tcjudG4h1YUjeuEjW",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "account_access_change",
+            "summary": {
+              "reported": "Manager (Alex) reports a new hire starting Monday who needs a laptop, an email account, and CRM access.",
+              "checked": "Reviewed KB-028 (New starter equipment and accounts), which lists the process: manager must provide the new starter's full name, job title, team, start date, manager's name, cost centre, equipment needs, systems/shared folders needed (and whose access to mirror), and any extra software at least five working days ahead; Access Management then creates accounts and grants access with manager approval.",
+              "ruled_out": "No prior onboarding tickets from this requester, so not a repeat/duplicate request.",
+              "why_escalating": "This requires creating new accounts and granting CRM access, which is an account access change requiring human approval, and the ticket is missing required details (full name, job title, team, cost centre, systems to mirror) and appears to be short-notice (starts Monday), which KB-028 says may not be ready in time. A person needs to gather the missing details and confirm what can be delivered by Monday."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1545,
+        "output": 874,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

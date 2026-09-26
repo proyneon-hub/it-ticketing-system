@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqcCCpABCBIYAipAt8yNf39l78I4TSQ7iCEhp3nmxv7VfQT29Rm0TabuIHD+esQEa849Tu/UVp9zzDlDMsHuFofGfdew3AxmXL5pCzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeyV3NUGEgyCTwHuADpIr6xAu6waDJwwWkJSdTiNImRKQSIwBM0EjRI534jUGp5XF26aYNXOUNY+qGf7VEaDg/jvmsSUPyS6yK/g+Eki8RCWZX/+KkRmJYoJ3yvw5mCxvc9k/LMcKme9EUgGKnKa2fXgM+g2elUiHNtmmScuyNsEx2a5xZqeVI+LtD1CEMLFRViGa9kpBDA41BgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01LcjGEWDVycquXGy937VdHj",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN authentication failed"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_018c8gcRicb3JGuCXv38NS9K",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 382,
+        "output": 102,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01VERsvxpkQNisouYRiw4WWw",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-007"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1168,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - user reports authentication failed, portal sign-in works fine (already confirmed step 3 passes). Steps 1,2,4,5,6 remain applicable."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01QzdcZMC3UBNdQtDwJ3nEJG",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "high",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "Requester is fully blocked from work while working from home due to VPN authentication failure, with no workaround since they cannot reach anything remotely."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1640,
+        "output": 266,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01UcfhBvSkaz9b827jMGckhb",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry for the trouble, Alex — being cut off from everything while working from home is frustrating. Since you can already sign in to the company portal, let's try these steps for the VPN authentication error:\n\n1. Confirm your internet connection is working by opening any public website (without the VPN).\n2. Check the date and time on your laptop are correct and set to automatic — an incorrect clock can cause certificate/authentication errors.\n3. When you connect to the VPN, make sure to approve the MFA prompt promptly if one appears. If no prompt arrives on your phone, let us know as that may need separate troubleshooting.\n4. Fully quit the VPN client (not just close the window) and reopen it, then try connecting again.\n5. Restart your laptop and try once more.\n\nIf you still get an authentication error after these steps, please reply with the exact wording of the error and your operating system version (and note if this started right after an OS update), so we can look further. Please don't install any VPN client from outside the company software portal.",
+            "cited_kb_ids": [
+              "KB-007"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-007 directly addresses VPN authentication errors and lists the exact troubleshooting steps needed; the requester already confirmed portal sign-in works, matching the article's guidance to check that first."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1952,
+        "output": 555,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This ticket has three unrelated problems (VPN connectivity, hardware/monitor flickering, and a software install request). This requires escalation as an ambiguous/multi-issue ticket rather than a single fix."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MHuHTBdN7epBQGYEqyYNiY",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "General Support",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Ticket bundles three unrelated issues (VPN drops, monitor flicker, Zoom install request) with a workaround presumably existing for VPN; none is described as fully blocking, so medium priority; needs a person to split into separate work items."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 396,
+        "output": 316,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01HevjXww2jrBzRaBWizY2Qk",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Help Desk",
+            "reason": "ambiguous_or_multi_issue",
+            "summary": {
+              "reported": "Requester reports three separate problems in one ticket: VPN connection keeps dropping, laptop monitor flickers on wake, and a request to have Zoom installed.",
+              "checked": "Reviewed the ticket; no comments or prior troubleshooting present. Each of these three issues (network/VPN, hardware/display, software install) falls under a different category and likely a different resolution path.",
+              "ruled_out": "Nothing ruled out yet - no KB search was performed since this needs to be split into distinct tickets/tasks before troubleshooting each individually.",
+              "why_escalating": "This is a multi-issue ticket covering three unrelated problem areas (Network, Hardware, Software/Access for install). It should be split into separate tickets and routed appropriately (Network Support for VPN, Field Services for monitor, Help Desk/Access Management for Zoom install) rather than handled as one bundled request."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 758,
+        "output": 446,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

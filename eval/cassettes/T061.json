@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpkDCpABCBIYAipAAB0rZHAVKIVKG0aUlYJN6hP02KC15vFsxclxnpPhWerf2sX/lPJxwEIhqk5SPZSZVQ/RI/pl08wLDpMRulMwXDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaOb3NUGEgwSQ+dSuchaZaJYh8kaDF7Q5aPotnNJAVWmlyIwr3cqiH1uhk4krFgbe7LLDNCs7GBmZFo0S3O6jAyoQi5MF64RSN0Z6jrCZFMmPkjbKrUBM6YF2qmBTfaLfPp+dr1Mryf3ScPRwL9HUS/kr9SSXcLtO3LwUEoBIi2glXsSCUYHwdakexGA00w8mF6AtPj3AGqx7v9KFg2aNZSh5IHKvZunrQbpFm/Fvq9i8hD0RrhEX6kPk0kH0SRAUFXjzI7EcCgFReAFsKN/B3Y3c+FKfcP0ywKB7rTylork0d8ci7GTKT7j4Pcyiir++qc3bbHEmNmYRfbvP2bd2xiOYB4stmE/5ZWslhgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0196HxMzbrsQuNZWRbsucAhP",
+          "name": "search_kb",
+          "input": {
+            "query": "Chromebook enrollment"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SpiAzJDWk9AdwX83FCfcSm",
+          "name": "search_kb",
+          "input": {
+            "query": "new employee device setup onboarding"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 383,
+        "output": 168,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EocECpABCBIYAipA69yK5yszW6vBN0OV67N6dIlOkyQz+QdKTnqzmVSqo3p/IOs/HalfWOY9+oC/Ty8m/RtuJt7ALjT1x2nXve9yEDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaab3NUGEgzVnmcSM76UZXR5+24aDGcDPp1Z1IKuyEj8ECIwRacMUl+nybkLdOoqhZk7s9jV/EqDaYdpqWWcjGvQjXxSdRppr4mkCa8Tcd6bx+aRKqMCYoFeDs9F1va7enIU6iPRNWws7hn/wGSvIBuFoIjmwHh0H4eUpzTMHf3MW6rib/I5D2r9gxRDxX27o489+8b4817RJ/Nw/9PvRySlgS8c5SzEl9rQOf2tkzmN0B6TShe7wLJlGg5A657Mx/jzcmB8dv6QwVZBUh+fOlHm5za0gqPl3Jt83DA66g6XD24FeDgVuoRXQ5DHv4x/sv+qVLr+wWKfiu47Sn87e7dhZJdvXV82Eql2AFJTXSN0zWxQJvO1l5gsqJWIDr6YmCFCB1gFvFvp9QrHI8/cpn/b2cED91JpMZmf3UAcUeM19+RXfRFyHdIf1XXg6RCLZlUhMSp5W2AekkV535l1N0wyDQJAUMYzMXUb+mLEcXmqqErb/a9KPMU4GAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01TAgRWp5itqwS9q34gotsSA",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-017"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01KmTpSHcnSfQXXAY8ZBRCgA",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-028"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1296,
+        "output": 208,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "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"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01NrY14FfAyqdmvDZJKgDcdm",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Onboarding",
+            "priority": "high",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "New starter's Chromebook enrolment depends on her account/access being provisioned, and the request appears to have been raised with less than the required five working days' notice before her start date tomorrow, so it needs coordinated handling rather than a self-service KB reply."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2485,
+        "output": 1196,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Pgh3HyNXecaaUXNv4pxUQD",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "ambiguous_or_multi_issue",
+            "summary": {
+              "reported": "Requester says an intern starts tomorrow and needs her new, boxed Chromebook enrolled so it works with her account.",
+              "checked": "KB-017 (Enrol a Chromebook) covers the enrolment steps themselves, and KB-028 (New starter equipment and accounts) covers the required new-starter process, which needs at least five working days' notice and requires Access Management to create the account/access before day one.",
+              "ruled_out": "This is not a simple device-enrolment question, since enrolment needs a working company account and MFA already set up for the intern, which may not exist yet given the short notice.",
+              "why_escalating": "This mixes an account-provisioning/access issue (very short notice, possibly no account created yet) with a device task, and per policy new starter access changes and late onboarding requests need a person to check account status and confirm what can realistically be ready before the start date."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 3727,
+        "output": 430,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

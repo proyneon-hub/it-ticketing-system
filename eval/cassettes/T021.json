@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqcDCpABCBIYAipAU+A9/0pjTNQW4+maOt9isYh/E/h+yTN64QQ4Srx9i1i/m6HbzV79cDgxAIqfQvEGFAV2AE+4k7rwNbstJStuBTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeCX3NUGEgxEJ11ERXES1ld2OAQaDIc2xtUoA6J82TW/4CIwMHuqRqqVRQBNQdzVP2InP6ipc3jo3XUqdFXePMLFLlnc61xpkJU4oag0oWWHRJ3xKsMBoqta2UyBr+chxQoFWAQySetSRz0GPv2xjRSODWY/li+xKi5JqBlGlYTSCOsedrrJ+NlU/sL+u25rl5EYdQ55jbNCJtLppqyTyo1rIe2+e5i03eZLycJhpJ6B0zrAYmrU0OM4swnr5bRhmilQ23s7UrBut4ksYz8v5LzFaRsxAcVQ9L7IVPNqeS6u4B3A+/PvyssWqmTb2xT0kJk5nnju33OljTxk3r7/c9GfJ35phZ5WbjiyB8ePuMcttjrxjnEq8WxeGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HxM1Xd5WkjagqJm2aQEw8t",
+          "name": "search_kb",
+          "input": {
+            "query": "account locked too many failed login attempts"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01HfkTCZvZtfLARnFtfpRtqo",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 362,
+        "output": 139,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01RLDcj78KFUyxs6n4SQcw7Z",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-002"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JZu26NJDQqWgahsjfnQp5w",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-001"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1159,
+        "output": 109,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches KB-002 exactly (account lockout with a phone retrying an old password). No security incident indicated—just a normal lockout scenario."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01VLg9orYoCjbzM3egGmZFfJ",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "medium",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Standard account lockout from repeated failed sign-ins, likely caused by a phone retrying an old password; workaround exists (wait/reset), so medium priority."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013rnnbsnhX3DfiuWLTPgEp7",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the lockout - this is usually caused by a phone still trying an old password. Here's how to fix it:\n\n1. Wait 30 minutes without trying to sign in on any device. Each failed attempt restarts the 30-minute wait.\n2. While you wait, sign out of the mail app (and any other app) on your phone, and turn off its Wi-Fi for a minute - this stops it from repeatedly retrying the old password.\n3. After 30 minutes, sign in once on your laptop with the correct password.\n4. If you're not sure of your current password, use **Forgot password** on the sign-in page instead of guessing again.\n5. As soon as you're back in, update the saved password on your phone so it stops retrying the old one.\n\nIf the account locks again within the hour, please let us know - that usually means a device is still using the old password and needs a closer look.",
+            "cited_kb_ids": [
+              "KB-002"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-002 directly addresses account lockout from repeated failed sign-in attempts, including the exact scenario of a phone retrying an old password, matching the ticket precisely."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2084,
+        "output": 766,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a phishing/compromised credential incident - the requester entered their password into a suspicious link from a spoofed \"HR\" email. This must be escalated to Security Team, not troubleshot via KB."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UJQJzp7JynCqaR2eg8TK53",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "urgent",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "Requester entered their password on a suspicious link from a spoofed HR email, indicating a likely credential compromise requiring immediate security response."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 372,
+        "output": 276,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_013zhiEaHAKpGxZxNMP91MNT",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester clicked a link in an email purporting to be from 'HR' about a payslip, and entered their password on the resulting page, which then showed an error.",
+              "checked": "Reviewed ticket details; this matches a classic phishing/credential harvesting pattern rather than a routine password or login issue.",
+              "ruled_out": "Not a simple password reset request or technical login glitch - the sequence (suspicious email, link, password entry, error page) strongly suggests a phishing site captured the credentials.",
+              "why_escalating": "This is a likely account compromise requiring immediate password reset, account review/monitoring for suspicious activity, and possible broader phishing campaign investigation - this must be handled by the Security Team and not resolved via self-service KB steps."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 694,
+        "output": 386,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

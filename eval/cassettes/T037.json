@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a request for a change in account access/permissions (adding access to a shared folder), which requires escalation rather than a KB-based fix."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UHvbpQNg1bwrGjYqkNAMdM",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "medium",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Request to grant access to a shared folder due to a team change is an account access/permissions change, not a KB-resolvable issue."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 250,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01N3Xi5sBNpgk4V5qSp6CT3o",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "account_access_change",
+            "summary": {
+              "reported": "Requester states they moved to the Finance team and needs access to the Finance/Reports shared folder, noting their manager Priya has agreed.",
+              "checked": "Reviewed the ticket details; this is a request for new folder access rather than a technical fault, so no KB article troubleshooting applies.",
+              "ruled_out": "Not a technical issue or outage; no KB article covers granting folder permissions.",
+              "why_escalating": "Granting or changing access to a shared folder is an account permissions change that requires manual verification (e.g., confirming manager approval and correct group/folder) and is outside the scope of KB-based self-service fixes."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 670,
+        "output": 349,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

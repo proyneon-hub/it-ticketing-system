@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErACCpABCBIYAipA4vOJnSt30Fjz50QauBIioVuEHr9Bu+Wh32nGYUa0Gt+Avxf8omFy9Peh4cSy482IVszIRTcs1jG9upImcsQeIDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAe+Y3NUGEgy6IA2UY+ywrft08AwaDH8h1oCtIxLGwVh5+iIwx/G6Iq7XE05YOR3OwUVoLdCD4Y+Q2mfReDs8ubU3Lf1ptag0eqOE6xESJp5D2kUeKk39i2KAaj1IbgvKZV9q9kv8HjAmx5IaMbWzvITg9K1f40jcJDFP7OFGzLyDq1p6dEVHFKU/RnIgT4DUCxiGAWGW6bTKbQw8iUXlNMXSORgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01AkJSBomxEfR6F3Qdvg3v8f",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Physical damage to a device (cracked screen) requires hands-on repair/replacement assessment, not a KB fix."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 361,
+        "output": 232,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01DA4TMojzMcnsGH9WBt5Zjb",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Field Services",
+            "reason": "hardware_damage",
+            "summary": {
+              "reported": "Requester dropped their laptop and the screen is cracked in one corner; device is still functional.",
+              "checked": "Reviewed ticket details; this is physical hardware damage, not a software/config issue covered by the knowledge base.",
+              "ruled_out": "Not a software or account access issue; no indication of safety hazard like liquid or swollen battery, but screen is physically cracked.",
+              "why_escalating": "Cracked screens require physical inspection/repair or replacement by a technician, which is outside knowledge-base troubleshooting scope."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 640,
+        "output": 320,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

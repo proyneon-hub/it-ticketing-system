@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ep8CCpABCBIYAipAltiOIY3dagbqdnB2tXScLbvyUSj6ZBgOb/djE5Y3k+OJLDfhxlLT//vJozQ171RwJAqtwFUx2xEvwUxNN+QY3jIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZGW3NUGEgypWTroohwsSdk6YxgaDGXz5ppAJT5H6viA6CIw5uiKg07ufIjJYZdqun8Kttyc+9uYUSuOMg1zTahRdO7gEjBUqRzfG1kRphd65rNmKjydQ613EbuwftPIF4OQq1zPV0tTtfamF3H1DWdaEagD9/9hspttjPHVJ8/ANSREE7dK7ZRBydQC+D7ix/gYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BJnTvgVtWGMcJ5onkTfyYX",
+          "name": "search_kb",
+          "input": {
+            "query": "can't access intranet from home"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_013QD6mV55H8fLcLzNF7yfyz",
+          "name": "search_tickets",
+          "input": {
+            "query": "intranet not loading working from home",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 355,
+        "output": 148,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EtQCCpABCBIYAipAELHT7wT0MWQ5x4+RmFlb3sBXX8LfRewaCVn5jYhDQYGDl74Lb0woGAlEuGpyCNAs2+/zjNRKAL3QhVViWe7MFTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZSW3NUGEgyGER+P+lml4++E9LYaDLpp4QOIYxQkSQv6HiIw2zll3OI4N5Dv6uwtmrsAYhYaFUf3w4zvm0OY6NA2wWNLrWR7ggwooauGfHXtDWf9KnFg0A+ZxUdky0qPV8a1XNhgqYql5GvNpiCK9W098SVl91OKmCLg1svaFYGK1CUH7EH5wUpb8bsslGPioWj4JUsR/rNCIbKxPuKX9xt5M+b1GGDDey2Vx52h7n2e3/92XrbG7zXwn1GK7t3O6AO4u96QuRgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01NufyVoHGh1CrZC4j5W4edD",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN remote access internal site not loading"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_018BYUZ1jaXFhEZH6nb8AkTk",
+          "name": "search_kb",
+          "input": {
+            "query": "website not loading network issue"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1154,
+        "output": 143,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "KB-010 matches well."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01CJXUENiScRXbsU61CunEaj",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-010"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2563,
+        "output": 66,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01KdW51PBejPDuPF3eys9J1d",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "medium",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "Requester working from home cannot reach the intranet while other websites work, which is a classic internal-site-reachability issue likely tied to VPN, with a workaround (using other sites) available."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 3039,
+        "output": 225,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01SPMDpPNJd2PyrGZGjmqSTf",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the trouble reaching the intranet. Since other websites work fine, this is likely because internal sites aren't reachable from home unless you're connected to the VPN. Please try these steps:\n\n1. Check you're connected to the VPN. Internal sites like the intranet aren't reachable from the plain home internet without it.\n2. Confirm your general internet works (you've already confirmed other sites load fine).\n3. Try opening the intranet address in a private/incognito browser window. If it loads there, clear your browser's cache and cookies for that site.\n4. Restart your laptop and try again.\n\nIf the intranet still won't load after connecting to the VPN and trying these steps, please reply with the exact address you're trying to reach, any error message you see, and whether a colleague can reach it - this will help us look further.",
+            "cited_kb_ids": [
+              "KB-010"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-010 directly addresses an internal website not loading while other sites work, which matches the reported symptoms exactly, including the VPN requirement for remote workers."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 3310,
+        "output": 485,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EvMCCpABCBIYAipA4iZ65iyvroUwl74x44YQ8zT34B9GjL5YRVBcQTxJHYRywFNm9nsL6s9RESd4rlC3Z7yviiuooHAV65z0gVfXmjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAbuX3NUGEgwbfMabrnygQOnr+ZUaDEYFA3DIBJRsQ72oMiIw/CNOkFAzNBnShuLOci1N4aNomkh0F3Y4ij2ilak/hjj8Q7543Q9dtW7MErB9OtEPKo8Bjfwy9v2QNDtFF10792GZs7OUgOa+mcsT/DOu2DQTEaapZUn3c/nhi0xdzQ0bS18GbXAa1SG6U7C9i6spm/LUDSaMhh/f3dk7EvZqlrcRFarWuTupAg6kIB6a+Av56u1LJaHKT5JR+d4mdt/kNdWpJojqMdS1LX78bRCa09EqhzptprDj1s20ucbZvyioUX0YAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01VawLBZNiLNz4AMRCAfT4hy",
+          "name": "search_kb",
+          "input": {
+            "query": "mailbox full storage quota",
+            "category": "Email"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 365,
+        "output": 125,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01EywaSL49gA3dvLgwcCk5oV",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-025"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 951,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a clear, common issue fully covered by KB-025. Priority medium since a workaround exists (clearing mailbox) but they need to see supplier replies today, so it's somewhat urgent but not full blocker with hard deadline within hours warranting \"urgent\" (no indication of hours-only deadline). I'll set medium priority."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UHD5dM4DFkys78x1aKcuTA",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Email",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Mailbox full is a common email issue with a workaround (clearing space) covered by KB, blocking new mail but not a full outage or security issue."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1476,
+        "output": 321,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_018G7HwxYZ7jt6Dc7Hyh18LJ",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry for the trouble - a full mailbox will bounce new mail, including replies from your supplier. Here's how to clear space quickly:\n\n1. Empty **Deleted Items** and **Junk Email** - both still count toward your limit.\n2. In Outlook, sort your mailbox by **Size** and look at the largest messages first.\n3. Save any large attachments to your shared drive or OneDrive, then delete the emails that carried them.\n4. Delete old newsletters or automatic notifications you no longer need.\n5. Check **Sent Items** too, since attachments you sent are stored there as well.\n6. Wait a few minutes after deleting - the warning should clear once you're back under the limit.\n\nIf your mailbox is still showing as full after doing this, or you need to keep the mail for legal/work reasons, please reply here so we can look at raising your limit or setting up an archive.\n",
+            "cited_kb_ids": [
+              "KB-025"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-025 directly and fully covers the \"mailbox full\" scenario described, including a clear escalation path if clearing space does not resolve it."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1843,
+        "output": 506,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

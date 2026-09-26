@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EsMDCpABCBIYAipA1MoseoF6X6R4V0Cl9g7Nb4SJqBS+ptpcdLecri84+R1D8fbiUWYmy7mN0wn3nwt4w0EXcAEcL+MQl4zSTKDPyDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYCb3NUGEgxWu/58Vc9028QQmzIaDMw6NA3R3+z8HO0dQyIwOjxqbkXE6Mc01j2JlGErJBg2O0PllbGVZKgdJJlcwm/spRaNT8wwmsbkhVatyyfLKt8BqHg67mtLrgWcgOu9AKyO/boqRrjECMckQp+SekZ5Qw+JVzfkaQ0kGUAv9depEcoBObonhSXeNW0eIliSixf/1FokAwFisauE9WEz81CInKNDPUnc5I7v19EEJnpaMUjgF/EGeKqSt+hjdiLc6N9vT3YxsI6+LQSd5n6MjvF9+k0aVgTBnKdxPC+PqZGwNsSdyIX4Kv22UgpXpkNTJfYoJSeeoNQjFFQ7ofITByNXEGkSpQ44sgWlmVVIlmuxvkW6SgF0AfG8WnhbMsv7WNDC+YsKc8gR49b+qORBasTJahgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012fCKvpox4z2cWF6KiYGwZ6",
+          "name": "search_kb",
+          "input": {
+            "query": "laptop keyboard keys not working"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BQ9j777dPshPgZfn9Ujdca",
+          "name": "search_tickets",
+          "input": {
+            "query": "keyboard keys not responding laptop",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 373,
+        "output": 207,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01SKhH2cvTWTpSoPm7agweyh",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-016"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1267,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "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"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014GdYEicdNxbeUTtGHBaDFx",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Physical laptop keyboard keys (E and R) are unresponsive unless pressed hard, while an external keyboard works fine; this is a hardware issue with a workaround in place, routed to Field Services for device troubleshooting/repair."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1844,
+        "output": 1031,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_011RnPF93pQ6Tu2sr1vjN3Ec",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the sticky E and R keys — that's frustrating. Since your external keyboard works fine, this looks like an issue with the laptop's built-in keyboard itself. Here's what to try:\n\n1. Restart the laptop first, in case it's a temporary glitch.\n2. Turn the laptop off, tilt it, and gently blow away any crumbs or dust from around the E and R keys. Please don't try to pull the keys off.\n3. In the meantime, you can keep using your external keyboard to carry on working.\n\nIf the keys are still unresponsive (or need heavy pressure) after this, it likely means they're physically worn or damaged and will need a technician to look at it. In that case, please let us know that you've tried the above steps and we'll arrange for someone to take a look at the laptop.",
+            "cited_kb_ids": [
+              "KB-016"
+            ],
+            "confidence": "medium",
+            "reasoning_summary": "KB-016 directly covers a laptop's own keys not responding while an external keyboard works, giving restart and dust-clearing steps, but flags that physically broken keys need a technician, so confidence is medium pending those steps."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2920,
+        "output": 503,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

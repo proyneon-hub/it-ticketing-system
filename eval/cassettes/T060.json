@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eo8DCpABCBIYAipAEvxgr6fRoK6aLnGSeKeN/P8uuy+iRmvoF9jZhb7xCXPrKlpU2KvKpTBU3D90UQzBHRdp1p2cpqWe4jbFR/xUGjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZWb3NUGEgwPCfaFOVNql98kUmcaDLiWPEnMzmqiTroZhSIwLVEUW6MnLUTIRT/BDzWjD+7Kf93SBkIod14zIVsPjcqyZ+KMvAnlYmMXBIwJ4wIyKqsBb0GkNFrqiLwkRLWG2v5A8t+HduNYf1np5etFRsqyTg3yrzilck5O+VzuL40b5gLGRR8aciYXLueysb/c3lN0iXEoMosY5QIG9qf/GYgm0NYndLZ6LrE+qJBHR8AFnK0H88lUaiZve2sWyVFLKNZJDr7k4oZfBx1kSEcmVTBWKODDgbaIHLw/q3gtgJBoUtfE3KDeIT5Xs23outxq/wSrM3Wd/1pt+8GrlsbbGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01QDyxhPT9gh2wsazBEUcXd3",
+          "name": "search_kb",
+          "input": {
+            "query": "MacBook battery life short draining fast"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MzWgNNL57Lw2awVbhAAqpG",
+          "name": "search_tickets",
+          "input": {
+            "query": "MacBook battery drains fast",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 376,
+        "output": 189,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01SBioVXriWZKcYA9pc4asWW",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-015"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1256,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This covers the issue well - standard troubleshooting steps for battery drain, no mention of swelling/damage/safety concern from requester."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01F8PiyyqnoetXxcft1fCm6m",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Battery degradation on a MacBook is a hardware issue with a workaround (charging more often), not urgent since no safety risk was reported."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1753,
+        "output": 259,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01Uu724fCc5nKzaC2vz5G13x",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry to hear your MacBook's battery is draining so fast. Here are some steps to try, from our knowledge base:\n\n1. Unplug the charger and check what's using the battery: open **System Settings > Battery** to see which apps are consuming the most power.\n2. Quit any apps near the top of that list, especially video calls left running in the background or browser tabs playing video.\n3. Lower the screen brightness and turn on **Low Power Mode**.\n4. Restart the MacBook — a stuck background process can keep the processor busy and drain the battery faster.\n5. Make sure you're using the charger that came with the laptop, with both ends firmly plugged in.\n6. Install any pending macOS updates.\n\nIf your MacBook is more than three years old, or macOS shows a **\"Service Battery\"** message, this is likely the battery itself losing capacity with age. In that case, please reply to this ticket so a technician can check the battery health and arrange a replacement.\n\n**Important:** if the battery or laptop ever feels hot, swollen, or looks physically deformed, please stop using it, unplug it, and contact the service desk straight away, as this is a safety risk.",
+            "cited_kb_ids": [
+              "KB-015"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-015 directly addresses laptops with battery draining quickly, providing troubleshooting steps and guidance on when to escalate for a possible battery replacement, matching the reported symptoms exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2058,
+        "output": 615,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

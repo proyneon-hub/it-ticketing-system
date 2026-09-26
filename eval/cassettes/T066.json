@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Er8GCpABCBIYAipALZY1f7xxhLH5rzmMoeQlG0MGysaHC0s374WgHFyJ2syiGolg97gyaMb77XqQSDS5iclq6OvZ3ZmKV7RKZB5FRDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAfCb3NUGEgwgnufYVDyCnfeSMMwaDDNFJoJHdUbaAXGxLyIwEwbCQwyo2t85EXn8WnXIoT6GDbTOBGL4cPKoEG9OZvILcdV1lRZW9146gwg4aILzKtsEqhDadtvuPKeiUWee3vLDydpCG5Qs5HPsz/epvRh9adf/Puedc5E4QkfdCJGzshyJDfS2ErESSDif2v9M1YBPFCfS5YH/bRqM0Cz5/Y0Cw0Na9VOIIRjTyTYEUTcZ7Gka01ahwfGJx9+DlofPhOBHn1nx+5b/dpvoatJ93rR7m7DctfbgtV2wOQXbw2aHXhU3M0wr8ho+bRVSfjWtV5u2+ppuFuv9fFRf25i2xgarMMM225ZcuB4A5yF/gfrOILzAGJZMdgTyD1zIwPcylr6kAsh/KPa+sQK+zVapMgyp+yIXB47RivtLD6WE1H88tYqVwYwDFKky84ZI17JIh7Wy/2mSvEE1WRvJnnOWGDwVi05Zxbr8QVjrfZvZeYSXegSZD5uUNFeHigAj5JgicPe2zj9/ecYjW6EmBG4iJiNlH0S7KhNAxI5/6muNbNJWoVFe6lP2NGkDYoZymrO9b+jUO2bdpcLHVjgz5G8Qlh9iyMwExoSx8TzvGfdTIXg7pHW/AwLAjjb31SXgMCjoc0Z8RxcdVVDmSxarJM7AD4wJMcsgj3oMBtQXm06fpwFoQtIY60tslbl76xyWyx6KDxCC9MGYO2SiNsy1Hnp22kR959snOW3jym2fFTJ74TusFnWlAaj/G/XVIW8/QOP6RLcFB4FYBqgXQL6FHb3LkNEXpEJMqWYDCzAqnrJvP78BtZmV2dxY2/zFTbSwNKu6713Kvn3oZCJ0qKLxJQFR/WcAUmReaX1yNmargMF0fpb1X5rD+IAAdBwxHaFAJBp5T95VOa5Jui8ChEQ/4V1MGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_016z3Kmr6E9wGfj7J6jhn7qv",
+          "name": "search_kb",
+          "input": {
+            "query": "software installation request Visio"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MGdVUUvzdQjUKKBFbBxQhf",
+          "name": "search_kb",
+          "input": {
+            "query": "new software install approval process"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 363,
+        "output": 252,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012hJSQ5vFGAC5wmqcNkacLT",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-019"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1786,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This covers the request clearly: Visio may be in the portal already, and if not, it needs the standard \"not in portal\" request info plus manager approval/security check. This is a straightforward informational reply, not an access-change escalation since it's just guidance on the request process."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JTHNjhwvy4o88WYDFdZB6K",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "low",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Request for a new software install (Visio) with no urgency or blocker; covered by standard software request KB process."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2220,
+        "output": 281,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012DmgbetkZC1pNXacenad7n",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nThanks for the request! Here's how to get Visio:\n\n1. First, check the company software portal (from the Start menu or Applications folder) and search for **Visio**. If it's listed, you can click **Install** yourself — no approval needed. Open it once afterwards to confirm it starts.\n2. If Visio isn't listed in the portal, please reply to this ticket with:\n   - The version of Visio you need, and a link to the vendor's page.\n   - What you need it for (e.g. drawing network diagrams for the new office).\n   - Whether it needs a paid licence and which cost centre should pay.\n   - Your manager's name, since new software needs their approval.\n\nThe security team reviews any new software before it's added, which can take a few working days, so please don't install it from another source in the meantime.\n\nIf you hit any issues with the portal itself, let us know and we'll take a closer look.\n\nThanks,\nService Desk",
+            "cited_kb_ids": [
+              "KB-019"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-019 directly covers requesting new software, both for items already in the approved portal and for software not yet approved, matching this request exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2547,
+        "output": 516,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqICCpABCBIYAipAh7y1/PhN+l92fn7JcPtttZVLhbnHPtTDH+zvHy5/SNZWElM73r8pLRlHFCQ/qds1s8PipPwMFkru2dwerF+bwDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAa6W3NUGEgyFX6WCUOLfYKWAVBUaDBd5c4XNVAthb/dezCIwaVYV+wOVlRE0cenJpzcUeKq+ARqpNcyqLWx53d5wV41TGH2oOVmIH9rx1zH9iIkdKj/zkHK0Ul3TN1T8sW676tS7u8nNefgGnSZVRDhws4PaoM8H9tIST45nVjIDxkeAh4CWzcVEmTQX6t61alHbFFAYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_011nZQdzdEAeEFkXxRkfLBPZ",
+          "name": "search_kb",
+          "input": {
+            "query": "print queue stuck error won't cancel",
+            "category": "Hardware"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 363,
+        "output": 103,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01BvhcWV9ZRfLfG4zii2A3YT",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-012"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1088,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches exactly. Now triage and propose."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MLwaHRDiba8pB2Vsti65vZ",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Printer queue stuck with an unremovable job is a hardware/printer issue with a workaround (retry later), affecting one person."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1550,
+        "output": 226,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01MsHm2Fk2JUfiREZyA2kCkp",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the stuck print job! Here's how to clear it:\n\n1. Open **Settings > Printers and scanners**, choose your printer, and select **Open queue**.\n2. In the queue window, go to **Printer > Cancel All Documents**.\n3. If the job still won't cancel, restart the print service: search for **Services** in the Start menu, find **Print Spooler**, right-click it, and choose **Restart**.\n4. Check the printer itself for a paper jam, empty tray, or error message, and clear it if found.\n5. Print a small test page before sending the big report again.\n\nSince your report is a large file, it may be worth saving it as a PDF and printing that, or printing it in smaller batches (a few pages at a time), as large or unusual files can block the queue.\n\nIf none of this works, please let us know and we'll take a closer look.",
+            "cited_kb_ids": [
+              "KB-012"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-012 directly covers print jobs stuck in the queue with an Error status that won't cancel, including the exact scenario of a large job blocking the queue."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1822,
+        "output": 496,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

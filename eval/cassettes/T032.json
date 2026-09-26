@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a clear security incident — unexpected sign-in alerts from an unfamiliar country plus an unrequested MFA prompt suggests possible account compromise. This must be escalated to the Security Team, not troubleshot via KB articles."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_017sT1goUrf78Rx3En3qn2KT",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Security",
+            "priority": "urgent",
+            "assignee_group": "Security Team",
+            "reasoning_summary": "Unrecognized sign-in alerts from a foreign country plus an unsolicited MFA prompt indicate possible account compromise, requiring urgent security review."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 369,
+        "output": 297,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01UuMZx8zqLC2ARNPjgGYE8y",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Security Team",
+            "reason": "security_incident",
+            "summary": {
+              "reported": "Requester received three sign-in alerts from an unfamiliar country and one MFA push notification they did not initiate.",
+              "checked": "Reviewed the ticket details; no prior comments or history on this ticket. This pattern matches a potential account compromise / credential attack scenario rather than a routine access or password issue.",
+              "ruled_out": "Not a simple password reset request or benign notification; not something covered by general troubleshooting KB articles.",
+              "why_escalating": "Unrecognized sign-in attempts combined with an unsolicited MFA prompt are strong indicators of a possible account compromise attempt. This requires immediate security team investigation (e.g., checking sign-in logs, forcing password reset, reviewing MFA device registrations) rather than standard help desk troubleshooting."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 712,
+        "output": 398,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

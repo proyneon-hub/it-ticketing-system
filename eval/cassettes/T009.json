@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqkCCpABCBIYAipAIzAM6LbkXbR0PAO4MehJbrima0LHfsJJP+/Fj4QelG8RLXAVJydxwt2J0I1fr0OKhEeZLGniTg8Bsm3hobVEhDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcSW3NUGEgyt1wpGsucl2EOH+MUaDGf5O83MVwQwy3gnySIwxWutNxExQIuIF9kLLsBVZ2bGLrcFeCMgWEF2Aupcl6MxOBxZuUT8l1+UmPa1Q/LVKkYRgFLX67Of1Es+m/S/d5DA8cAKYcMJM271TptR+rwN2RfFeaDgF1i6q7o4YJy7a+4JYrNQRksKBXh4YhVIgWVk6SXQOlmGGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_011YfeP6HLhJDWdngLzV3J1W",
+          "name": "search_kb",
+          "input": {
+            "query": "external monitor flickers black after laptop sleep"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01JSMG4mD3h5AgHcqyiY9CU2",
+          "name": "search_tickets",
+          "input": {
+            "query": "monitor flickers after laptop sleep",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 165,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01X7jXyJXRitFQVXXPD1bkUo",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-014"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1222,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is exactly covered by KB-014. Proceeding with triage and resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01CsGtRJZoLnhQHS7yryPzSc",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "External monitor flicker/blackout after sleep is a known hardware display issue with a workaround (restart), matching KB-014 exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1750,
+        "output": 241,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_017ixsLicKMvqQVvug5eRw7P",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the flickering monitor — this is a common issue after sleep and usually fixable. Please try these steps in order:\n\n1. Check the monitor is on and set to the correct input (HDMI, DisplayPort or USB-C). Use the input button on the monitor to cycle through options if needed.\n2. Unplug the video cable at both ends and firmly reconnect it. If you have a spare cable, try that instead.\n3. If you use a docking station, unplug its power for 30 seconds, then plug it back in and reconnect the laptop.\n4. Wake the laptop by pressing a key, then close and reopen the lid.\n5. On Windows, press **Windows key + Ctrl + Shift + B** to reset the graphics driver. On a Mac, unplug and reconnect the display.\n6. In display settings, set the refresh rate back to 60 Hz, as higher rates can cause flicker on some cables.\n7. Restart the laptop with the monitor connected.\n\nIf the flickering keeps happening after trying these, please reply with the monitor model, the dock model (if you use one), and the type of cable, and let us know whether it also happens with a different monitor.",
+            "cited_kb_ids": [
+              "KB-014"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-014 directly and exactly describes this symptom (monitor flickers/goes black after laptop sleep) and provides a full step-by-step fix."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2037,
+        "output": 600,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

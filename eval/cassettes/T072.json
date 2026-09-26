@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EtQCCpABCBIYAipAODrhlt2vqWap85GXXXck0g3QqKTcZ3gS9/OemEif1AMtwLbCpgQnRw4UmmdDNv2o0bcr80UcaIiv3757+stQbjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAb2c3NUGEgzW8MndATtqF1armTcaDJm11n68WJXmPclRJCIwbwL/80t05Qk+Pt4VybDVRdzscztuickePe6an/90rvYHN1CZiJPkLshQjqwNqj/bKnFbA3ZLoiNPjbeHAR2wXsgV9B9a162OmVJcC1P6mk/F94zNb7UgMGXopM3MLFOybOseW2yr+o34e9zLuLfHZ+TrSaf8OCI9HG6VHunbZEYkXHvW3VmixWkPn4+DrKqlcM3V1AlyD2iyIxOQ0OZjNAo+rBgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Lt8nb1swXQfvVCKq99omZb",
+          "name": "search_kb",
+          "input": {
+            "query": "MFA text message code not received"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_017yAAMg5UwDmxWU2z3f6h7Q",
+          "name": "search_tickets",
+          "input": {
+            "query": "MFA code not arriving via text",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 370,
+        "output": 170,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01KEytiqHGPcXefxoAqQe3KU",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-004"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1204,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqwHCpABCBIYAipArekrFnZR6hRRAfEFSG951nvlDXB6nDEOKIDykvqVaRKQfszDoNaCN3huswHxWfSYg1X9rW+c05ud3S1mMMZTITIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcOc3NUGEgw3xLotaQKqsIIU9zYaDFyzx8Myb/epywYsHiIwD5RmRDiTIG44WvdUlAW3RHq5sSUPcyNMOqILKOl8nsmR1RJtYq2T7GSz49ZSkQyqKsgF74fJVnANTb90diKNG3H9xLSIwgU3HWckSlkBC6w8fedk6vJIxm4K66CIZOiMV0AA0VsqlIJHauxECHia/Eym3BRqA0KHmpazC4BYlTX+V4/d2pl39C6Szlf5IYWhttjk3UgYb3yO1BEYQ+QKlhWHkMlE6KQX1/yN6CqmKx/ffq1Qyy4uf+rlT0wCxUrghYvFeY0j8/hpW/ev4JMD00j2/kTOu84PV2bnWJb/4++rzHg+y/FZ7j3gvHcxRsWK8lwJMuNLtQSF4tpXH+6yD23wxVKKeJXZ5KRZW4dhsU4F3imt55GLX0dfSSss6IoSdXfxXcatEsnJlaBnwz5KBwT1imlq+CUqW27PXU+thB5LMg5pQBlP+F8D1UxgNVR3463NDG/MuZTorI9Q37oK2sLqe92JwB02EkEOlcg+n85eTlAxG9w+l2kKEAKdJUIrl8Pzttg7/oZ+PGHReeNNSvwibF01olsRlXtGM34WK93jnySehZYSX3FbBcGYWgL5LaBJfI6ECJgxTQwy756FOTH2yFqvVFQf0wi4mekIMKKHgiACHtv0DMojBiP8RSkJY5Cf4ddczAh7guWb/AUhsvomeB62Gq1RuR++R13Gytu7F+hdaBqMTVC64e9SQj5fhtK9FgvszfDc858Kpeyjls7HDtD0ic+xgZGlj4mW8YsgCESAmk8r+HlqAWyhpcCZJf/DQLVtA/dmTn3ehnD2BzjPf94+NZDT/suV1ACsjMKP1xBxnSidhuvA7P1JREsUB7ZdiwMC9OCZdilN5gwEwxjnypAUnqqvBWxVN9ayyv4xiAGgPjvZysr/JHmgs+OeQ2ZyUcudIN5dRPa+zTnX8/l50WSjGwEIWrYrjBYAl5c7q1RAvhM7jpA9+CUY21cUFTWv4W7F6+L6wVKuaH724UEnA3KQpx3CS49FrFJx6yg6mhrV6emSypf3lxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01MjxyWcjWunDt7aDWaETBQJ",
+          "name": "search_kb",
+          "input": {
+            "query": "SMS code sign in"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1678,
+        "output": 291,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqgFCpABCBIYAipAEJLqAcNkwrkevTtGg5t24J2+1bpgSTZdqY7wy9fhwJpOXhXzU2CIatmdEZ+wIzxiB0JIuz8XOKhK66AWSHwNvDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAcec3NUGEgxgKyYk82S7stlHmdMaDCWd9KbbnhumuuZatyIwlUB99n0DHXk8TdnKNW6yqYIeJfmvZZC+HepHbmLJsH4S0OJH5nwD+gpm+YUDOZCGKsQDe7Co9+9V8LCUzNiClXcONuIHiCxru5G4k5DiRzu0nqmDbCYCRH3U9LEKem11jlnlsRtwIb14wZuH/723KOoSBpc39z/KsuEZE24gtkbXEqad8VSzLwWPdmlMjPZhrpDpXpx5Ghs+Jnf2RV8f8AkcH+6kio+UgJcWhlMOGCugUulqcE4KJTd8G+hTLvPMrk1i3oudq/RBHv60arbHarNID6nnOAZZchwOWdQ0PXmjm9h1rd2gqmiW++pbf7T+JOUGOLeTuQOz3pLXdP/mu38A70W/eqQbes81HlZNP2z3sipwS9ka2U5HwbFO+rNKSs2tmPdhHOLxskoUjSkaEluOxdDuawVEU+xteuyAWdLC8wEwE2mo7ftkhE5vrdG16+7LpUztTeGP6tnHGoUobUQhIsud5HoBzfPktOkKAWLEHGLZKO8P2xLafeIlyXo7J0lq+jWs85M9JjD39TMqYOAvDugCZIuBmbHbk2gRr1NAGA0i6Opt3i0YLKvW5Q/CZCD0+hx2LY6yjG61SPzzcRpphjOiG8+DXds6d6//QrMTRkPOz0v22Ul+MnOQO45YXEPAyv+Wt0Hle5StY65S+h+B8WD/V9MYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01RQr6ss4UoY1Mr9QXN9qdHf",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "high",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "User is fully blocked from signing in because the SMS MFA code never arrives despite multiple attempts, with no workaround available."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2587,
+        "output": 353,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01EVBepbBS16shbDHNmB4Wb4",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "out_of_kb_scope",
+            "summary": {
+              "reported": "Requester cannot sign in because the MFA text message (SMS) code never arrives, tried three times over ten minutes.",
+              "checked": "Searched the knowledge base for MFA delivery issues; found KB-004 (MFA prompts not arriving) but it only covers authenticator app push notifications, not SMS text codes, so it does not match the reported problem. No other article addresses SMS/text-based MFA delivery.",
+              "ruled_out": "Nothing in the KB specifically covers failed SMS MFA delivery, so app-notification troubleshooting steps were ruled out as not applicable.",
+              "why_escalating": "The requester is completely blocked from signing in with no workaround, and the knowledge base does not cover SMS MFA delivery failures, so this needs a person to check the phone number on file or the SMS gateway/provider status."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2986,
+        "output": 421,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

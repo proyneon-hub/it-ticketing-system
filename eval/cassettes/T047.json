@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EokFCpABCBIYAipAeA0l6oGws0GZdz4yuFDePD0HyOtgmGHAw1NfYmGvgvtmEmeCqB+2dI4IufOCOmmJQHsH6Tslc32EmmwtItSBtjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeuZ3NUGEgzUOQefl25ziE2h+FgaDNhNj2ul1M5lAfhkJyIwbLeHZYX0VTQLqULtrSw8NMvNs+TSmO+yVCRm8Joqf0AkbD662GczFlJQW38SrFEDKqUDpWIpMOQpQaFDukazmZHNpyPnUV+XT6uUXk3GbJ79tdVUpQzEC/UmOzqP01AArsssjVns/uDtiJaUGsqnA7Hi2IV1NW8nebroB9/gyusX8W2iJS9uDUDw2gXZtkZuRLf5ePH8bmWqCI5YPviZFvDzVOUkbC5FDrRPv+2NMaTX475ys5V+s/eDiH470mJ/poKJMHiGx3RqrMPHYcIGlxrNCPt0+A5DBUk2O03G2Eapnep3M1XhdX7gWYt24yQqF+2skZK5wfEqU5lsMDZQP9A172QP4ukBmME9337PyXiAqGmd30icQzBcYNZT8EgdfYczuFI5yy3yrK9EJ4Uqt5Zc78/mNI6fSSYjyIWhth+jPbPozW9J9eIrnv50Mf6gaZ8gY2APm8euCJmJ97lSd3N6MB3iAo1uVmcxKIDuK0cf7wk4AumpHXtz9iHpAozgslDaOmO5LkxC4V2MxjuMWm8bqpE4zGjqzM6sLzC8nvW3cad53wcm5AlBFsOFf/Dj1WtjewDBBQAFClLAU9SkVdWQn2o0Jc1utQTnnK79MSXHl6mWNACPmxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01YbYG1JxQX4BSX5ZodgUNff",
+          "name": "get_requester_context",
+          "input": {},
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01NPppYU91DQyisZaGezpuDd",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN drops disconnects during calls",
+            "category": "Network"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 398,
+        "output": 234,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This confirms a repeated issue (third occurrence this month, prior two tickets resolved with the same KB advice already given) plus a frustrated/distressed requester. Per policy this warrants escalation rather than repeating the same fix."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01N1MdKwrAvxnytkeNUBeNqv",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "high",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "Recurring VPN disconnect issue (third time this month, same as two recently resolved tickets) causing repeated work disruption during client calls; requester is frustrated, so this needs a human to investigate root cause rather than repeat basic troubleshooting."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1263,
+        "output": 323,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012QYhbykDR5Gm1Rqmkm4Y4Z",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Network Support",
+            "reason": "distressed_requester",
+            "summary": {
+              "reported": "Requester's VPN has dropped during client calls three times this month, and they are frustrated at being repeatedly told to just restart it.",
+              "checked": "Requester's ticket history shows two recent tickets (TKT-0047, TKT-0048) already resolved using the standard VPN disconnect troubleshooting steps (KB-006). Confirmed no open tickets currently.",
+              "ruled_out": "Basic self-service troubleshooting (checking home internet, restarting VPN client) has already been tried per prior tickets and has not fixed the recurring issue.",
+              "why_escalating": "This is a repeated problem (third occurrence this month) despite following standard KB-006 steps before, and the requester is clearly frustrated and explicitly asking for someone who can fix it properly rather than repeat the same advice. Needs a network engineer to investigate root cause (e.g. client-side config, network path, or infrastructure issue) rather than another generic troubleshooting reply."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1632,
+        "output": 460,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

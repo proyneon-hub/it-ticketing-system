@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpwCCpABCBIYAipAJmjfWJ3MSgEeW951Pz7TgGhzSaY4StvuuzDO+D8HrcvEfhw1rpDDSi/hM4eU384+BQwdv1+7aeRPttSNVppGDzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZyZ3NUGEgwFJi5NBW7DXJkePSAaDO+0+ObLRcQLZhQS/yIwnE0XAf2oJzpQCI244G9V77RUiHiQE0l7raJt4RC5VU2huTG27Orn5bJaJ4fC+/ICKjmsh/R7a4BF95+6EKfU17nrgHVaF5IWK2aS4T38CVJkQ969A9yzl3KVWQ9lpBL3HLpdqc3esq2WgQEYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Wtj9qVFmm55wkQPyt2wZUo",
+          "name": "search_kb",
+          "input": {
+            "query": "SAP error 0x80070005 posting journal entry"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_011V8AazPhhDJCshotfKkGYw",
+          "name": "search_tickets",
+          "input": {
+            "query": "SAP error 0x80070005",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 375,
+        "output": 162,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Eo0DCpABCBIYAipAILFfVPrBGoQz3pM8IP9GtMrpCVsJcx/SqvSwP+T3jKi3OGjCciGGaHtiOIZr9BgE7iQyJo8MUpkTdO0UWDNM4jIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZ+Z3NUGEgxCVAFHg0RGpf2URboaDPs8lNkS+74JpGAmxCIwyJen2rzChHvPG6lOXSlFtx2Awi9PoGBZkOorEf5uZont+Bz/PO8a6A3oUpMKSy+8KqkB1qDnHIhq9sUpipV3oFS/SAV8fxp8X+Meed7ucSzlox8sMIvqzR8I1yzCC6jxpM7lz+PB4A7OdPsH/zUfnU6BgBCjUcz8pUQYtvRzjsd5Ue/VLSkTbGonhuemRAa5ukXgHjjLnrDMchRp92u+/wV9ZL3JyjFzo/Rqb6Fqyd5WkLKNxXItrnirE2yLZ/JskH7O482xBJgkVrkEod/j36YT+dv2TkAU2AyEZhgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01KA7ZW6y7oUwYSBM4Qn24ub",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-023"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1207,
+        "output": 112,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a specific SAP error code with a business-critical deadline (month-end close). This is not a generic crash issue - it's an out-of-KB-scope specific error, and the KB article doesn't cover it exactly (no mention of error codes like 0x80070005 which often relates to permissions/access issues in SAP). Given the deadline urgency and lack of exact coverage, I'll escalate."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01BGck1tt4WDHGvTk1CGr72Q",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Software",
+            "priority": "high",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Specific SAP GUI error code blocking a business-critical month-end close task with no clear workaround; KB has no article covering this exact error."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1731,
+        "output": 338,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01FSsakaPZSf3DuGKMsEB4uL",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Help Desk",
+            "reason": "out_of_kb_scope",
+            "summary": {
+              "reported": "User gets SAP GUI error 0x80070005 when trying to post a journal entry, and month-end close is due the next day.",
+              "checked": "Searched the knowledge base for SAP-specific errors and this exact error code; only found a generic 'application freezes or crashes' article (KB-023) which does not address this specific error code or SAP posting issues. Also searched past tickets for similar SAP error reports and found none.",
+              "ruled_out": "Generic application crash/freeze troubleshooting (KB-023) does not specifically address this SAP error code, so it was not proposed as it could be misleading or ineffective.",
+              "why_escalating": "This is a specific application error code not covered by any KB article, and the user has a hard deadline (month-end close tomorrow) with apparently no workaround, so a technician should investigate directly (likely a permissions or SAP configuration issue behind this error code)."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2115,
+        "output": 436,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a request for access to a shared mailbox - a change to account access/permissions, which requires escalation rather than a KB-based fix."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01UUQb4seJHa8YFRzVd5x27x",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Access",
+            "priority": "low",
+            "assignee_group": "Access Management",
+            "reasoning_summary": "Request to add requester to a shared mailbox is an access/permissions change with no urgency indicated, requiring Access Management to verify authorization before granting."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 362,
+        "output": 256,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01SAWT3PgkVykLM5tr4tDoQi",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Access Management",
+            "reason": "account_access_change",
+            "summary": {
+              "reported": "Requester Alex Example is asking to be added to the Sales team shared mailbox temporarily, to cover for a colleague (Sam) next month.",
+              "checked": "Confirmed this is a request for a new permission grant to a shared mailbox, not a technical fault; no KB article applies since this requires an actual access change.",
+              "ruled_out": "Not a technical/troubleshooting issue, so no KB fix applies.",
+              "why_escalating": "Granting or modifying mailbox access requires verification of the requester's identity and manager/owner approval before Access Management can add them to the shared mailbox, and set an appropriate end date for the temporary access."
+            }
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 664,
+        "output": 352,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

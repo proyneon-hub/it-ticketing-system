@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqYCCpABCBIYAipAjzT5pJNM7S8CV7GBe4w3EE+tLlLj2+3CWINlnhCqLUUUq3qFr/s4EpVG53Yhsi6ZZ5aAwNkqemuJgAQGS+eXxzIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAdma3NUGEgyvXaHZhEHEFHLAuO8aDLecbda+jsiFiOxS9yIwjS+MDj5CRjE+9jcqIK9CrjsbhAY25sAidhsjT/KaIBqeGNwsY+7AsvYP5EvFe1HGKkMUc/Q5vBKXPaXU/DR4BaHV+IeRfD9AF6NE4v1y8fpDS3gNVs5V9f3lX+/TsJtkYuKMtHRgVPAypQ4J7dMFbi2yQzdcGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Wny3dGFVcABgDJhe4BSkTJ",
+          "name": "search_kb",
+          "input": {
+            "query": "print job stuck printing queue",
+            "category": "Hardware"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 386,
+        "output": 100,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01PsNW2HCjkTzxnuxJaB9gco",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-012"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1107,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - shared office printer affects multiple people, but this is a common self-service fix. Priority: medium (workaround exists eventually, one printer affecting several people but not urgent/all work blocked)."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01QDD39xc8k8BxiSkbopedY1",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "A stuck print job on a shared floor printer is blocking other people's jobs; this is a hardware/print queue issue best handled by Field Services with a known KB fix."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1569,
+        "output": 288,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_019t8BgQGDej2HuFTsoLyWSQ",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about that — a stuck job like this can block everyone else's printing too. Here's how to clear it:\n\n1. Open **Settings > Printers and scanners**, choose the printer, and click **Open queue**.\n2. In the queue window, choose **Printer**, then **Cancel All Documents**.\n3. If the job won't cancel, search for **Services** in the Start menu, find **Print Spooler**, right-click it and choose **Restart**.\n4. Check the printer itself for a paper jam, empty tray, or error message, and clear it if found.\n5. Print a small test page before resending the 40-page report.\n\nSince your report is large, it may help to save it as a PDF and print that, or send it in smaller batches (e.g. 10 pages at a time) to avoid blocking the queue again.\n\nIf the job still won't clear after restarting the Print Spooler, or the printer shows as offline, please let us know and we'll get someone to take a closer look.",
+            "cited_kb_ids": [
+              "KB-012"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-012 directly covers stuck print jobs in the queue, including canceling documents, restarting the Print Spooler, checking the printer for jams, and handling large files - all matching this exact scenario."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1903,
+        "output": 547,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

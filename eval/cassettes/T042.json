@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqoCCpABCBIYAipA47qF/j8wO5JHh91rZwVXddc3EEQG2Do/8giYi/IcTBhKZ19d0d2QkEk0Bj+bh4AeDsIlMpLIe1yY/FnaecwneDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAaqZ3NUGEgz0KmLPJdgd8Y2EHK0aDOU43r6RnzCH/TdUiyIwvRRDit7QIAbBhSLiRgArU1870789nwS525K4GEVdBOrQFsz9KaTlz6MMt4lhXHLDKkeheLO4ZAGOkLp3344Ilgt1Fdc6imPfP49uOKSD8j8kVl0aMEogiagh19DGOvllkQWw6qUOWgyMicRtQq7+6C3HQcfMTtBJlxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01GexugtT4fq8CjEqyFNNDoM",
+          "name": "search_kb",
+          "input": {
+            "query": "plotter driver Mac printing"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Cc73jdzuU4bvH39iwTeBCd",
+          "name": "search_kb",
+          "input": {
+            "query": "printer setup Mac"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 131,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErQCCpABCBIYAipAKtOoquYMXaR2nZiYTuHYkyEBurwV3IB7xKpbQjc7XA7MhE7Jqceh0dWGw6dLcFYUi1K5cbUWVNLahl2E6k3EQTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAayZ3NUGEgwf/jhmPLM7mWfJAiUaDBBB2aDv1AkJDc77qyIwUvAOaeTA1KnuDjnuSmKdSqZRyDKyxWJZECx+vXBtZDg0sqGZhrivKy/dtj6ODaz9KlF1oBOrld16h4UQA7ukw/iHojRPhNJsvZIMw7lxeSLfcmUJeLwtw0F3Fwuf7SqL8Fkbfg+HDKT7fLWocch134zypqqP3yqg+yAjZS7ZAfRlbygYAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01EfBuU4AsSNGiFbDAvtTgLD",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-013"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1772,
+        "output": 84,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "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"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01KXkCpHx7GSdBW5Gr3ZCLkW",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Field Services",
+            "reasoning_summary": "Physical plotter/printer not appearing in the Mac printer list and missing driver; a workaround (other printers) likely exists, so not urgent, but resolving requires manual driver/address setup by a technician."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_015E8YQUfvwBDfapjydXTyZ3",
+          "name": "escalate",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "assignee_group": "Field Services",
+            "reason": "out_of_kb_scope"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "max_tokens",
+      "usage": {
+        "input": 2228,
+        "output": 2048,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

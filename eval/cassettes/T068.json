@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EpoCCpABCBIYAipAkj9zHAbfQVa2iEh8AN7Y+z9jUrc+CV4hXiZHwwMSCaWy6ub3rsJPUVqSYECsY8vVjaCUhOJaaKLZxAZ0DFQ37TIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYuc3NUGEgxZfIHXpbVpF4d9idoaDAfs4NivpltB8avmRyIwjMgVKgB8ZFGZp1LxDYFW1wgBuwTanaibfMRp/vhXIpARXxE1xkiRFOAu3Z/q6PjGKjfvsA/INHkZWvqhjQ5C/Tyxu9ru0KG93qTs9npbR/R+H3UMRFDwiHkIANGNdUHWTT0IIkiy72/oGAE="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012C9B1skBDUFAy9ATF9eiiu",
+          "name": "search_kb",
+          "input": {
+            "query": "mailbox almost full cannot send email",
+            "category": "Email"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 378,
+        "output": 99,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01FRMFxb1TA7EHurGsdZMCxc",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-025"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 939,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This is a common problem fully covered by KB-025. Priority medium given workaround exists but time pressure today - task is important with deadline, but there is a clear self-service workaround, so medium is reasonable (not urgent/high since not fully blocked - can free space themselves)."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_014dhPGC5xRCkcJYzEue9br9",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Email",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Mailbox nearly full causing outgoing mail bounce is a common, self-fixable issue with a documented workaround, not a full outage."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1464,
+        "output": 300,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01TJ432y3kfWt5t1zYXvxEvn",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the timing on this - here's a quick way to fix it so you can send your client email today:\n\n1. Empty your **Deleted Items** and **Junk Email** folders - both count towards your mailbox limit.\n2. Sort your mailbox by size (Outlook: Sort > Size) and look at the largest messages first.\n3. Save any large attachments to your shared drive or OneDrive, then delete the emails that carried them.\n4. Delete old newsletters or automatic notifications you no longer need.\n5. Check **Sent Items** too - large attachments you've sent are stored there as well.\n6. Wait a few minutes after clearing space; the warning should clear once you're back under the limit, and you should then be able to send.\n\nIf your mailbox is still showing as full after doing this, or you need to keep some of this mail for work/legal reasons, please reply here and we'll have a technician check your limit and look at raising it or setting up an archive.",
+            "cited_kb_ids": [
+              "KB-025"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-025 directly and fully addresses a mailbox at/near capacity causing outgoing mail to bounce, with clear self-service steps and an escalation path if it doesn't resolve."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1810,
+        "output": 540,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

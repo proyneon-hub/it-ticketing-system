@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ep4CCpABCBIYAipA8FjtRRFggru47NxkTr/2I05rWUPzvkm/Lck9TUN+aQdKSCqYwU2U6cDd52mCtUaEziDXztbUjAgqrpaBSxnPqjIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAd+V3NUGEgxm7IrrmRIFOyqjCHYaDAZkEafxxcnw8ATYiCIwxHQ48wnAoprckoYME4sDwSBknEyVeZDZsxyil6Y2c7O0HfUqWljDsFtr5e5qb7FQKjsnyHntCfTyY9EQfIVhoHXCsPayD3j3N2+lyCTfJJmwRM7R5yb0oxDgw9l+IaHhVRH86/pcySopxlZnURgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01PdXn5FrS3KQSo4hakk8mxe",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN keeps disconnecting Wi-Fi"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01TYCXnxrjKJkfCRDEmVMFJV",
+          "name": "search_tickets",
+          "input": {
+            "query": "VPN disconnects during Teams calls home wifi",
+            "limit": 5
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 374,
+        "output": 169,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01BLLnAwfJxatKyC7SZxWzkk",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-006"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1231,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This directly matches the reported issue. I'll propose the resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_0117iwGbgKCzwQrAdjpUwXeE",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "medium",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "VPN drops repeatedly on home Wi-Fi during calls, a known degraded-connectivity issue with a workaround, covered by KB-006."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1721,
+        "output": 238,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012ESMoRvjtvMprNmNYKThqL",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about the trouble with your VPN dropping, especially during calls. Here are some steps to try, in order:\n\n1. **Check your home internet first**: open a public website without the VPN connected. If it's slow or drops, restart your router and try again.\n2. **If you're on Wi-Fi**, move closer to the router or connect a cable instead. A weak Wi-Fi signal is the most common cause of this.\n3. **Fully disconnect the VPN**, close the VPN client, and reconnect.\n4. **Turn off any second VPN or security tool** running on the laptop, since two of them competing for the network can cause drops.\n5. **Restart the laptop**, then connect the VPN before opening other apps (like Teams).\n6. In the VPN client settings, if there's a choice of connection type or protocol, try switching it and reconnect.\n\nIf it still drops after trying these, please reply with the time of the last three drops, whether you were on Wi-Fi or a cable, and any message the VPN client showed when it disconnected — that will help us dig further.",
+            "cited_kb_ids": [
+              "KB-006"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-006 covers this exact scenario (VPN dropping every few minutes, notably during calls) with a clear numbered troubleshooting sequence."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2005,
+        "output": 563,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

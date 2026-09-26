@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EtICCpABCBIYAipAi/C1kcm+/vkp2FgOS53pEdP+T9xN46l73Ea3Bh6PkcqOCSgVn0PmgJdZ2I3MSAoxgznM42zQfCLXvbkVVvx5dDIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAfaZ3NUGEgyrg7YgiT+oZU0jjTUaDPQaGGK4ZRLSU6vOJCIwRJ/cOkVKDse/evJaLeNNp6NC9yubYGzirrX4xtku2ixkamcTS1ChfKGVoPRPNpkXKm/FSP+xTk2M5Qz7qyyFTdpi9GhD/fWHv0YElPUlJsl3MBnWtKCrN5uio8HbmHXVeZfLCCwwR3jjjlIotZxQULG7vF2QcmzzZi69mr7dTO0BQN/6r5l+7oQwfRnerCs6Yzzn22EO8ldlwHhCsTlNdq4YAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012CDi1EkyJe9ewBbbUkQk1V",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN disconnects frequently"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01F11msf5b8V2mXvVEDhqgmJ",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN dropping Wi-Fi connection"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 392,
+        "output": 158,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches KB-006 exactly."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_018sbfzjz9vqbuNEpTJs85yZ",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-006"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1806,
+        "output": 69,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01AuiRCHYiBuk6iPoj2xYwYX",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "medium",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "VPN disconnects repeatedly while on calls at home over Wi-Fi; a workaround (reconnect) exists so this is a degraded-service issue, not a full block, matching KB-006 exactly, routed to Network Support."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2309,
+        "output": 242,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01L1TWLj5VeekNB1KLMjZqD8",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hola Alex,\n\nSiento las molestias con la VPN. Esto suele pasar por la conexión Wi-Fi en casa o por conflictos con el cliente VPN. Prueba estos pasos en orden:\n\n1. Comprueba primero tu internet de casa: abre una página web pública sin la VPN. Si va lenta o se corta, reinicia el router e inténtalo de nuevo.\n2. Si estás en Wi-Fi, acércate al router o conecta un cable de red. Una señal débil es la causa más común.\n3. Desconecta completamente la VPN, cierra el cliente y vuelve a conectarte.\n4. Desactiva cualquier otra VPN o herramienta de seguridad que esté corriendo en el portátil; dos compitiendo por la red puede causar cortes.\n5. Reinicia el portátil y conecta la VPN antes de abrir otras aplicaciones.\n6. En la configuración del cliente VPN, si te deja elegir el protocolo o tipo de conexión, cámbialo y vuelve a conectar.\n\nSi sigue cortándose, respóndenos con la hora de los últimos tres cortes, si estabas en Wi-Fi o con cable, y el mensaje que mostró el cliente VPN, para poder investigarlo más a fondo.\n\nGracias por tu paciencia.",
+            "cited_kb_ids": [
+              "KB-006"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-006 \"VPN keeps disconnecting\" exactly matches the reported symptom of VPN dropping every few minutes during calls while on home Wi-Fi, and provides the full set of troubleshooting steps to give."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2597,
+        "output": 700,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

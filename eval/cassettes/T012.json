@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "Ep4CCpABCBIYAipAPm0GucmeLOLQWMDb2l/XC1qjEhc9usylKn/8xaXhWy6Dml6Ac5xVukR9pAPGhGXYbQbKWxwccmIbBsWNGaOclTIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAeiW3NUGEgyGJymkSFZ2QRniTPsaDAHKAyg9hVaFRub6eyIwE18BKZjD+sSF68XQXP34p7XQoDHO1DhfiHNIFyR3XnckSZOmclmTuMmKlwFMzjoKKju2g8NsdxZ/z2D0WVzXHyraMDhei8R3gA9sIyJCP+zQb68Cx7Ny+sau+k1a92aW6gRcfYMHlzpEcLi1pxgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_012pEpN7VsRayRwiwoB3BLrm",
+          "name": "search_kb",
+          "input": {
+            "query": "Chromebook enrollment work apps Wi-Fi"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_016BNFUhjS6tb9B7hKMxsFPm",
+          "name": "search_kb",
+          "input": {
+            "query": "new device onboarding company Wi-Fi"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 372,
+        "output": 144,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01CpsU98ckNcd6Q2vqHiqgSc",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-017"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1826,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches exactly. Proceeding to triage and propose resolution."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01E91RtndrfeQ5FJ7VB5AKXH",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "New device needs enrolment before it can access company apps and Wi-Fi; a workaround-free but non-urgent setup task, best handled by Help Desk using the standard enrolment article."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2338,
+        "output": 251,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_016V8CtaW79jRin7bkEHSSYM",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex,\n\nYour Chromebook needs to be enrolled before it can use company apps and Wi-Fi. Here's how:\n\n1. Turn the Chromebook on and connect it to any Wi-Fi network you can access (e.g. your home network or a phone hotspot).\n2. On the sign-in screen, **do not** sign in with a personal account. Instead press **Ctrl + Alt + E** together. The screen should switch to \"Enterprise enrolment\".\n3. Enter your work email address and password, then approve the MFA prompt.\n4. Wait a few minutes for enrolment to finish - the Chromebook may restart and download settings and apps automatically.\n5. Sign in with your work account.\n\n**If it doesn't work:**\n- If you see \"Enrolment not allowed\" or \"Device is not permitted\", the device likely isn't in the company inventory yet. Please reply with the serial number (found on the bottom of the Chromebook) so we can add it.\n- If the Chromebook was previously used with a personal account, it may need a factory reset before enrolling. Please check with us before doing this, as it will remove any local files.\n\nLet us know if you run into any issues at these steps.",
+            "cited_kb_ids": [
+              "KB-017"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-017 directly and fully covers Chromebook enrolment, including the exact steps to gain access to work apps and Wi-Fi, and troubleshooting for common enrolment failures."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2635,
+        "output": 619,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

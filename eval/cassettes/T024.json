@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "EqgCCpABCBIYAipAL6sQEO6bZvcx1Z3gIwZvtaAcObYfl2mKBOBTIFl3w267yko5WWYwevGFXEOzDc568fGumfhy6NcLPX4OAIqp3jIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAYSY3NUGEgzyd67SEdwWDcmqHEEaDFGqwBXyo+vUSN9uuyIw99xOEmHaUUtw+/88RCL778ktFoRIx4ZxeVA/WDrXRu5PaPdsn6d0tkVEu3H6iTSkKkVveAr5Cjhci97LEPuHvc66H9ZaFN1Z7XbebflgL3clQk0cnkfa4zSqtJuR6pft2PR3xp5toYXibWY7fF63VcpzAUBlkh0YAQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_016htdvp3gyjRtuwrpry2hMS",
+          "name": "search_kb",
+          "input": {
+            "query": "monitor no signal dock"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 365,
+        "output": 77,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01CJkV4BD89KokAqoiRtLGTH",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-014"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1068,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - hardware/dock/monitor issue after a desk move, and KB-014 directly covers \"No signal\" troubleshooting steps."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01DoMsnJkne7fmno5sUrfA8g",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Hardware",
+            "priority": "medium",
+            "assignee_group": "Help Desk",
+            "reasoning_summary": "Single monitor showing no signal after a desk move, likely a cable/dock/input issue with a workaround (using one monitor); matches KB-014 exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1596,
+        "output": 269,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_012QWK9SwmmZ8LKjchjWrENK",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Sorry about that, moving desks can easily jostle the cables loose. Here are some steps to try, in order:\n\n1. Check the monitor is switched on and set to the right input (HDMI, DisplayPort or USB-C) - press the input button on the monitor to cycle through the options.\n2. Unplug the video cable at both ends and plug it back in firmly. Try a different cable if you have one to hand.\n3. If you're using a docking station, unplug its power for 30 seconds, then plug it back in and reconnect your laptop.\n4. Wake the laptop (press a key), then close and reopen the lid.\n5. On Windows, press **Windows + Ctrl + Shift + B** together to reset the graphics driver. On a Mac, unplug and reconnect the display.\n6. In display settings, set the refresh rate back to 60 Hz, as a higher setting can cause issues on older cables.\n7. Restart the laptop with the monitor connected.\n\nIf the monitor still says \"No signal\" after trying these, please reply with the monitor model, the dock model (if any), and the type of cable you're using, and let us know if it also happens with a different monitor - this will help us look further into it.",
+            "cited_kb_ids": [
+              "KB-014"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-014 directly addresses monitors showing \"No signal,\" including after a desk move / dock reconnection, and provides the exact troubleshooting steps needed."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1911,
+        "output": 607,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}

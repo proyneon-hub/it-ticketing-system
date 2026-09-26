@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "model": "claude-sonnet-5",
+  "promptVersion": "triage.v1",
+  "responses": [
+    {
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "ErMCCpABCBIYAipAT+kLF5HkDYuVuFnfngiRm9qOjQvzhi9f26eP4cs+1g3WvzAu4lEpiH69XaA0NNm7QmLXL5eLkVRD/zrjl87V3TIPY2xhdWRlLXNvbm5ldC01OABCCHRoaW5raW5nWiRjNjhjMWEzMy1kYzU1LTRjZWUtOWMyZi1jYThmMTZiNjM2ZjKoAZma3NUGEgwad4u1Z2WhrvpPE8gaDKnVGQ02the3CxVI2SIwdz8LJ+yZc9NmksU8V4WF5TM0cs+Phy4HLREB4BMEnGI5+Q7l83xRACahiMES9ua+KlDeJ1KJ2+I0xAAh+0/9ma2CdNmKgETUvVSDGC0HVY1LmsnjAvmd962mHWGFwNQoC0ewzIpTLfdZDjpyGw5TKvrDquuM4vf6ilaLSNqq6QeG0RgB"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01F9jKnntE9PNTfqZkngPKjk",
+          "name": "search_kb",
+          "input": {
+            "query": "can't access shared drive from home"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_017Pri3znj3F71izAXztiFWr",
+          "name": "search_kb",
+          "input": {
+            "query": "VPN connection required for network drive"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 379,
+        "output": 134,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_01YT11yZUUD31GnNdB88ztMo",
+          "name": "get_kb_article",
+          "input": {
+            "kb_id": "KB-010"
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 1758,
+        "output": 56,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "This matches well - working from home, shared drive missing, other websites work fine (internet works). This is exactly KB-010's scenario."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01PWst3nATS7NcdqBDyZGV5a",
+          "name": "set_triage",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "category": "Network",
+            "priority": "medium",
+            "assignee_group": "Network Support",
+            "reasoning_summary": "Shared drive unreachable from home while internet works is a classic VPN/off-network access issue with a workaround (office access), covered by KB-010."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2224,
+        "output": 256,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_018yAD6LgQ8MFCnTwvGMXuwv",
+          "name": "propose_resolution",
+          "input": {
+            "ticket_id": "{{TICKET_ID}}",
+            "reply_markdown": "Hi Alex, thanks for flagging this. Since the drive worked in the office yesterday but not from home, this is most likely because the shared drive needs a VPN connection while you're off the office network. Here's what to try:\n\n1. Make sure you're connected to the VPN (internal drives aren't reachable over plain internet). If the VPN itself won't connect, let us know as that may need separate steps.\n2. Confirm your internet is otherwise working (you mentioned other sites load fine, so this is likely fine).\n3. Try disconnecting the shared drive, then reconnect it by typing its path directly into your file manager's address bar.\n4. If it asks for a password, sign out of your account and back in, then try again.\n5. Restart your laptop if it's still not showing up.\n\nIf none of these steps get the drive to appear, please reply and let us know at which step it failed, along with the exact drive path and whether you're connected to the VPN — we'll take it from there.",
+            "cited_kb_ids": [
+              "KB-010"
+            ],
+            "confidence": "high",
+            "reasoning_summary": "KB-010 directly covers a shared drive that worked before but is now unreachable from home, with internet otherwise working, matching the ticket exactly."
+          },
+          "caller": {
+            "type": "direct"
+          }
+        }
+      ],
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 2526,
+        "output": 530,
+        "cacheRead": 4961,
+        "cacheWrite": 0
+      }
+    }
+  ]
+}
