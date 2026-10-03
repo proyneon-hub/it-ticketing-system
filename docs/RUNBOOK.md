@@ -201,7 +201,7 @@ The hourly `Support Ops Scheduled Health Check` workflow checks health, database
 
 - Confirm the project has `MONGODB_URI` and a 32+ character `AUTH_SECRET` (`/api/ready` shows `authConfigured: true`), then redeploy after any change. Without the secret, sign-in returns 503 "Server authentication is not configured."
 - Check the function logs for `/api` routes, and search them by request id.
-- Confirm `api/[...path].js` is deployed and the frontend build output exists in `dist`.
+- Confirm `api/index.js` is deployed and the frontend build output exists in `dist`.
 - `/api/ready` is the quickest check that the deployed functions can reach the database.
 
 ## CI failure troubleshooting
