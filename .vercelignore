@@ -1,0 +1,21 @@
+# Not needed to build or run the deployment; keeps the uploaded source small.
+# Patterns are anchored to the repo root on purpose: an unanchored *.md would also drop
+# prompts/*.md, which the agent reads at runtime, and kb/*.md. Everything `npm run build`
+# reads (src, api, server.ts, scripts, kb, prompts, tsconfig*.json, vite.config.mjs,
+# index.html) is deliberately not listed.
+/docs
+/tests
+/perf
+/ops
+/eval
+/Support-Ops-Automation
+/coverage
+/playwright-report
+/playwright-report-live
+/test-results
+/Dockerfile
+/docker-compose*.yml
+/.dockerignore
+/*.md
+**/__tests__
+**/*.test.*

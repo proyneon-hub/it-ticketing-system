@@ -48,7 +48,7 @@ Tags: `latest` and `sha-<commit>`. Running an older tag is the fastest rollback.
 
 ## Vercel
 
-The frontend is built by Vite and served statically; `api/` contains thin adapters that run the same Express app as serverless functions (`api/[...path].js` is the catch-all). The API is TypeScript: `npm run build` compiles it to `dist-server/` and the adapters load that output, exactly as the Docker image does. `vercel.json` holds the build settings.
+The frontend is built by Vite and served statically; `api/index.js` is a thin adapter that runs the same Express app as the one serverless function; `vercel.json` rewrites every `/api/*` path to it. The API is TypeScript: `npm run build` compiles it to `dist-server/` and the adapter loads that output, exactly as the Docker image does. `vercel.json` holds the build settings.
 
 1. Create a MongoDB Atlas cluster and a database user. In Network Access, allow the deployment. For a demo, "allow from anywhere" is common; restrict it for anything real.
 2. In Vercel choose **Add New Project**, import the GitHub repository, and use these settings:
@@ -98,6 +98,6 @@ Some features need a one-time switch in the repository settings:
 
 **`Database unavailable` or a 503 from `/api/ready`.** Check that the user and password in the URI are right, that the database user exists, and that Atlas Network Access allows the deployment.
 
-**`/api/docs` shows a blank or unstyled page on Vercel.** Swagger UI serves its assets from `node_modules/swagger-ui-dist`; `vercel.json` includes them in the functions with `includeFiles`. If a change to that setting breaks the page, check the function's bundled files in the Vercel deployment details.
+**`/api/docs` shows a blank or unstyled page on Vercel.** Swagger UI serves its assets from `node_modules/swagger-ui-dist`; `vercel.json` includes only the files the page loads (not the source maps or alternate bundles) in the function with `includeFiles`. If a change to that setting breaks the page, check the function's bundled files in the Vercel deployment details.
 
 **A user reports an error.** Ask for the reference shown under it and follow [Tracing a user-reported error](docs/RUNBOOK.md#tracing-a-user-reported-error).

@@ -2,7 +2,8 @@ import express, { type RequestHandler, type Router } from 'express';
 import type { JsonObject } from 'swagger-ui-express';
 import spec from './openapi.json';
 
-// Swagger UI ships about 12 MB of static assets, so it is loaded on the first
+// Swagger UI ships about 12 MB of static assets (2 MB of them are deployed to Vercel,
+// see vercel.json), so it is loaded on the first
 // visit to /api/docs instead of at startup. That keeps cold starts on serverless
 // hosts as fast as before for everyone who never opens the docs.
 interface SwaggerUi {

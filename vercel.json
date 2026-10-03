@@ -13,8 +13,8 @@
     }
   ],
   "functions": {
-    "api/**/*.js": {
-      "includeFiles": "node_modules/swagger-ui-dist/**"
+    "api/index.js": {
+      "includeFiles": "node_modules/swagger-ui-dist/{package.json,index.js,absolute-path.js,swagger-ui-bundle.js,swagger-ui-standalone-preset.js,swagger-ui.css,favicon-16x16.png,favicon-32x32.png,oauth2-redirect.html}"
     }
   }
 }

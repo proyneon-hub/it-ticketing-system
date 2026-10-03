@@ -167,7 +167,7 @@ jobs:
           node-version: 22.11.0
 
       - name: Check that the serverless entry point loads
-        run: node -e "require('./api/[...path].js'); console.log('loaded on', process.version); process.exit(0)"
+        run: node -e "require('./api/index.js'); console.log('loaded on', process.version); process.exit(0)"
 
       # Catches a typo in either Compose file before a stage that needs Docker does.
       - name: Validate the Compose files
